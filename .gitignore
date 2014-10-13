@@ -6,6 +6,16 @@
 
 # R data files from past sessions
 .Rdata
+.Rda
+*.Rdata
+*.Rda
+
 
 # RStudio files
 .Rproj.user/
+
+# HTML files
+*.htm
+*.html
+.htm
+.html
