@@ -1,12 +1,15 @@
-AHA_Google_Maps_Plot_by_IDs = function(ID_KLAK, ID_Asset,Type_KLAK="LS",Type_Asset="moffen") 
+AHA_Google_Maps_Plot_by_IDs = function(file,ID_KLAK, ID_Asset,Type_KLAK="LS",Type_Asset="moffen") 
 {
 # This function will plot the data files used in project AHA onto google maps
 # Input is a series of PC4 areas or a single PC4 area PC_4 = 6810:6823 for Arnhem
+# file is a file formatted for this function such as:
+# file= "20141010_Moffen"
 # Method include proxy 
   
-  load(paste0(settings$Results,"/1. Proxy mijlpaal 1/20141010_Moffen.R"))
-
-  for (z in 1:94){
+  load(paste0(settings$Results,"/1. Proxy mijlpaal 1/", file,."R"))
+# Loop z times, create plots from entries z (will generate 1 browser tab per run!) - errors are ignored.
+  for (z in 1:10)
+    {
   ID_Asset = gestoorde_moffen[z,7:11]
   ID_Asset = ID_Asset[!is.na(ID_Asset)]
   ID_KLAK  = gestoorde_moffen$ID_KLAK[z]
