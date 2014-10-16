@@ -78,7 +78,8 @@ fixnumber = function(x) {
   val= strsplit(x,",")[[1]];
   
   if (suppressWarnings(!is.na(as.numeric(val[1])))){
-    len=length(val); cor=ifelse(nchar(tail(val,1))==2,100,1000)
+    len=length(val); 
+    cor=switch(nchar(val[len]),"1"=10,"2"=100,"3"=1000)
     if(len==1) {a=val[1]
     } else if(len==2) {
       a=(as.numeric(val[1])+as.numeric(val[2])/cor)
@@ -91,7 +92,6 @@ fixnumber = function(x) {
   }
   #cat(paste0(a,", "))
   return(as.numeric(a))
-}
 }
 
 convert_SDO_GEOMETRY = function(mdsys)

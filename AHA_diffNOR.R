@@ -1,6 +1,8 @@
 AHA_diffNOR = function(NORtable, source)
   # Used to derive the monthly change version of the NOR using first month as a basis
 {
+  source("AHA_Settings.R")
+  AHA_Settings()
   library(compare)
   library(pracma)
   library(foreach)
@@ -25,8 +27,8 @@ AHA_diffNOR = function(NORtable, source)
                         cat("Please add headers to compute\n\n"))
 
   # Select which collumns to compare
-  comparecols = switch (NORtable,ELCVERBINDINGSKNOOPPUNTEN=c("ID_unique","Spanningsniveau", "Soort",	"Constructie",	"Isolatiemedium",	"Fabrikant"),
-                        ELCVERBINDINGSDELEN=c("ID_unique","Lengte","Status","Geleidermateriaal","Spanningsniveau","Diameter","Netverbinding"),
+  comparecols = switch (NORtable,ELCVERBINDINGSKNOOPPUNTEN=c("ID_unique","ID_NAN","Spanningsniveau", "Soort",	"Constructie",	"Isolatiemedium",	"Fabrikant"),
+                        ELCVERBINDINGSDELEN=c("ID_unique","Lengte","ID_NAN","Status","Geleidermateriaal","Spanningsniveau","Diameter","Netverbinding"),
                         ELCVERBINDINGEN=c("ID_unique","Beheerder","Lengte", "ID_Hoofdleiding",	"SpanningsNiveau",	"SOORT",	"SOORTNET"),
                         cat("Please add headers to compute\n\n"))
   plot(file.info(files)$size)
@@ -51,8 +53,8 @@ AHA_diffNOR = function(NORtable, source)
            # Create the NAN number
            if(!any(colnames(mindataset)=="ID_NAN")) 
            {switch (NORtable,
-                    ELCVERBINDINGSKNOOPPUNTEN={mindataset$ID_NAN=NA},
-                    ELCVERBINDINGSDELEN      ={mindataset$ID_NAN=NA})}
+                    ELCVERBINDINGSKNOOPPUNTEN={mindataset$ID_NAN=""},
+                    ELCVERBINDINGSDELEN      ={mindataset$ID_NAN=""})}
            
            # Prep data table
            mindataset$ID_unique    = 
@@ -67,6 +69,7 @@ AHA_diffNOR = function(NORtable, source)
            
            # Load some variables for later
            dataclasses = as.data.frame(t(as.data.frame(sapply(masterdataset, class))))
+           colnames(dataclasses)= colnames(masterdataset)
            changes     = data.table(matrix(1,0,length(comparecols)+1));setnames(changes,c(comparecols,"Date"))
            
          },
@@ -92,6 +95,8 @@ AHA_diffNOR = function(NORtable, source)
     load(files[n]) 
 
     # Prepare the data set
+    if(NORtable == "ELCVERBINDINGSDELEN" & class(mindataset$Lengte)=="character")  {  cat("Correctig character lengths \n")
+      mindataset$Lengte = as.numeric(sapply(mindataset$Lengte,fixnumber))}
     toc();cat("Preparing sets\n");tic()
     mindataset$ID_unique    = 
       paste0(as.character(mindataset[,ID_unique[1]]),
@@ -101,7 +106,9 @@ AHA_diffNOR = function(NORtable, source)
     
     # Make sure there is a NAN col
     if(!any(colnames(mindataset)=="ID_NAN")) {switch (NORtable,
-       ELCVERBINDINGEN          ={if (n>84) {mindataset$Lengte = as.integer(sapply(mindataset$Lengte,fixnumber))}},ELCVERBINDINGSKNOOPPUNTEN={mindataset$ID_NAN=NA}, ELCVERBINDINGSDELEN ={mindataset$ID_NAN=NA})}
+       ELCVERBINDINGEN          ={if (n>84) {mindataset$Lengte = as.integer(sapply(mindataset$Lengte,fixnumber))}},
+       ELCVERBINDINGSKNOOPPUNTEN={mindataset$ID_NAN=""}, 
+       ELCVERBINDINGSDELEN ={mindataset$ID_NAN="N"})}
     
     # Convert to data table for speed
     toc(); cat("Converting to data table\n"); tic()    
@@ -110,7 +117,7 @@ AHA_diffNOR = function(NORtable, source)
     mindataset = unique(mindataset)
     
     toc(); cat("Calculating classes\n"); tic()
-    dataclasses =rbind(dataclasses,as.data.frame(t(as.data.frame(sapply(mindataset[,colnames(dataclasses)], class)))));
+    dataclasses = rbind(dataclasses,as.data.frame(t(as.data.frame(sapply(mindataset[,colnames(masterdataset)], class)))));
     row.names(dataclasses) <- NULL 
 
     # Check which IDs have been removed
@@ -160,7 +167,8 @@ fixnumber = function(x) {
   val= strsplit(x,",")[[1]];
   
   if (suppressWarnings(!is.na(as.numeric(val[1])))){
-    len=length(val); cor=ifelse(nchar(tail(val,1))==2,100,1000)
+    len=length(val); 
+    cor=switch(nchar(val[len]),"1"=10,"2"=100,"3"=1000)
     if(len==1) {a=val[1]
     } else if(len==2) {
       a=(as.numeric(val[1])+as.numeric(val[2])/cor)
