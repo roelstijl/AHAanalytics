@@ -4,9 +4,12 @@ AHA_Google_Maps_Plot = function(PC_4)
 # Input is a series of PC4 areas or a single PC4 area PC_4 = 6810:6823 for Arnhem
 # Method include proxy 
   
+  source("AHA_Settings.R")
+  AHA_Settings()
 library("plotGoogleMaps")
 
 # Load existing data into global environment
+map = list()
 if (!exists("moffen")){
 load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data.Rda"),envir=globalenv())
 }
@@ -22,8 +25,23 @@ for(m in 1:length(kabels_geo[,1])) {
 }
 kabels_geo_rem= SpatialPolygonsDataFrame(SpatialPolygons(lst[which(kabels_geo$Change=="Removed")],proj4string=CRS("+init=epsg:28992")),kabels_geo[kabels_geo$Change=="Removed",])
 kabels_geo_add= SpatialPolygonsDataFrame(SpatialPolygons(lst[which(kabels_geo$Change=="Added")],proj4string=CRS("+init=epsg:28992")),kabels_geo[kabels_geo$Change=="Added",])
-map1=plotGoogleMaps(kabels_geo_rem,legend=FALSE,layerName="Kabels_Removed",zcol="DateAdded",strokeColor="#00FF99",add=TRUE)
-map2=plotGoogleMaps(kabels_geo_add,legend=FALSE,layerName="Kabels_Added",zcol="DateRemoved",strokeColor="#00CCFF",add=TRUE,previousMap=map1)
+map[[length(map)+1]]=plotGoogleMaps(kabels_geo_rem,legend=FALSE,layerName="Kabels_Removed",zcol="DateAdded",strokeColor="#00CCFF",add=TRUE)
+map[[length(map)+1]]=plotGoogleMaps(kabels_geo_add,legend=FALSE,layerName="Kabels_Added",zcol="DateRemoved",strokeColor="#00FF99",add=TRUE,previousMap=map[[length(map)]])
+
+# Data prep KLAK_LS
+KLAK_LS_geo = KLAK_LS[!is.na(KLAK_LS$Co_X)& pmatch(as.numeric(substring(KLAK_LS$PC_6,1,4)),PC_4,nomatch=0,duplicates.ok=TRUE)>0,]
+if (nrow(KLAK_LS_geo)>0){
+  coordinates(KLAK_LS_geo) = KLAK_LS_geo[,c("Co_X","Co_Y")]
+  proj4string(KLAK_LS_geo) <- CRS("+init=epsg:28992")
+  map[[length(map)+1]]=plotGoogleMaps(KLAK_LS_geo,layerName="LS Storingen",zcol="Maand",add=TRUE,legend=FALSE,colPalette="#DB4D4D",previousMap=map[[length(map)]])}
+
+# Data prep KLAK_MS
+if (nrow(KLAK_LS_geo)>0){
+  KLAK_MS_geo = KLAK_MS[!is.na(KLAK_MS$Co_X)& pmatch(as.numeric(substring(KLAK_MS$PC_6,1,4)),PC_4,nomatch=0,duplicates.ok=TRUE)>0,]
+  coordinates(KLAK_MS_geo) = KLAK_MS_geo[,c("Co_X","Co_Y")]
+  proj4string(KLAK_MS_geo) <- CRS("+init=epsg:28992")
+  map[[length(map)+1]]=plotGoogleMaps(KLAK_MS_geo,legend=FALSE,layerName="MS Storingen",zcol="Maand",colPalette="#FF3300",add=TRUE,previousMap=map[[length(map)]])
+}
 
 # Data prep moffen
 moffen[moffen$DateRemoved=="","Change"] = "Added"
@@ -32,21 +50,8 @@ moffen$PC_4=substring(moffen$PC_XY,1,4)
 moffen_geo = moffen[!is.na(moffen$Coo_X) & pmatch(as.numeric(substring(moffen$PC_XY,1,4)),PC_4,nomatch=0,duplicates.ok=TRUE)>0,]
 coordinates(moffen_geo) = (moffen_geo[,c("Coo_X","Coo_Y")])
 proj4string(moffen_geo) <- CRS("+init=epsg:28992")
-map3=plotGoogleMaps(moffen_geo[moffen_geo$Change=="Added",],legend=FALSE,layerName="Moffen_Added",zcol="DateAdded",add=TRUE,colPalette="#00FF99",previousMap=map2)
-map4=plotGoogleMaps(moffen_geo[moffen_geo$Change=="Removed",],legend=FALSE,layerName="Moffen_Removed",zcol="DateRemoved",add=TRUE,colPalette="#00CCFF",previousMap=map3)
-
-# Data prep KLAK_LS
-KLAK_LS_geo = KLAK_LS[!is.na(KLAK_LS$Co_X)& pmatch(as.numeric(substring(KLAK_LS$PC_6,1,4)),PC_4,nomatch=0,duplicates.ok=TRUE)>0,]
-coordinates(KLAK_LS_geo) = KLAK_LS_geo[,c("Co_X","Co_Y")]
-proj4string(KLAK_LS_geo) <- CRS("+init=epsg:28992")
-map5=plotGoogleMaps(KLAK_LS_geo,layerName="LS Storingen",zcol="Maand",add=TRUE,legend=FALSE,colPalette="#DB4D4D",previousMap=map4)
-
-# Data prep KLAK_MS
-KLAK_MS_geo = KLAK_MS[!is.na(KLAK_MS$Co_X)& pmatch(as.numeric(substring(KLAK_MS$PC_6,1,4)),PC_4,nomatch=0,duplicates.ok=TRUE)>0,]
-coordinates(KLAK_MS_geo) = KLAK_MS_geo[,c("Co_X","Co_Y")]
-proj4string(KLAK_MS_geo) <- CRS("+init=epsg:28992")
-map6=plotGoogleMaps(KLAK_MS_geo,legend=FALSE,layerName="MS Storingen",zcol="Maand",colPalette="#FF3300",previousMap=map5)
-
+map[[length(map)+1]]=plotGoogleMaps(moffen_geo[moffen_geo$Change=="Added",],legend=FALSE,layerName="Moffen_Added",zcol="DateAdded",add=TRUE,colPalette="#00FF99",previousMap=map[[length(map)]])
+map[[length(map)+1]]=plotGoogleMaps(moffen_geo[moffen_geo$Change=="Removed",],legend=FALSE,layerName="Moffen_Removed",zcol="DateRemoved",add=FALSE,colPalette="#00CCFF",previousMap=map[[length(map)]])
 }
 
 fixnumber = function(x) {

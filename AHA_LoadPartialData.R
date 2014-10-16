@@ -62,6 +62,10 @@ AHA_LoadPartialData = function()
   KLAK_LS=merge(x = KLAK_LS, y = ugroep[,c("ID_KLAK_Melding","Aantal_Melders","ID_Groep")], by = "ID_KLAK_Melding", all.x=TRUE)
   KLAK_MS=merge(x = KLAK_MS, y = ugroep[,c("ID_KLAK_Melding","Aantal_Melders","ID_Groep")], by = "ID_KLAK_Melding", all.x=TRUE)
   
+  # Zit er nog niet in:
+  # BARlog
+  # Koppeling mof -> kabel -> hoofdleiding (-> route, later)
+  # 
   
   save(moffen,kabels,EANtoHFD,CARXYPC,KLAK_COMP,verbindingen,KLAK_LS,KLAK_MS,KLAKMELDERS,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data.Rda"))
 }

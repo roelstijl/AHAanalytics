@@ -15,6 +15,7 @@ install.packages("plyr")
 install.packages("Rserve"); 
 install.packages("shiny");
 install.packages("XML");
+install.packages("hash")
 install.packages("data.table");
 install.packages("pracma") 
 install.packages("plotGoogleMaps")
