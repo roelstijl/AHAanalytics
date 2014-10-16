@@ -5,7 +5,7 @@
 # data<-data.frame(fread("aansluitingen_stationinclbehuizing.csv",header=TRUE))
 # data2<-read.csv("aansluitingengeotrace.csv",header=TRUE,colClasses=c("character"))
 # datacar<-read.csv("N:/Multivariate Analyse/Asset Health Analytics/0. Ongebruikte en brondata/8. CAR/CAR_D_KRM_AANSLUITING/export/MY_SCHEMA/TA/TAB1/data",sep="," ,header=FALSE)
-# profielendata=read.csv("H:/Documents/Probabilistisch Netwerk Model/E1A_stat/profielen Elektriciteit 2014 versie R.csv")
+ profielendata=read.csv("H:/Documents/Probabilistisch Netwerk Model/E1A_stat/profielen Elektriciteit 2014 versie R.csv")
 #  
 # colnames(data2)[2]<-"ID"
 # colnames(data2)[3]<-"STATION_ID"

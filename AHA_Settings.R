@@ -17,7 +17,7 @@ install.packages("shiny");
 install.packages("XML");
 install.packages("data.table");
 install.packages("pracma") 
-install.packages("RgoogleMaps")
+install.packages("plotGoogleMaps")
 install.packages("foreach")
 }
   
