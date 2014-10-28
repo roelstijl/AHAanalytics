@@ -1,21 +1,4 @@
 load("C:/Data/AHAdata/2. Input Datasets/AHA_Proxy_partial_data.Rda")
-load("N:/Multivariate Analyse/AHAdata/2. Input Datasets/6. NOR/kabelsn.Rda")  #kabels met spanningsniveaus
-library(data.table)
-KLAKMELDERS<-data.table(KLAKMELDERS); setkey(KLAKMELDERS,ID_Groep)
-kabels     <-data.table(kabels)     ; setkey(kabels,PC_XY_van)
-
-# Koppelen klak-groepsnummers ---------------------------------------------
-KLAK_LS[,c("ID_Groep")]<-sapply(KLAK_LS$ID_KLAK_Melding,
-                                function(x){if(length(KLAKMELDERS$ID_Groep[which(KLAKMELDERS$MELDING==x)])==0)
-                                {0}
-                                else
-                                {KLAKMELDERS$ID_Groep[which(KLAKMELDERS$MELDING==x)]}})
-
-KLAK_MS[,c("ID_Groep")]<-sapply(KLAK_MS$ID_KLAK_Melding,
-                                function(x){if(length(KLAKMELDERS$ID_Groep[which(KLAKMELDERS$MELDING==x)])==0)
-                                {0}
-                                else
-                                {KLAKMELDERS$ID_Groep[which(KLAKMELDERS$MELDING==x)]}})
 
 # Oude proxy LS Moffen --------------------------------------------------
 
@@ -48,6 +31,7 @@ moffenklak[,c("Rdiff")]<-as.Date(paste0(moffenklak$DateRemoved,"04"),format="%y%
 checkverschil<-function(dagen,nmin,nmax){if(!is.na(dagen)){if(dagen <= nmax & dagen >=nmin){1}else{0} }else{0}}
 moffenklak[,c("Adiffc")]<-sapply(moffenklak$Adiff,function(x) checkverschil(x,-30,70))                     #Kan asset verwijderd zijn door storing?
 moffenklak[,c("Rdiffc")]<-sapply(moffenklak$Rdiff,function(x) checkverschil(x,-30,70))                     #Kan asset toegevoegd zijn door storing?
+#Bekijk of Asset is vervangen door andere asset
 system.time(for(i in 1:nrow(klaktabel)){
     removed<-moffenklak[which(moffenklak$ID_KLAK_Melding==klaktabel$ID_KLAK_Melding[i] & moffenklak$DateRemoved!=""),c("Coo_X","Coo_Y","DateRemoved")]
     added  <-moffenklak[which(moffenklak$ID_KLAK_Melding==klaktabel$ID_KLAK_Melding[i] & moffenklak$DateAdded!=""),c("Coo_X","Coo_Y","DateAdded")]
@@ -84,16 +68,18 @@ klaktabelmoffenLS<-proxyLSmoffen()
 moffen[,c("ID_KLAK_Melding","Tijdstip_begin_storing","PC_6")]<-NA
 moffenklak<-moffen[0,]
 ll<-0
+i=9
 for(i in 1:nrow(KLAK_MS)){
   klakextract<-KLAK_MS[i,c("ID_KLAK_Melding","Tijdstip_begin","PC_6")]
-  postcodelijst<-c(klakextract$PC_6,KLAKMELDERS$PC6[which(KLAKMELDERS$ID_Groep==KLAK_LS$ID_Groep[i])])
+  postcodelijst<-c(klakextract$PC_6,KLAKMELDERS$PC6[which(KLAKMELDERS$ID_Groep==KLAK_MS$ID_Groep[i])])
   moffenklakadd<-moffen[which(moffen$PC_XY %in% postcodelijst),]
   countremoved<-sum(moffenklakadd$DateRemoved != "")
   countadded<-sum(moffenklakadd$DateAdded != "")
   if(countremoved>0 & countadded>0){
     moffenklakadd[,c("ID_KLAK_Melding","Tijdstip_begin","PC_6")]<-klakextract
     moffenklak<-rbind(moffenklak,moffenklakadd)
-    ll<-ll+1}
+    ll<-ll+1
+    }
 }
 
 ###voeg datumverschillen toe
@@ -102,6 +88,16 @@ moffenklak[,c("Rdiff")]<-as.Date(paste0(moffenklak$DateRemoved,"04"),format="%y%
 checkverschil<-function(dagen,nmin,nmax){if(!is.na(dagen)){if(dagen <= nmax & dagen >=nmin){1}else{0} }else{0}}
 moffenklak[,c("Adiffc")]<-sapply(moffenklak$Adiff,function(x) checkverschil(x,-30,70))                     #Kan asset verwijderd zijn door storing?
 moffenklak[,c("Rdiffc")]<-sapply(moffenklak$Rdiff,function(x) checkverschil(x,-30,70))                     #Kan asset toegevoegd zijn door storing?
+#Bekijk of Asset is vervangen door andere asset
+system.time(for(i in 1:nrow(klaktabel)){
+  removed<-moffenklak[which(moffenklak$ID_KLAK_Melding==klaktabel$ID_KLAK_Melding[i] & moffenklak$DateRemoved!=""),c("Coo_X","Coo_Y","DateRemoved")]
+  added  <-moffenklak[which(moffenklak$ID_KLAK_Melding==klaktabel$ID_KLAK_Melding[i] & moffenklak$DateAdded!=""),c("Coo_X","Coo_Y","DateAdded")]
+  dist   <-t(sapply(removed$Coo_X,function(x){(x-added$Coo_X)^2})+sapply(removed$Coo_Y,function(x){(x-added$Coo_Y)^2}))
+  tijdsd <-t(sapply(removed$DateRemoved,function(x){as.Date(paste0(x,"04"),format="%y%m%d")-as.Date(paste0(added$DateAdded,"04"),format="%y%m%d")}))
+  vervc  <-sapply(apply(floor(dist/4)+floor(abs(tijdsd/45)),1,min),function(x)ifelse(x>0,0,1))
+  moffenklak[which(moffenklak$ID_KLAK_Melding==klaktabel$ID_KLAK_Melding[i] & moffenklak$DateRemoved!=""),c("vervc")]<-vervc
+}
+)
 
 ### Maak dataframe met mogelijk gevonden klakstoringen
 klaktabel<-data.frame(table(moffenklak$ID_KLAK_Melding))
@@ -253,6 +249,27 @@ for(i in 1:nrow(KLAKMELDERS)){
 
 View(CARXYPC)
 
+# Koppelen klak-groepsnummers, aanmaken data.tables ---------------------------------------------
+KLAK_LS[,c("ID_Groep")]<-sapply(KLAK_LS$ID_KLAK_Melding,
+                                function(x){if(length(KLAKMELDERS$ID_Groep[which(KLAKMELDERS$MELDING==x)])==0)
+                                {0}
+                                else
+                                {KLAKMELDERS$ID_Groep[which(KLAKMELDERS$MELDING==x)]}})
+
+KLAK_MS[,c("ID_Groep")]<-sapply(KLAK_MS$ID_KLAK_Melding,
+                                function(x){if(length(KLAKMELDERS$ID_Groep[which(KLAKMELDERS$MELDING==x)])==0)
+                                {0}
+                                else
+                                {KLAKMELDERS$ID_Groep[which(KLAKMELDERS$MELDING==x)]}})
+#load("N:/Multivariate Analyse/AHAdata/2. Input Datasets/6. NOR/kabelsn.Rda")  #kabels met spanningsniveaus
+library(data.table)
+KLAKMELDERS    <-data.table(KLAKMELDERS); setkey(KLAKMELDERS,ID_Groep)
+kabels         <-data.table(kabels)     ; setkey(kabels,PC_XY_van)
+moffen         <-data.table(moffen)     ; setkey(moffen,PC_XY)
+kabels$PC_4_van<-substr(kabels$PC_XY_van,1,4)
+moffen$PC_4    <-substr(moffen$PC_XY,1,4)
+
+
 
 # Verbeterde proxy LS moffen --------------------------------------------------------
 
@@ -297,17 +314,95 @@ klaktabel<-klaktabel[which(klaktabel$storing==1),]
 
 klaktabelmoffenLS<-klaktabel
 
+# Verbeterde proxy MS Moffen ----------------------------------------------------
+
+#KLAK_MS<-KLAK_MS[which(KLAK_LS$Assetgroep=="Kabels. lijnen & garnituren"),]
+setkey(moffen,PC_4)
+
+###aanmaken tabel met moffen + bijbehorende KLAK-melding
+moffen[,ID_KLAK_Melding:=NA] ; moffen[,ID_KLAK_Melding:=as.integer(ID_KLAK_Melding)]
+moffen[,Component:=NA]       ; moffen[,Component:=as.character(Component)]
+moffen[,Tijdstip_begin:=NA]  ; moffen[,Tijdstip_begin:=as.character(Tijdstip_begin)]
+moffen[,PC_6:=NA]            ; moffen[,PC_6:=as.character(PC_6)]
+moffen[,ID_Groep:=NA]        ; moffen[,ID_Groep:=as.double(ID_Groep)]
+moffenklak<-moffen[0,]
+
+klaktabel    <- KLAK_MS[c("ID_KLAK_Melding", "Component","Tijdstip_begin", "PC_6", "ID_Groep")]   #aanmaken tabel met klakmeldingen
+ll<-0
+for(i in 1:nrow(klaktabel)){
+  ifelse(is.na(klaktabel$ID_Groep[i]),
+         klakmelders$PC6    <-klaktabel$PC_6[i],                                                  #Indien ID_groep onebekend is, kijk alleen naar KLAK-melding
+        {klakmelders        <-KLAKMELDERS   [list(klaktabel$ID_Groep[i]),]                        #Koppel alle klakmelders aan melding
+         klakmelders        <-klakmelders   [which(complete.cases(klakmelders$PC6)),]})
+  klakmelders$PC4 <-substr        (klakmelders$PC6,1,4)                                           #converteer PC6 naar PC4
+  moffenklakadd   <-moffen        [list(unique(klakmelders$PC4)),]
+  moffenklakadd   <-moffenklakadd [complete.cases(moffenklakadd$DateRemoved)]
+  countremoved    <-ifelse(is.na(sum(moffenklakadd$DateRemoved != "")),0,sum(moffenklakadd$DateRemoved != ""))
+  klaktabel$countremoved[i] <-  countremoved                                                         #aantal verwijderde assets registreren
+  if(countremoved>0){
+    moffenklakadd[,c("ID_KLAK_Melding", "Component","Tijdstip_begin", "PC_6", "ID_Groep"):=klaktabel[i,c("ID_KLAK_Melding", "Component","Tijdstip_begin", "PC_6", "ID_Groep")]]
+    moffenklak    <-rbind(moffenklak,moffenklakadd)
+    ll<-ll+1
+  }
+}
+
+###voeg datumverschillen toe
+moffenklak[,c("Adiff")]  <- as.Date(paste0(moffenklak$DateAdded,"04"),format="%y%m%d")-as.Date(moffenklak$Tijdstip_begin,format="%d-%m-%Y")
+moffenklak[,c("Rdiff")]  <- as.Date(paste0(moffenklak$DateRemoved,"04"),format="%y%m%d")-as.Date(moffenklak$Tijdstip_begin,format="%d-%m-%Y")
+checkverschil            <- function(dagen,nmin,nmax){if(!is.na(dagen)){if(dagen <= nmax & dagen >=nmin){1}else{0} }else{0}}
+moffenklak[,c("Adiffc")] <- sapply(moffenklak$Adiff,function(x) checkverschil(x,-30,70))                     #Kan asset toegevoegd zijn door storing?
+moffenklak[,c("Rdiffc")] <- sapply(moffenklak$Rdiff,function(x) checkverschil(x,-30,70))                     #Kan asset verwijderd zijn door storing?
+#Bekijk of Asset is vervangen door andere asset
+moffenklak <-data.frame(moffenklak)
+for(i in which(klaktabel$countremoved>0)){
+  removed<-moffenklak[which(moffenklak$ID_KLAK_Melding==klaktabel$ID_KLAK_Melding[i] & moffenklak$DateRemoved!=""),c("Coo_X","Coo_Y","DateRemoved")]
+  added  <-moffenklak[which(moffenklak$ID_KLAK_Melding==klaktabel$ID_KLAK_Melding[i] & moffenklak$DateAdded!=""),c("Coo_X","Coo_Y","DateAdded")]
+  dist   <-t(sapply(removed$Coo_X,function(x){(x-added$Coo_X)^2})+sapply(removed$Coo_Y,function(x){(x-added$Coo_Y)^2}))
+  tijdsd <-t(sapply(removed$DateRemoved,function(x){as.Date(paste0(x,"04"),format="%y%m%d")-as.Date(paste0(added$DateAdded,"04"),format="%y%m%d")}))
+  vervc  <-sapply(apply(floor(dist/4)+floor(abs(tijdsd/45)),1,min),function(x)ifelse(x>0,0,1))
+  moffenklak[which(moffenklak$ID_KLAK_Melding==klaktabel$ID_KLAK_Melding[i] & moffenklak$DateRemoved!=""),c("vervc")]<-vervc
+}
+
+#Bepaal of spanningsniveau van kabel "MS", "Onbekend"of "Anders" is
+#moffenklak$SPNV<-ifelse(moffenklak$Spanningsniveau %in% c("10 kV","10 kv","20kV","3kV","6kV"),"MS",ifelse(moffenklak$Spanningsniveau =="","NB","AN"))
+#Selecteer alleen MS moffen
+moffenklak <- moffenklak[which(moffenklak$Brontabel=="ms_moffen"),]
+
+### Maak dataframe met mogelijk gevonden klakstoringen
+klaktabel[,c("countadded")]   <-sapply(klaktabel$ID_KLAK_Melding,function(x) sum(moffenklak$Adiffc[which(moffenklak$ID_KLAK_Melding==x)]))   #aantal toegevoegde moffen
+klaktabel[,c("countremoved")] <-sapply(klaktabel$ID_KLAK_Melding,function(x) sum(moffenklak$Rdiffc[which(moffenklak$ID_KLAK_Melding==x)]))   #aantal weggehaalde moffen
+#max(klaktabel$countremoved)
+klaktabel[,c("storing")]      <-sapply(klaktabel$countadded, function (x) if(x>0){1}else{0})*sapply(klaktabel$countremoved, function (x) if(x>0){1}else{0})
+
+
+klaktabel[,c("asset1","asset2","asset3","asset4","asset5")]<-NA
+
+tabel<-sapply(klaktabel$ID_KLAK_Melding, function(x) moffenklak$ID_Bron[which(moffenklak$ID_KLAK_Melding==x & moffenklak$Rdiffc==1 & moffenklak$verv==1)])
+klakteveel<-which(unlist(lapply(tabel,length))>5)
+tabel<-tabel[-klakteveel]
+Reduce("+",lapply(tabel,length))
+max(unlist(lapply(tabel,length)))
+tabel<-t(data.frame(lapply(tabel,function(x)x[1:5])))
+
+klaktabel[-klakteveel,c("asset1","asset2","asset3","asset4","asset5")]<-tabel
+
+klaktabelmoffenMS   <-klaktabel[which(klaktabel$storing==1),]
+
+#save(klaktabel,file="gestoordemoffen.Rda")
+
 # Verbeterde proxy MS kabels ----------------------------------------------------
 # KLAK_MS<-KLAK_MS[which(KLAK_LS$Assetgroep=="Kabels. lijnen & garnituren"),]
 
 ###aanmaken tabel met kabels + bijbehorende KLAK-melding
-klaktabel    <- KLAK_LS[c("ID_KLAK_Melding", "Component","Tijdstip_begin_storing", "PC_6", "ID_Groep")]   #aanmaken tabel met klakmeldingen
+klaktabel    <- KLAK_MS[c("ID_KLAK_Melding", "Component","Tijdstip_begin_storing", "PC_6", "ID_Groep")]   #aanmaken tabel met klakmeldingen
 kabelsklak   <- kabels[0,]
 ll<-0
 i=1
-for(i in 1:nrow(KLAK_MS)){
+for(i in 1:nrow(klaktabel))){
   klakmelders     <-KLAKMELDERS   [list(klaktabel$ID_Groep[i]),]                                    #Koppel alle klakmelders aan melding
-  klakmelders     <-klakmelders   [complete.cases(klakmelders$PC_6),]
+  klakmelders     <-klakmelders   [which(complete.cases(klakmelders$PC6)),]
+  klakmelders$PC4 <-substr(klakmelders$PC6,1,4)
+  kabelsklakadd   <-kabels        [list(klakmelders$PC6),]
   countremoved<-sum(kabelsklakadd$DateRemoved != "")
   countadded<-sum(kabelsklakadd$DateAdded != "")
   if(countremoved>0 & countadded>0){

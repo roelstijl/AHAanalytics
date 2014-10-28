@@ -31,16 +31,16 @@ AHA_LoadPartialData = function()
   mindataset$Maand = sapply(mindataset$Maand,fixdates)
   KLAK_LS= mindataset[pmatch(mindataset$Maand, maanden, dup = TRUE,nomatch=0)>0,]
   KLAK_LS = data.frame(KLAK_LS)
-  KLAK_LS$Co_X=as.numeric(sapply(KLAK_LS$Co_X,fixnumber))
-  KLAK_LS$Co_Y=as.numeric(sapply(KLAK_LS$Co_Y,fixnumber))
+  KLAK_LS$Coo_X=as.numeric(sapply(KLAK_LS$Coo_X,fixnumber))
+  KLAK_LS$Coo_Y=as.numeric(sapply(KLAK_LS$Coo_Y,fixnumber))
   
   load("C:/Datasets/AHAdata/1. Ruwe Datasets/4. KLAK/KLAK_MS.Rda")
   mindataset$Maand = sapply(mindataset$Maand,fixdates) 
   KLAK_MS= mindataset[pmatch(mindataset$Maand, maanden, dup = TRUE,nomatch=0)>0,]
   
   KLAK_MS = data.frame(KLAK_MS)
-  KLAK_MS$Co_X=as.numeric(sapply(KLAK_MS$Co_X,fixnumber))
-  KLAK_MS$Co_Y=as.numeric(sapply(KLAK_MS$Co_Y,fixnumber))
+  KLAK_MS$Coo_X=as.numeric(sapply(KLAK_MS$Coo_X,fixnumber))
+  KLAK_MS$Coo_Y=as.numeric(sapply(KLAK_MS$Coo_Y,fixnumber))
   
   
   load("C:/Datasets/AHAdata/1. Ruwe Datasets/4. KLAK/KLAK_COMPENSATIE.Rda")
