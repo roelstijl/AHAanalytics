@@ -1,12 +1,17 @@
-AHA_Settings = function ()
+.First = function ()
 {
 # Load user specific things and sources functions
 # Source all the functions
+  
+cat("Loading settings for AHA project (Alliander & Bearingpoint), on failure please reload packages\n
+    Modify .Rprofile to change these settings\n\n")  
+
 options(stringsAsFactors = FALSE)
-source("AHA_inspect_raw_data.R")
-source("AHA_RDStoGPS.R")
-source("AHA_import.R")
-source("AHA_Google_Maps_Plot.R")
+source("AHA_Visual_RDS_to_GPS.R")
+source("AHA_Data_Import.R")
+source("AHA_Visual_Google_Maps_Plot.R")
+source("AHA_Data_Batch_Processing.R")
+source("AHA_Data_NOR_Log.R")
 
 # Install required packages if not installed already
 if (FALSE){
@@ -19,15 +24,17 @@ install.packages("hash")
 install.packages("data.table");
 install.packages("pracma") 
 install.packages("plotGoogleMaps")
-install.packages("foreach")
+install.packages("lubridate")
 }
   
 # Activate some scripts that might be usefull
-require("xlsx")
-require("plyr")
-require("shiny")
-require("data.table")
-library("pracma") 
+suppressMessages(require("xlsx"))
+suppressMessages(require("plyr"))
+suppressMessages(require("lubridate"))
+suppressMessages(require("shiny"))
+suppressMessages(require("data.table"))
+suppressMessages(library("pracma"))
+suppressMessages(library("hash"))
 
 # Determine settings based on computer
   settings = data.frame(1)
@@ -64,5 +71,5 @@ else{
 
 settings<<-settings
   
-cat("Settings loaded\n")
+cat("Loaded settings, built by R Stijl (Bearingpoint), J Heres (Alliander)")  
 }

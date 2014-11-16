@@ -39,3 +39,6 @@ data3 = merge(
   by=c("NR_Behuizing","Datum","Belasting_component","Min_or_Max","EV","WP","PV")
 )
 
+par(mfrow=c(1, 1), mar=c(2, 15, 0, 2))
+barplot(table(masterdataset$Netvlak,useNA="always"),horiz=TRUE,las=1,
+        col=terrain.colors(10));

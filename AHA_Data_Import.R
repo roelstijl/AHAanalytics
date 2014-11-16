@@ -1,6 +1,7 @@
-AHA_Import= function(folder,dataname,headername,mode){
+AHA_Data_Import= function(folder,dataname,headername,mode){
   
   # Asset health analytics import script, 
+  # Load project first
   # (c) Roel Stijl (Bearingpoint), Jacco Heres (Alliander), 2014
   
   # This file imports select collumns from raw files and modifies the headers based on an xlsx file
@@ -12,8 +13,6 @@ AHA_Import= function(folder,dataname,headername,mode){
   # - save will save the data to file <filename>.Rda
   # Multiple files is supported, initial input dataname is a partial search
     
-  source("AHA_Settings.R")
-  AHA_Settings()
   # Define the location of your data based on the system used
 
   setfolder     = list.files(settings$Bron_Datasets,pattern=folder)[1]; dir.create(paste0(settings$Ruwe_Datasets,"/",setfolder), showWarnings = FALSE)
@@ -33,7 +32,8 @@ AHA_Import= function(folder,dataname,headername,mode){
   # Choose the correct import method
   switch (folder,
   NOR={
-            if(!grepl("ELCVERBINDINGEN_14", curdataname) & any(lapply(c("ELCVERBINDINGEN"),grepl,curdataname))){
+            if(!any(pmatch(paste0("ELCVERBINDINGEN_140",1:8), curdataname,dup = TRUE,nomatch=0)>0) & any(pmatch("ELCVERBINDINGEN",curdataname,dup = TRUE,nomatch=0)>0))
+              {
               dataset = data.frame(read.csv(paste0(settings$Bron_Datasets,"/",setfolder,"/",datafiles[filenumber]),row.names=NULL));names(dataset)[1:(length(names(dataset))-1)]= names(dataset)[2:length(names(dataset))]; names(dataset)[(length(names(dataset)))]="DUPLICATE"
             } else if (curdataext == "csv"){
               dataset =data.frame( fread(paste0(settings$Bron_Datasets,"/",setfolder,"/",datafiles[filenumber]),sep=",",header=TRUE))
@@ -108,4 +108,18 @@ AHA_Import= function(folder,dataname,headername,mode){
     cat("Wrong mode selected, load, save or shiny")
   }  
   }
+}
+
+AHA_inspect_raw_data = function(dataset,header,headerfile){
+  shinyfolder  = "x. Shiny"
+  
+  save(dataset,file=paste0(shinyfolder,"/dataset.Rda"))
+  save(header,file=paste0(shinyfolder,"/header.Rda"))
+  
+  cat("Starting shiny .\n")  
+  header = runApp(shinyfolder)
+  
+  cat("Closing shiny .\n")
+  file.rename(paste0(shinyfolder ,"/header.xlsx"),paste0(shinyfolder,"/",headerfile));
+  
 }

@@ -1,15 +1,11 @@
-AHA_diffNOR = function(NORtable, source)
+AHA_Data_NOR_Log = function(NORtable, source="file")
   # Used to derive the monthly change version of the NOR using first month as a basis
+  # Source can be backup or file
 {
-  source("AHA_Settings.R")
-  AHA_Settings()
-  library(compare)
-  library(pracma)
-  library(foreach)
-  library(data.table)
-  library(hash)
-#   source = "file"
-#   NORtable = "ELCVERBINDINGSDELEN"
+# Load functions and settings ----------------------------------------
+
+  #   source = "file"
+  #   NORtable = "ELCVERBINDINGSDELEN"
   datafolder    = paste0(settings$Ruwe_Datasets,"/6. NOR");
   outputfolder  = paste0(settings$Input_Datasets,"/6. NOR");
   
@@ -33,9 +29,8 @@ AHA_diffNOR = function(NORtable, source)
                         cat("Please add headers to compute\n\n"))
   plot(file.info(files)$size)
 
-  #################################################
-  # Create the master dataset from the first file #
-  #################################################
+
+# Create the master dataset from the first file ---------------------------
   cat("Loading master set\n");tic()
   
   switch(source,
@@ -50,11 +45,17 @@ AHA_diffNOR = function(NORtable, source)
            mindataset$DateRemoved = ""
            mindataset$Status_ID = "Active"
            
-           # Create the NAN number
+           # Create the NAN number or Verbindingen if not present already
            if(!any(colnames(mindataset)=="ID_NAN")) 
            {switch (NORtable,
-                    ELCVERBINDINGSKNOOPPUNTEN={mindataset$ID_NAN=""},
-                    ELCVERBINDINGSDELEN      ={mindataset$ID_NAN=""})}
+                    ELCVERBINDINGSKNOOPPUNTEN={mindataset$ID_NAN=NA},
+                    ELCVERBINDINGSDELEN      ={mindataset$ID_NAN=NA})}
+           
+           if(!any(colnames(mindataset)=="ID_Verbinding")) 
+           {switch (NORtable,
+                    ELCVERBINDINGSKNOOPPUNTEN={mindataset$ID_Verbinding=NA}
+           )}
+           
            
            # Prep data table
            mindataset$ID_unique    = 
@@ -85,9 +86,9 @@ AHA_diffNOR = function(NORtable, source)
          });
   toc();par(mfrow=c(2,1))  
 
-  #####################################################################
-  # Calculate the difference between the master dataset and each file #
-  #####################################################################  
+
+# Calculate the difference between the master dataset and each file -------
+
   for (n in firstfile:length(files))
   {
     # Load some data
@@ -104,11 +105,16 @@ AHA_diffNOR = function(NORtable, source)
     mindataset$file = n;  mindataset$DateAdded = curdate; mindataset$DateRemoved = ""; mindataset$Status_ID = "Active"
     if(any(!(colnames(masterdataset) %in% colnames(mindataset)))){mindataset[,colnames(masterdataset)[!(colnames(masterdataset) %in% colnames(mindataset))]]=NA}
     
-    # Make sure there is a NAN col
-    if(!any(colnames(mindataset)=="ID_NAN")) {switch (NORtable,
-       ELCVERBINDINGEN          ={if (n>84) {mindataset$Lengte = as.integer(sapply(mindataset$Lengte,fixnumber))}},
-       ELCVERBINDINGSKNOOPPUNTEN={mindataset$ID_NAN=""}, 
-       ELCVERBINDINGSDELEN ={mindataset$ID_NAN="N"})}
+    # Create the NAN number or Verbindingen if not present already
+    if(!any(colnames(mindataset)=="ID_NAN")) 
+    {switch (NORtable,
+             ELCVERBINDINGSKNOOPPUNTEN={mindataset$ID_NAN=NA},
+             ELCVERBINDINGSDELEN      ={mindataset$ID_NAN=NA})}
+    
+    if(!any(colnames(mindataset)=="ID_Verbinding")) 
+    {switch (NORtable,
+             ELCVERBINDINGSKNOOPPUNTEN={mindataset$ID_Verbinding=NA}
+    )}
     
     # Convert to data table for speed
     toc(); cat("Converting to data table\n"); tic()    
