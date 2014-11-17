@@ -1,5 +1,5 @@
 AHA_Data_NOR_Log_Postprocessing  = function(){
-  # Load and prepare some data --------------------------------------------------
+# Load and prepare some data --------------------------------------------------
   
   assets = list()
   changes = list()
@@ -7,29 +7,50 @@ AHA_Data_NOR_Log_Postprocessing  = function(){
   
   load(paste0(settings$Input_Datasets,"/6. NOR/masterdataset_ELCVERBINDINGEN.Rda"))    
   verbindingen = masterdataset
-  verbindingen = unique(setorderv(verbindingen, "DateAdded",order=-1),by=c("ID_Verbinding","Lengte"))
-  
+  verbindingen = unique(setorder(verbindingen, "DateAdded"),by=c("ID_Verbinding","Beheerder"))
+
+# Kabels ---------------
+  # Add the correct voltage levels
   load(paste0(settings$Input_Datasets,"/6. NOR/masterdataset_ELCVERBINDINGSDELEN.Rda"))
   kabels = merge(masterdataset,Conv_voltage,by="Spanningsniveau",all.x=TRUE)
-  kabels = merge(masterdataset,verbindingen,by=c("ID_verbinding","Lengte"),all.x=TRUE)
+  kabels = merge(kabels,unique(verbindingen[,c("ID_Verbinding","ID_Hoofdleiding"),with=FALSE],by="ID_Verbinding"),by="ID_Verbinding",all.x=TRUE)
+  remove("masterdataset")
   
-  setorder(changes,"Date","ID_unique")
-  i= 2*(1:(nrow(changes)/2)); 
+  # Add the length changes
+  setorder(changes,"Date","ID_unique");  i= 2*(1:(nrow(changes)/2)); 
   lengthch = data.table(changes$Lengte[i-1]-changes$Lengte[i]); 
   setnames(lengthch,"V1","Length_ch")
-  lengthch = merge(cbind(changes[i-1][("ID_unique","Date")],lengthch)[lengthch$Length_Change!=0],kabels,by="ID_unique",all.x=TRUE)
+  lengthch = merge(cbind(changes[i-1][lengthch$Length_ch!=0,c("ID_unique","Date"),with=FALSE],
+                         lengthch[lengthch$Length_ch!=0]),kabels,by="ID_unique",all.x=TRUE)
   setnames(lengthch,"Date","Date_Length_ch")
   lengthch$Status_ID = "Length changed"
   kabels$Date_Length_ch=""
   kabels$Length_ch=""
-  rbind(kabels,lengtch)
+  kabels = rbind(kabels,lengtch)
+  remove("changes");  remove("lengthch");
+  save(assets,file=paste0(settings$Input_Datasets,"/Asset_Data_NOR_",Sys.Date(),".Rda"))
   
-  remove("verbindingen"); remove("changes")
+  # Add the HLD
+  kabels = merge(kabels,verbindingen[,c("ID_Verbinding","Beheerder","ID_Hoofdleiding"),with=FALSE],all.x=TRUE,by=c("ID_Verbinding","Beheerder"))
+
+  assets$kbl_OS = kabels[!kabels$Netvlak=="MS"&!kabels[kabels$Netvlak=="LS"]]
+  assets$kbl_LS = kabels[kabels$Netvlak=="LS"]
+  assets$kbl_MS = kabels[kabels$Netvlak=="MS"]  
+  remove("kabels")
+  save(assets,file=paste0(settings$Input_Datasets,"/Asset_Data_NOR_kabels_",Sys.Date(),".Rda"))
+  remove("assets")
   
+# Moffen --------------------------
   load(paste0(settings$Input_Datasets,"/6. NOR/masterdataset_ELCVERBINDINGSKNOOPPUNTEN.Rda"))
   moffen = merge(masterdataset,Conv_voltage,by="Spanningsniveau",all.x=TRUE)
+  moffen = merge(moffen,verbindingen[,c("ID_Verbinding","Beheerder","ID_Hoofdleiding"),with=FALSE],all.x=TRUE,by=c("ID_Verbinding","Beheerder"))
+
+  assets$mof_OS = moffen[!moffen$Netvlak=="MS"&!moffen[moffen$Netvlak=="LS"]]
+  assets$mof_LS = moffen[moffen$Netvlak=="LS"]
+  assets$mof_MS = moffen[moffen$Netvlak=="MS"]
+  save(assets,file=paste0(settings$Input_Datasets,"/Asset_Data_NOR_moffen_",Sys.Date(),".Rda"))
+
   
-  )
 
 # Find the verbindingen and hoofdleidingen -----------------------------------------------------------
 masterdataset = unique(masterdataset,by="ID_Verbinding")
@@ -76,12 +97,5 @@ setnames(a,"ID_Hoofdleiding","ID_Hoofdleiding_naar")
 setnames(a,"ID_Verbinding","ID_Verbinding_naar")
 
 # Seperate the data based on the asset and voltage --------------------------------------------------
-assets$mof_OS = kabels[!kabels$Netvlak=="MS"&!kabels[kabels$Netvlak=="LS"]]
-assets$mof_LS = kabels[kabels$Netvlak=="LS"]
-assets$mof_MS = kabels[kabels$Netvlak=="MS"]
-
-assets$kbl_OS = kabels[!kabels$Netvlak=="MS"&!kabels[kabels$Netvlak=="LS"]]
-assets$kbl_LS = kabels[kabels$Netvlak=="LS"]
-assets$kbl_MS = kabels[kabels$Netvlak=="MS"]  
 
 }

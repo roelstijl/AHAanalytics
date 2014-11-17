@@ -1,14 +1,15 @@
 AHA_Proxy_Dataset = function(initialdate="1401",months=10)
   {
   # Loads several month of AHA datasets
-  
-  # Settings ----------------------------------------------------------------  
+
+# Settings ----------------------------------------------------------------  
+
 
   dates = as.Date(paste0(initialdate,"01"), "%y%m%d")
   month(dates) = month(dates)+(1:months)-1
   maanden = format(dates, format="%y%m")
   
-  # Load the data ----------------------------------------------------------------
+# Load the data ----------------------------------------------------------------
   load("C:/Datasets/AHAdata/1. Ruwe Datasets/6. NOR/masterset_ELCVERBINDINGSKNOOPPUNTEN.Rda")
   moffen = masterset[pmatch(masterset$DateAdded, maanden, dup = TRUE,nomatch=0)|pmatch(masterset$DateRemoved, maanden, dup = TRUE,nomatch=0)>0,]
   load("C:/Datasets/AHAdata/1. Ruwe Datasets/6. NOR/masterset_ELCVERBINDINGSDELEN.Rda")
