@@ -50,8 +50,6 @@ AHA_Data_NOR_Log_Postprocessing  = function(){
   assets$mof_MS = moffen[moffen$Netvlak=="MS"]
   save(assets,file=paste0(settings$Input_Datasets,"/Asset_Data_NOR_moffen_",Sys.Date(),".Rda"))
 
-  
-
 # Find the verbindingen and hoofdleidingen -----------------------------------------------------------
 masterdataset = unique(masterdataset,by="ID_Verbinding")
 setnames(a,"ID_Verbinding_van","ID_Verbinding")

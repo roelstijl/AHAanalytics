@@ -29,7 +29,6 @@ AHA_Data_NOR_Log = function(NORtable, source="file")
                         cat("Please add headers to compute\n\n"))
   plot(file.info(files)$size)
 
-
 # Create the master dataset from the first file ---------------------------
   cat("Loading master set\n");tic()
   
@@ -85,7 +84,6 @@ AHA_Data_NOR_Log = function(NORtable, source="file")
            firstfile <- readline(prompt= "Continue from what file?: "); firstfile = as.numeric(firstfile)
          });
   toc();par(mfrow=c(2,1))  
-
 
 # Calculate the difference between the master dataset and each file -------
 
