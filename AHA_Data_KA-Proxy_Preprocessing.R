@@ -3,76 +3,82 @@ AHA_Proxy_Dataset = function(initialdate="1401",months=10)
   # Loads several month of AHA datasets
 
 # Settings ----------------------------------------------------------------  
-
-
   dates = as.Date(paste0(initialdate,"01"), "%y%m%d")
   month(dates) = month(dates)+(1:months)-1
   maanden = format(dates, format="%y%m")
   
 # Load the data ----------------------------------------------------------------
-  load("C:/Datasets/AHAdata/1. Ruwe Datasets/6. NOR/masterset_ELCVERBINDINGSKNOOPPUNTEN.Rda")
-  moffen = masterset[pmatch(masterset$DateAdded, maanden, dup = TRUE,nomatch=0)|pmatch(masterset$DateRemoved, maanden, dup = TRUE,nomatch=0)>0,]
-  load("C:/Datasets/AHAdata/1. Ruwe Datasets/6. NOR/masterset_ELCVERBINDINGSDELEN.Rda")
-  kabels = masterset[pmatch(masterset$DateAdded, maanden, dup = TRUE,nomatch=0)|pmatch(masterset$DateRemoved, maanden, dup = TRUE,nomatch=0)>0,]
-  load("C:/Datasets/AHAdata/1. Ruwe Datasets/6. NOR/masterdataset_ELCVERBINDINGSDELEN.Rda")
-  verbindingen = masterset[pmatch(masterset$DateAdded, maanden, dup = TRUE,nomatch=0)|pmatch(masterset$DateRemoved, maanden, dup = TRUE,nomatch=0)>0,]
-  
-  load("C:/Datasets/AHAdata/1. Ruwe Datasets/11. Nettopologie/aansluitingen_stationinclbehuizing.Rda")
-  aansluitingen1 = mindataset
-  load("C:/Datasets/AHAdata/1. Ruwe Datasets/11. Nettopologie/aansluitingengeotrace.Rda")
-  aansluitingen2 = mindataset
+  load(paste0(settings$Input_Datasets,"/Asset_Data_NOR_kabels_2014-11-17.Rda"))
+  assets$kbl_LS = assets$kbl_LS[assets$kbl_LS$DateAdded %in% maanden | assets$kbl_LS$DateRemoved %in% maanden | assets$kbl_LS$Date_Length_ch %in% maanden]
+  assets$kbl_MS = assets$kbl_MS[assets$kbl_MS$DateAdded %in% maanden | assets$kbl_MS$DateRemoved %in% maanden | assets$kbl_LS$Date_Length_ch %in% maanden]
+  temp=assets
+
+  load(paste0(settings$Input_Datasets,"/Asset_Data_NOR_moffen_2014-11-17.Rda"))
+  assets$mof_LS = assets$mof_LS[assets$mof_LS$DateAdded %in% maanden | assets$mof_LS$DateRemoved %in% maanden]
+  assets$mof_MS = assets$mof_MS[assets$mof_MS$DateAdded %in% maanden | assets$mof_MS$DateRemoved %in% maanden]
+  assets$kbl_LS = temp$kbl_LS  
+  assets$kbl_MS = temp$kbl_LS 
+
+  load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/aansluitingen_stationinclbehuizing.Rda"))
+  aansluitingen1 = data.table(mindataset)
+  setkey(aansluitingen1$ID_EAN)
+  load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/aansluitingengeotrace.Rda"))
+  aansluitingen2 = data.table(mindataset)
+  setkey(aansluitingen2$ID_EAN)
   
   # Koppeling EAN naar hoofdleiding
+nettopo = list();
   tablecount<-data.frame(table(aansluitingen1$ID_EAN))               
   data3=merge(aansluitingen1[-which(aansluitingen1$ID_EAN==""),], tablecount, by.x="ID_EAN", by.y="Var1")
-  data3=data3[which(data3$Freq==1),]
+  data3=data3[which(data3$Freq==1)]
   pm = pmatch(colnames(aansluitingen1),colnames(aansluitingen2))
-  aansluitingen2 = aansluitingen2[,pm]
-  EANtoHFD<-rbind(aansluitingen2,data3[,1:9])
-  
-  
-  load("C:/Datasets/AHAdata/1. Ruwe Datasets/4. KLAK/KLAK_LS.Rda")
+  aansluitingen2 = aansluitingen2[,pm,with=FALSE]
+  nettopo$EAN_to_HLD<-rbind(aansluitingen2,data3[,1:9,with=FALSE])
+
+  storingen=list()
+  load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_LS.Rda"))
   mindataset$Maand = sapply(mindataset$Maand,fixdates)
-  KLAK_LS= mindataset[pmatch(mindataset$Maand, maanden, dup = TRUE,nomatch=0)>0,]
-  KLAK_LS = data.frame(KLAK_LS)
-  KLAK_LS$Coo_X=as.numeric(sapply(KLAK_LS$Coo_X,fixnumber))
-  KLAK_LS$Coo_Y=as.numeric(sapply(KLAK_LS$Coo_Y,fixnumber))
+  storingen$LS= data.table(mindataset[pmatch(mindataset$Maand, maanden, dup = TRUE,nomatch=0)>0,])
+  storingen$LS = data.frame(storingen$LS)
+  storingen$LS$Coo_X=as.numeric(sapply(storingen$LS$Coo_X,fixnumber))
+  storingen$LS$Coo_Y=as.numeric(sapply(storingen$LS$Coo_Y,fixnumber))
   
   load("C:/Datasets/AHAdata/1. Ruwe Datasets/4. KLAK/KLAK_MS.Rda")
   mindataset$Maand = sapply(mindataset$Maand,fixdates) 
-  KLAK_MS= mindataset[pmatch(mindataset$Maand, maanden, dup = TRUE,nomatch=0)>0,]
+  storingen$MS= data.table(mindataset[pmatch(mindataset$Maand, maanden, dup = TRUE,nomatch=0)>0,])
   
-  KLAK_MS = data.frame(KLAK_MS)
-  KLAK_MS$Coo_X=as.numeric(sapply(KLAK_MS$Coo_X,fixnumber))
-  KLAK_MS$Coo_Y=as.numeric(sapply(KLAK_MS$Coo_Y,fixnumber))
+  storingen$MS = data.frame(storingen$MS)
+  storingen$MS$Coo_X=as.numeric(sapply(storingen$MS$Coo_X,fixnumber))
+  storingen$MS$Coo_Y=as.numeric(sapply(storingen$MS$Coo_Y,fixnumber))
   
   
   load("C:/Datasets/AHAdata/1. Ruwe Datasets/4. KLAK/KLAK_COMPENSATIE.Rda")
-  KLAK_COMP = mindataset;
+  storingen$Compensatie = data.table(mindataset);
   
-  load("C:/Datasets/AHAdata/1. Ruwe Datasets/8. CAR/CAR_2012_XY.Rda")
-  CARXYPC = mindataset[,c("PC_6","Huisnr","CO_X","CO_Y","ID_EAN")]
+  load("C:/Datasets/AHAdata/1. Ruwe Datasets/8. CAR/CAR_2013_XY.Rda")
+  nettopo$EAN_to_XY_PC6 = data.table(mindataset[,c("PC_6","Huisnr","CO_X","CO_Y","ID_EAN")])
   
   load("C:/Datasets/AHAdata/1. Ruwe Datasets/4. KLAK/KLAK_KOPPEL_MELDING_GROEP.Rda")
-  KLAKMELDERS = mindataset;
+  storingen$KLAKMELDERS = data.table(mindataset);
   
   # Combine KLAK data
-  nmelders = table(KLAKMELDERS$ID_Groep)
-  ugroep   = KLAKMELDERS[KLAKMELDERS$ST_Groep_eerste=="Ja",]
-  frequ    = table(KLAKMELDERS[,2])
-  ugroep  = merge(x=ugroep,y=frequ,by.x="ID_Groep",by.y="Var1",all.x=TRUE)
-  colnames(ugroep)[c(1,2,9)]=c("ID_KLAK_Melding","ID_Groep","Aantal_Melders")
+  nmelders = table(storingen$KLAKMELDERS$ID_Groep)
+  ugroep   = storingen$KLAKMELDERS[storingen$KLAKMELDERS$ST_Groep_eerste=="Ja",]
+  frequ    = setnames(data.table(table(storingen$KLAKMELDERS$ID_Groep)),"Aantal_Melders")
+  frequ$ID_Groep = as.integer(rownames(frequ))
+  ugroep  = merge(x=ugroep,y=frequ,by="ID_Groep",all.x=TRUE)
+  setnames(ugroep,c("MELDING","ID_Groep","Aantal_Melders"),c("ID_KLAK_Melding","ID_Groep","Aantal_Melders"))
   
-  KLAK_LS=merge(x = KLAK_LS, y = ugroep[,c("ID_KLAK_Melding","Aantal_Melders","ID_Groep")], by = "ID_KLAK_Melding", all.x=TRUE)
-  KLAK_MS=merge(x = KLAK_MS, y = ugroep[,c("ID_KLAK_Melding","Aantal_Melders","ID_Groep")], by = "ID_KLAK_Melding", all.x=TRUE)
+  storingen$LS=merge(x = storingen$LS, y = ugroep[,c("ID_KLAK_Melding","Aantal_Melders","ID_Groep"),with=FALSE], by = "ID_KLAK_Melding", all.x=TRUE)
+  storingen$MS=merge(x = storingen$MS, y = ugroep[,c("ID_KLAK_Melding","Aantal_Melders","ID_Groep"),with=FALSE], by = "ID_KLAK_Melding", all.x=TRUE)
   
   # Zit er nog niet in:
   # BARlog
-  # Koppeling mof -> kabel -> hoofdleiding (-> route, later)
+  # Koppeling mof -> kabel -> hoofdleiding ->station (-> route, later)
   
   # Save the data ----------------------------------------------------------------
   
-  save(moffen,kabels,EANtoHFD,CARXYPC,KLAK_COMP,verbindingen,KLAK_LS,KLAK_MS,KLAKMELDERS,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data.Rda"))
+  save(assets,storingen,nettopo,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_",Sys.Date(),".Rda"))
 }
 
 
@@ -163,61 +169,61 @@ AHA_Proxy_Dataset_post = function(){
   kabels<-kabels2
   moffen<-moffen2
   
-  #functies van Roel
-  fixdates = function(x) {
-    paste0(substr(x,3,4),substr(x,6,7))
-  }
-  
-  fixnumber = function(x) {
-    val= strsplit(x,",")[[1]];
-    
-    if (suppressWarnings(!is.na(as.numeric(val[1])))){
-      len=length(val); 
-      cor=switch(nchar(val[len]),"1"=10,"2"=100,"3"=1000)
-      if(len==1) {a=val[1]
-      } else if(len==2) {
-        a=(as.numeric(val[1])+as.numeric(val[2])/cor)
-      } else if(len==3) {
-        a=(as.numeric(val[1])*1000+as.numeric(val[2])+as.numeric(val[3])/cor)
-      }
-    }
-    else{
-      a=NA
-    }
-    #cat(paste0(a,", "))
-    return(as.numeric(a))
-  }
-  maanden <- c("1110","1111","1112","1201","1202","1203","1204","1205","1206","1207","1208","1209","1210","1211","1212","1301")
-  #Laden klak-data en koppelen aan klakmelders
-  load("N:/Multivariate Analyse/AHAdata/1. Ruwe Datasets/4. KLAK/KLAK_LS.Rda")
-  mindataset$Maand = sapply(mindataset$Maand,fixdates)
-  KLAK_LS= mindataset[pmatch(mindataset$Maand, maanden, dup = TRUE,nomatch=0)>0,]
-  KLAK_LS = data.frame(KLAK_LS)
-  KLAK_LS$Coo_X=as.numeric(sapply(KLAK_LS$Coo_X,fixnumber))
-  KLAK_LS$Coo_Y=as.numeric(sapply(KLAK_LS$Coo_Y,fixnumber))
-  
-  load("N:/Multivariate Analyse/AHAdata/1. Ruwe Datasets/4. KLAK/KLAK_MS.Rda")
-  mindataset$Maand = sapply(mindataset$Maand,fixdates) 
-  KLAK_MS= mindataset[pmatch(mindataset$Maand, maanden, dup = TRUE,nomatch=0)>0,]
-  KLAK_MS = data.frame(KLAK_MS)
-  KLAK_MS$Coo_X=as.numeric(sapply(KLAK_MS$Coo_X,fixnumber))
-  KLAK_MS$Coo_Y=as.numeric(sapply(KLAK_MS$Coo_Y,fixnumber))
-  
-  load("N:/Multivariate Analyse/AHAdata/1. Ruwe Datasets/4. KLAK/KLAK_KOPPEL_MELDING_GROEP.Rda")
-  KLAKMELDERS = mindataset;
-  
-  # Combine KLAK data
-  nmelders = table(KLAKMELDERS$ID_Groep)
-  ugroep   = KLAKMELDERS[KLAKMELDERS$ST_Groep_eerste=="Ja",]
-  frequ    = table(KLAKMELDERS[,2])
-  ugroep  = merge(x=ugroep,y=frequ,by.x="ID_Groep",by.y="Var1",all.x=TRUE)
-  colnames(ugroep)[c(1,2,9)]=c("ID_KLAK_Melding","ID_Groep","Aantal_Melders")
-  
-  KLAK_LS=merge(x = KLAK_LS, y = ugroep[,c("ID_KLAK_Melding","Aantal_Melders","ID_Groep")], by = "ID_KLAK_Melding", all.x=TRUE)
-  KLAK_MS=merge(x = KLAK_MS, y = ugroep[,c("ID_KLAK_Melding","Aantal_Melders","ID_Groep")], by = "ID_KLAK_Melding", all.x=TRUE)
-  
-  save(moffen,kabels,EANtoHFD,CARXYPC,KLAK_COMP,verbindingen,KLAK_LS,KLAK_MS,KLAKMELDERS,file="AHA_Proxy_partial_dataN.Rda")
-  
-  }
-  
+#   #functies van Roel----------------
+#   fixdates = function(x) {
+#     paste0(substr(x,3,4),substr(x,6,7))
+#   }
+#   
+#   fixnumber = function(x) {
+#     val= strsplit(x,",")[[1]];
+#     
+#     if (suppressWarnings(!is.na(as.numeric(val[1])))){
+#       len=length(val); 
+#       cor=switch(nchar(val[len]),"1"=10,"2"=100,"3"=1000)
+#       if(len==1) {a=val[1]
+#       } else if(len==2) {
+#         a=(as.numeric(val[1])+as.numeric(val[2])/cor)
+#       } else if(len==3) {
+#         a=(as.numeric(val[1])*1000+as.numeric(val[2])+as.numeric(val[3])/cor)
+#       }
+#     }
+#     else{
+#       a=NA
+#     }
+#     #cat(paste0(a,", "))
+#     return(as.numeric(a))
+#   }
+#   maanden <- c("1110","1111","1112","1201","1202","1203","1204","1205","1206","1207","1208","1209","1210","1211","1212","1301")
+#   #Laden klak-data en koppelen aan klakmelders
+#   load("N:/Multivariate Analyse/AHAdata/1. Ruwe Datasets/4. KLAK/KLAK_LS.Rda")
+#   mindataset$Maand = sapply(mindataset$Maand,fixdates)
+#   KLAK_LS= mindataset[pmatch(mindataset$Maand, maanden, dup = TRUE,nomatch=0)>0,]
+#   KLAK_LS = data.frame(KLAK_LS)
+#   KLAK_LS$Coo_X=as.numeric(sapply(KLAK_LS$Coo_X,fixnumber))
+#   KLAK_LS$Coo_Y=as.numeric(sapply(KLAK_LS$Coo_Y,fixnumber))
+#   
+#   load("N:/Multivariate Analyse/AHAdata/1. Ruwe Datasets/4. KLAK/KLAK_MS.Rda")
+#   mindataset$Maand = sapply(mindataset$Maand,fixdates) 
+#   KLAK_MS= mindataset[pmatch(mindataset$Maand, maanden, dup = TRUE,nomatch=0)>0,]
+#   KLAK_MS = data.frame(KLAK_MS)
+#   KLAK_MS$Coo_X=as.numeric(sapply(KLAK_MS$Coo_X,fixnumber))
+#   KLAK_MS$Coo_Y=as.numeric(sapply(KLAK_MS$Coo_Y,fixnumber))
+#   
+#   load("N:/Multivariate Analyse/AHAdata/1. Ruwe Datasets/4. KLAK/KLAK_KOPPEL_MELDING_GROEP.Rda")
+#   KLAKMELDERS = mindataset;
+#   
+#   # Combine KLAK data
+#   nmelders = table(KLAKMELDERS$ID_Groep)
+#   ugroep   = KLAKMELDERS[KLAKMELDERS$ST_Groep_eerste=="Ja",]
+#   frequ    = table(KLAKMELDERS[,2])
+#   ugroep  = merge(x=ugroep,y=frequ,by.x="ID_Groep",by.y="Var1",all.x=TRUE)
+#   colnames(ugroep)[c(1,2,9)]=c("ID_KLAK_Melding","ID_Groep","Aantal_Melders")
+#   
+#   KLAK_LS=merge(x = KLAK_LS, y = ugroep[,c("ID_KLAK_Melding","Aantal_Melders","ID_Groep")], by = "ID_KLAK_Melding", all.x=TRUE)
+#   KLAK_MS=merge(x = KLAK_MS, y = ugroep[,c("ID_KLAK_Melding","Aantal_Melders","ID_Groep")], by = "ID_KLAK_Melding", all.x=TRUE)
+#   
+#   save(moffen,kabels,EANtoHFD,CARXYPC,KLAK_COMP,verbindingen,KLAK_LS,KLAK_MS,KLAKMELDERS,file="AHA_Proxy_partial_dataN.Rda")
+#   
+#   }
+#   
   
