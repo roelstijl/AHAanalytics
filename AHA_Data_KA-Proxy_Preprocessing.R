@@ -1,4 +1,4 @@
-AHA_Proxy_Dataset = function(initialdate="1401",months=10)
+AHA_Data_KA_Proxy_Preprocessing = function(initialdate="1401",months=10)
   {
   # Loads several months of AHA datasets and puts this into a dataset
 
@@ -7,84 +7,86 @@ AHA_Proxy_Dataset = function(initialdate="1401",months=10)
   month(dates) = month(dates)+(1:months)-1
   maanden = format(dates, format="%y%m")
   
-# Load the data ----------------------------------------------------------------
-  load(paste0(settings$Input_Datasets,"/Asset_Data_NOR_kabels_2014-11-17.Rda"))
-  assets$kbl_LS = assets$kbl_LS[assets$kbl_LS$DateAdded %in% maanden | assets$kbl_LS$DateRemoved %in% maanden | assets$kbl_LS$Date_Length_ch %in% maanden]
-  assets$kbl_MS = assets$kbl_MS[assets$kbl_MS$DateAdded %in% maanden | assets$kbl_MS$DateRemoved %in% maanden | assets$kbl_LS$Date_Length_ch %in% maanden]
-  temp=assets
+# NOR Data ----------------------------------------------------------------
+  cat("Load NOR data\n"); tic();
 
-  load(paste0(settings$Input_Datasets,"/Asset_Data_NOR_moffen_2014-11-17.Rda"))
-  assets$mof_LS = assets$mof_LS[assets$mof_LS$DateAdded %in% maanden | assets$mof_LS$DateRemoved %in% maanden]
-  assets$mof_MS = assets$mof_MS[assets$mof_MS$DateAdded %in% maanden | assets$mof_MS$DateRemoved %in% maanden]
-  assets$kbl_LS = temp$kbl_LS  
-  assets$kbl_MS = temp$kbl_LS 
+  load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_assets.Rda"))
+  assets$moffen = assets$moffen[assets$moffen$DateAdded %in% maanden | assets$moffen$DateRemoved %in% maanden]
+  assets$moffen$PC_4=substr(assets$moffen$PC_XY,1,4)
+  assets$kabels = assets$kabels[assets$kabels$DateAdded %in% maanden | assets$kabels$DateRemoved %in% maanden | assets$kabels$Date_Length_ch %in% maanden]
+  assets$kabels$PC_4=substr(assets$kabels$PC_XY_van,1,4)  
+  assets$kabels$PC_4=substr(assets$kabels$PC_XY_naar,1,4)  
 
+
+# EAN-Hoofdleiding-XY-PC data ----------------
+  toc; cat("Load EAN data\n"); tic();
   load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/aansluitingen_stationinclbehuizing.Rda"))
   aansluitingen1 = data.table(mindataset)
-  setkey(aansluitingen1$ID_EAN)
+  setkey(aansluitingen1,ID_EAN)
   load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/aansluitingengeotrace.Rda"))
   aansluitingen2 = data.table(mindataset)
-  setkey(aansluitingen2$ID_EAN)
-  
-  # Koppeling EAN naar hoofdleiding
-nettopo = list();
-  tablecount<-data.frame(table(aansluitingen1$ID_EAN))               
-  data3=merge(aansluitingen1[-which(aansluitingen1$ID_EAN==""),], tablecount, by.x="ID_EAN", by.y="Var1")
+  setkey(aansluitingen2,ID_EAN)
+  nettopo = list();
+  tablecount<-data.frame(table(aansluitingen1$ID_EAN))
+  setnames(tablecount,"Var1","ID_EAN")
+  data3=merge(aansluitingen1[-which(aansluitingen1$ID_EAN==""),], tablecount, by="ID_EAN")
   data3=data3[which(data3$Freq==1)]
   pm = pmatch(colnames(aansluitingen1),colnames(aansluitingen2))
   aansluitingen2 = aansluitingen2[,pm,with=FALSE]
-  nettopo$EAN_to_HLD<-rbind(aansluitingen2,data3[,1:9,with=FALSE])
+  load("C:/Datasets/AHAdata/1. Ruwe Datasets/8. CAR/CAR_2013_XY.Rda")
+  mindataset$ID_EAN= as.character(mindataset$ID_EAN)
+  setnames(EAN_to_XY_PC6,c("CO_X","CO_Y"),c("Coo_X","Coo_Y"))
+  EAN_to_XY_PC6 = data.table(mindataset[,c("PC_6","Huisnr","Coo_X","Coo_Y","ID_EAN")])
+  EAN_to_XY_PC6$PC_4=substr(EAN_to_XY_PC6$PC_6,1,4)
+  setkey(EAN_to_XY_PC6,ID_EAN)
 
+  nettopo$EAN_koppel<-merge(rbind(aansluitingen2,data3[,1:9,with=FALSE]),EAN_to_XY_PC6,by="ID_EAN",all.x=TRUE)
+
+# Storingsdata uit KLAK ------------------------
+  toc; cat("Load KLAK data\n"); tic();
   storingen=list()
   load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_LS.Rda"))
-  mindataset$Maand = sapply(mindataset$Maand,fixdates)
-  storingen$LS= data.table(mindataset[pmatch(mindataset$Maand, maanden, dup = TRUE,nomatch=0)>0,])
-  storingen$LS = data.frame(storingen$LS)
-  storingen$LS$Coo_X=as.numeric(sapply(storingen$LS$Coo_X,fixnumber))
-  storingen$LS$Coo_Y=as.numeric(sapply(storingen$LS$Coo_Y,fixnumber))
+  mindataset$Maand = sapply(mindataset$Datum,fixdates)
+  storingen$LS= data.table(mindataset[pmatch(mindataset$Maand, maanden, dup = TRUE,nomatch=0)>0,]);
   
-  load("C:/Datasets/AHAdata/1. Ruwe Datasets/4. KLAK/KLAK_MS.Rda")
-  mindataset$Maand = sapply(mindataset$Maand,fixdates) 
+  load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_MS.Rda"))
+  mindataset$Maand = sapply(mindataset$Datum,fixdates) 
   storingen$MS= data.table(mindataset[pmatch(mindataset$Maand, maanden, dup = TRUE,nomatch=0)>0,])
   
-  storingen$MS = data.frame(storingen$MS)
-  storingen$MS$Coo_X=as.numeric(sapply(storingen$MS$Coo_X,fixnumber))
-  storingen$MS$Coo_Y=as.numeric(sapply(storingen$MS$Coo_Y,fixnumber))
-  
-  
-  load("C:/Datasets/AHAdata/1. Ruwe Datasets/4. KLAK/KLAK_COMPENSATIE.Rda")
+  load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_COMPENSATIE.Rda"))
   storingen$Compensatie = data.table(mindataset);
-  
-  load("C:/Datasets/AHAdata/1. Ruwe Datasets/8. CAR/CAR_2013_XY.Rda")
-  nettopo$EAN_to_XY_PC6 = data.table(mindataset[,c("PC_6","Huisnr","CO_X","CO_Y","ID_EAN")])
-  
-  load("C:/Datasets/AHAdata/1. Ruwe Datasets/4. KLAK/KLAK_KOPPEL_MELDING_GROEP.Rda")
+
+  load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_KOPPEL_MELDING_GROEP.Rda"))
   storingen$KLAKMELDERS = data.table(mindataset);
-  
-  # Combine KLAK data
-  nmelders = table(storingen$KLAKMELDERS$ID_Groep)
-  ugroep   = storingen$KLAKMELDERS[storingen$KLAKMELDERS$ST_Groep_eerste=="Ja",]
-  frequ    = setnames(data.table(table(storingen$KLAKMELDERS$ID_Groep)),"Aantal_Melders")
-  frequ$ID_Groep = as.integer(rownames(frequ))
-  ugroep  = merge(x=ugroep,y=frequ,by="ID_Groep",all.x=TRUE)
-  setnames(ugroep,c("MELDING","ID_Groep","Aantal_Melders"),c("ID_KLAK_Melding","ID_Groep","Aantal_Melders"))
+  frequ          = data.table(data.frame(table(storingen$KLAKMELDERS$ID_Groep)))
+  setnames(frequ,c("ID_Groep","Aantal_Melders"))
+  frequ$ID_Groep = as.integer(frequ$ID_Groep ); 
+  ugroep         = merge(storingen$KLAKMELDERS[storingen$KLAKMELDERS$ST_Groep_eerste=="Ja",],frequ,by="ID_Groep",all.x=TRUE)
+  setnames(ugroep,c("MELDING","PC6"),c("ID_KLAK_Melding","PC_6"))
+  ugroep$Huisnr  = (as.character(ugroep$Huisnr))
+  ugroep         = merge(ugroep,EAN_to_XY_PC6[!duplicated(EAN_to_XY_PC6[,c("PC_6","Huisnr"),with=FALSE])],by=c("PC_6","Huisnr"),all.x=TRUE)
   
   storingen$LS=merge(x = storingen$LS, y = ugroep[,c("ID_KLAK_Melding","Aantal_Melders","ID_Groep"),with=FALSE], by = "ID_KLAK_Melding", all.x=TRUE)
   storingen$MS=merge(x = storingen$MS, y = ugroep[,c("ID_KLAK_Melding","Aantal_Melders","ID_Groep"),with=FALSE], by = "ID_KLAK_Melding", all.x=TRUE)
+
+  load(paste0(settings$Ruwe_Datasets,"/21. GIS-mutaties/gis mutaties alles.Rda"))
+  storingen$LS=merge(storingen$LS, storingen$LS, by = "ID_KLAK_Melding", all.x=TRUE)
+  storingen$MS=merge(storingen$MS, storingen$MS, by = "ID_KLAK_Melding", all.x=TRUE)
+
   
-  # Zit er nog niet in:
-  # BARlog
-  # Koppeling mof -> kabel -> hoofdleiding ->station (-> route, later)
-  
-  # Save the data ----------------------------------------------------------------
-  
-  save(assets,storingen,nettopo,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_",Sys.Date(),".Rda"))
+# Zit er nog niet in:
+# BARlog
+# Koppeling mof -> kabel -> hoofdleiding ->station (-> route, later)
+
+# Save the data ----------------------------------------------------------------
+toc; cat("Save all data\n"); tic();
+
+save(assets,storingen,nettopo,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_",Sys.Date(),".Rda"))
+
 }
 
-
-
 fixdates = function(x) {
-  paste0(substr(x,3,4),substr(x,6,7))
+  return(format(as.Date(x,"%d-%m-%Y"), format="%y%m"))
 }
 
 fixnumber = function(x) {

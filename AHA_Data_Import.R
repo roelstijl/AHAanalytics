@@ -1,4 +1,4 @@
-AHA_Data_Import= function(folder,dataname,headername,mode){
+AHA_Data_Import= function(folder,dataname,headername,mode="save"){
   
   # Asset health analytics import script, 
   # Load project first
