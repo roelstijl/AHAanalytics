@@ -29,49 +29,56 @@ AHA_Data_Import= function(folder,dataname,headername,mode="save"){
   curdataext  = substring(datafiles[filenumber],nchar(datafiles[filenumber])-2,nchar(datafiles[filenumber]));
   cat(paste0("Start data-import of file : ",datafiles[filenumber]),".\n" ); tic()  
   
+  # Determine what to key on
+  out= switch (headername,
+          KLAK_LS="ID_KLAK_MELDING",
+          KLAK_MS="ID_KLAK_MELDING",
+          KLAK_KOPPEL_MELDING_GROEP= "ID_Groep",
+          1)
+  
   # Choose the correct import method
   switch (folder,
   NOR={
             if(!any(pmatch(paste0("ELCVERBINDINGEN_140",1:8), curdataname,dup = TRUE,nomatch=0)>0) & any(pmatch("ELCVERBINDINGEN",curdataname,dup = TRUE,nomatch=0)>0))
               {
-              dataset = data.frame(read.csv(paste0(settings$Bron_Datasets,"/",setfolder,"/",datafiles[filenumber]),row.names=NULL));names(dataset)[1:(length(names(dataset))-1)]= names(dataset)[2:length(names(dataset))]; names(dataset)[(length(names(dataset)))]="DUPLICATE"
+              mindataset = data.frame(read.csv(paste0(settings$Bron_Datasets,"/",setfolder,"/",datafiles[filenumber]),row.names=NULL));names(mindataset)[1:(length(names(mindataset))-1)]= names(mindataset)[2:length(names(mindataset))]; names(mindataset)[(length(names(mindataset)))]="DUPLICATE"
             } else if (curdataext == "csv"){
-              dataset =data.frame( fread(paste0(settings$Bron_Datasets,"/",setfolder,"/",datafiles[filenumber]),sep=",",header=TRUE))
+              mindataset =data.frame( fread(paste0(settings$Bron_Datasets,"/",setfolder,"/",datafiles[filenumber]),sep=",",header=TRUE))
             } else if (curdataext == "ssv"){
-              dataset =data.frame( fread(paste0(settings$Bron_Datasets,"/",setfolder,"/",datafiles[filenumber]),sep=";",header=TRUE))
+              mindataset =data.frame( fread(paste0(settings$Bron_Datasets,"/",setfolder,"/",datafiles[filenumber]),sep=";",header=TRUE))
             }
           },
   KLAK={
     switch (curdataext,
-            csv = {dataset  = data.frame(read.csv(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=","))},
-            tsv = {dataset  = data.frame(read.csv(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep="\t"))},
-            ssv = {dataset  = data.frame(read.csv(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=";"))})
+            csv = {mindataset  = data.frame(read.csv(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=","))},
+            tsv = {mindataset  = data.frame(read.csv(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep="\t"))},
+            ssv = {mindataset  = data.frame(read.csv(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=";"))})
       },
   CAR={
            switch (curdataext,
-           csv = {dataset  = data.frame(read.csv(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=","))},
-           tsv = {dataset  = data.frame(read.csv(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep="\t"))},
-           ssv = {dataset  = data.frame(read.csv(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=";"))})
+           csv = {mindataset  = data.frame(read.csv(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=","))},
+           tsv = {mindataset  = data.frame(read.csv(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep="\t"))},
+           ssv = {mindataset  = data.frame(read.csv(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=";"))})
           },
-  Nettopologie = {dataset  = data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=","))},
-  BARlog       = {dataset  = data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep="\t",colClasses=list(character="BAR_ID")))},
+  Nettopologie = {mindataset  = data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=","))},
+  BARlog       = {mindataset  = data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep="\t",colClasses=list(character="BAR_ID")))},
   
 
   #Else
 { switch (curdataext,
-          csv = {dataset  = data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=","))},
-          tsv = {dataset  = data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep="\t"))},
-          ssv = {dataset  = data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=";"))})
+          csv = {mindataset  = data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=","))},
+          tsv = {mindataset  = data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep="\t"))},
+          ssv = {mindataset  = data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=";"))})
 }
   )
   
   # Convert header into the same format as the xlsx file
   toc(); cat("converting header. \n"); tic();
-  header       = data.frame(matrix(0,length(colnames(dataset)),4))
-  header[,1]   = data.frame(colnames(dataset))
-  header[,2]   = (colnames(dataset))
-  header[,3]   = matrix(0,length(colnames(dataset)))
-  header[,4]   = matrix("comment",length(colnames(dataset)))
+  header       = data.frame(matrix(0,length(colnames(mindataset)),4))
+  header[,1]   = data.frame(colnames(mindataset))
+  header[,2]   = (colnames(mindataset))
+  header[,3]   = matrix(0,length(colnames(mindataset)))
+  header[,4]   = matrix("comment",length(colnames(mindataset)))
   colnames(header) = c(curdataname,"Original name","Meenemen","Notities")
   
   # Load the xlsx file or create it if non existing
@@ -79,7 +86,7 @@ AHA_Data_Import= function(folder,dataname,headername,mode="save"){
     savedheader   = read.xlsx(paste0(settings$Ruwe_Datasets, "/", setfolder,"/",headerfile),1, as.data.frame=TRUE)
   }else{ 
     cat("Creating new header file.\n")
-    header[,3]   = matrix(1,length(colnames(dataset)))
+    header[,3]   = matrix(1,length(colnames(mindataset)))
     write.xlsx(header,file=paste0(settings$Ruwe_Datasets, "/", setfolder,"/",headerfile),row.names=FALSE)
     savedheader  = header
   }
@@ -87,19 +94,19 @@ AHA_Data_Import= function(folder,dataname,headername,mode="save"){
   # Check if the headers saved and actual are equal and correct where nog
   pat    = pmatch(header[,2], savedheader[,2], dup = TRUE,nomatch=0)
   header[pat>0,] = savedheader[pat[pat>0],]
-  setnames(dataset,colnames(dataset), t(header[1]))
+  setnames(mindataset,colnames(mindataset), t(header[1]))
   
   # Choose what output to generate (last element)
   if(mode=="shiny"){
-    AHA_inspect_raw_data(dataset,header,headerfile); cat("Copy file\n"); file.copy(paste0(shinyfolder,"/",headerfile),paste0(settings$Ruwe_Datasets, "/", setfolder,"/",headerfile),overwrite=TRUE);      
+    AHA_inspect_raw_data(mindataset,header,headerfile); cat("Copy file\n"); file.copy(paste0(shinyfolder,"/",headerfile),paste0(settings$Ruwe_Datasets, "/", setfolder,"/",headerfile),overwrite=TRUE);      
     cat("Done\n") ;    return()} 
   
   else if(mode=="load") {
-    cat("Done\n");    return(dataset[,header[header[,3]==1,1]])
+    cat("Done\n");    return(mindataset[,header[header[,3]==1,1]])
     
   } else if(mode=="save") {
     toc();cat("Saving to file\n");tic()
-    mindataset = dataset[,header[header[,3]==1,1]]
+    mindataset = data.table(mindataset[,header[header[,3]==1,1]])
     dataclasses= sapply(mindataset, class)
     
     save(mindataset,dataclasses,file=paste0(settings$Ruwe_Datasets, "/", setfolder,"/",curdataname,".Rda"))
@@ -110,10 +117,10 @@ AHA_Data_Import= function(folder,dataname,headername,mode="save"){
   }
 }
 
-AHA_inspect_raw_data = function(dataset,header,headerfile){
+AHA_inspect_raw_data = function(mindataset,header,headerfile){
   shinyfolder  = "x. Shiny"
   
-  save(dataset,file=paste0(shinyfolder,"/dataset.Rda"))
+  save(mindataset,file=paste0(shinyfolder,"/mindataset.Rda"))
   save(header,file=paste0(shinyfolder,"/header.Rda"))
   
   cat("Starting shiny .\n")  

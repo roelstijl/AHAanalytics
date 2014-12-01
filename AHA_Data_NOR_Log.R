@@ -15,53 +15,60 @@ AHA_Data_NOR_Log = function(NORtable, source="file")
   filesshort = list.files(pattern=paste0(NORtable,".*\\.Rda"), path=datafolder)
   files=files[!grepl("masterdataset_backup",filesshort)]
   filesshort=filesshort[!grepl("masterdataset_backup",filesshort)]
-  
-  # Select which collumns to use for the unique identifiers
-  ID_unique = switch (NORtable, ELCVERBINDINGSKNOOPPUNTEN=c("ID_Bron","PC_XY"),
-                        ELCVERBINDINGSDELEN=c("ID_Kabel","PC_XY_van"),
-                        ELCVERBINDINGEN=c("ID_Verbinding","ID_Hoofdleiding"),
-                        cat("Please add headers to compute\n\n"))
 
   # Select which collumns to compare
-  comparecols = switch (NORtable,ELCVERBINDINGSKNOOPPUNTEN=c("ID_unique","ID_NAN","Spanningsniveau", "Soort",	"Constructie",	"Isolatiemedium",	"Fabrikant"),
-                        ELCVERBINDINGSDELEN=c("ID_unique","Lengte","ID_NAN","Status","Geleidermateriaal","Spanningsniveau","Diameter","Netverbinding"),
-                        ELCVERBINDINGEN=c("ID_unique","Beheerder","Lengte", "ID_Hoofdleiding",	"SpanningsNiveau",	"SOORT",	"SOORTNET"),
+  comparecols = switch (NORtable,ELCVERBINDINGSKNOOPPUNTEN=c("ID_unique","ID_NAN","BRONSYSTEEM","Spanningsniveau", "Soort",	"Constructie",	"Isolatiemedium",	"Fabrikant"),
+                        ELCVERBINDINGSDELEN=c("ID_unique","Lengte","BRONSYSTEEM","ID_NAN","Status","Geleidermateriaal","Spanningsniveau","Diameter","Netverbinding"),
+                        ELCVERBINDINGEN=c("ID_unique","Beheerder","BRONSYSTEEM","Lengte", "ID_Hoofdleiding",	"SpanningsNiveau",	"SOORT",	"SOORTNET"),
                         cat("Please add headers to compute\n\n"))
   plot(file.info(files)$size)
 
+
+for (n in 1:length(files))
+{
+  
+# Load some data -------------------------------------
+  toc(); 
+  curdate = firstFri(gsub("[^0-9]","",filesshort[n]));
+  cat(paste0("Starting import of dataset: ",filesshort[n],"\n"));tic()
+  load(files[n]) 
+  
+  # Prepare the data set
+  if(NORtable == "ELCVERBINDINGSDELEN" & class(mindataset$Lengte)=="character")  
+    {cat("Correcting character lengths \n")
+    mindataset$Lengte = as.numeric(sapply(mindataset$Lengte,fixnumber))}
+
+  toc();cat("Preparing sets\n");tic()
+  ID_unique = switch (NORtable,
+                      ELCVERBINDINGSDELEN       = mindataset[,ID_unique:=paste0(ID_Kabel,PC_6_van)],
+                      ELCVERBINDINGEN           = mindataset[,ID_unique:=paste0(ID_Verbinding,BRONSYSTEEM)],
+                      ELCVERBINDINGSKNOOPPUNTEN = mindataset[,ID_unique:=paste0(ID_Bron,PC_6)],
+                      cat("Please add headers to compute\n\n"))
+
+  mindataset$file = n;  mindataset$DateAdded = curdate; mindataset$DateRemoved = as.Date(NA); mindataset$Status_ID = "Active"
+
+  if(n!=1) {if(any(!(colnames(masterdataset) %in% colnames(mindataset))))
+  {set(mindataset,,colnames(masterdataset)[!(colnames(masterdataset) %in% colnames(mindataset))],(NA))}}
+  
+  # Create the NAN number or Verbindingen if not present already
+  if(!any(colnames(mindataset)=="ID_NAN")){mindataset$ID_NAN=as.character(NA)}
+  if(!any(colnames(mindataset)=="BRONSYSTEEM")){mindataset$BRONSYSTEEM=as.character(NA)}
+
+  
+  if(!any(colnames(mindataset)=="ID_Verbinding")) 
+  {switch (NORtable,
+           ELCVERBINDINGSKNOOPPUNTEN={mindataset$ID_Verbinding=as.character(NA)}
+  )}
+
+
 # Create the master dataset from the first file ---------------------------
-  cat("Loading master set\n");tic()
+if (n==1){
+cat("Loading master set\n");tic()
   
   switch(source,
-         file={
-           
-           #Load stuff
-           load(files[1])
-           
+         file={                  
            # Add some stuff
-           mindataset$file = 1; 
-           mindataset$DateAdded = "0701"; 
-           mindataset$DateRemoved = ""
-           mindataset$Status_ID = "Active"
-           
-           # Create the NAN number or Verbindingen if not present already
-           if(!any(colnames(mindataset)=="ID_NAN")) 
-           {switch (NORtable,
-                    ELCVERBINDINGSKNOOPPUNTEN={mindataset$ID_NAN=NA},
-                    ELCVERBINDINGSDELEN      ={mindataset$ID_NAN=NA})}
-           
-           if(!any(colnames(mindataset)=="ID_Verbinding")) 
-           {switch (NORtable,
-                    ELCVERBINDINGSKNOOPPUNTEN={mindataset$ID_Verbinding=NA}
-           )}
-           
-           
-           # Prep data table
-           mindataset$ID_unique    = 
-             paste0(as.character(mindataset[,ID_unique[1]]),
-                    as.character(mindataset[,ID_unique[2]]))
-           mindataset = data.table(mindataset)
-           setkey(mindataset,ID_unique)
+           mindataset$file = 1; mindataset$DateAdded = firstFri("0701"); mindataset$DateRemoved = as.Date(NA); mindataset$Status_ID = "Active"
            
            # Initiate master set
            masterdataset = unique(mindataset)
@@ -84,44 +91,17 @@ AHA_Data_NOR_Log = function(NORtable, source="file")
            firstfile <- readline(prompt= "Continue from what file?: "); firstfile = as.numeric(firstfile)
          });
   toc();par(mfrow=c(2,1))  
-
+}
 # Calculate the difference between the master dataset and each file -------
-
-  for (n in firstfile:length(files))
-  {
-    # Load some data
-    toc(); curdate = gsub("[^0-9]","",filesshort[n]);cat(paste0("Starting import of dataset: ",filesshort[n],"\n"));tic()
-    load(files[n]) 
-
-    # Prepare the data set
-    if(NORtable == "ELCVERBINDINGSDELEN" & class(mindataset$Lengte)=="character")  {  cat("Correctig character lengths \n")
-      mindataset$Lengte = as.numeric(sapply(mindataset$Lengte,fixnumber))}
-    toc();cat("Preparing sets\n");tic()
-    mindataset$ID_unique    = 
-      paste0(as.character(mindataset[,ID_unique[1]]),
-             as.character(mindataset[,ID_unique[2]]))
-    mindataset$file = n;  mindataset$DateAdded = curdate; mindataset$DateRemoved = ""; mindataset$Status_ID = "Active"
-    if(any(!(colnames(masterdataset) %in% colnames(mindataset)))){mindataset[,colnames(masterdataset)[!(colnames(masterdataset) %in% colnames(mindataset))]]=NA}
-    
-    # Create the NAN number or Verbindingen if not present already
-    if(!any(colnames(mindataset)=="ID_NAN")) 
-    {switch (NORtable,
-             ELCVERBINDINGSKNOOPPUNTEN={mindataset$ID_NAN=NA},
-             ELCVERBINDINGSDELEN      ={mindataset$ID_NAN=NA})}
-    
-    if(!any(colnames(mindataset)=="ID_Verbinding")) 
-    {switch (NORtable,
-             ELCVERBINDINGSKNOOPPUNTEN={mindataset$ID_Verbinding=NA}
-    )}
-    
+if(n!=1){
     # Convert to data table for speed
     toc(); cat("Converting to data table\n"); tic()    
-    mindataset = data.table(mindataset[,colnames(masterdataset)])
+    mindataset = mindataset[,colnames(masterdataset),with=FALSE]
     setkey(mindataset,ID_unique) 
     mindataset = unique(mindataset)
-    
+      
     toc(); cat("Calculating classes\n"); tic()
-    dataclasses = rbind(dataclasses,as.data.frame(t(as.data.frame(sapply(mindataset[,colnames(masterdataset)], class)))));
+    dataclasses = rbind(dataclasses,as.data.frame(t(as.data.frame(sapply(mindataset[,colnames(masterdataset),with=FALSE], class)))));
     row.names(dataclasses) <- NULL 
 
     # Check which IDs have been removed
@@ -147,10 +127,10 @@ AHA_Data_NOR_Log = function(NORtable, source="file")
     setkey(masterdataset,ID_unique)  
     
     # Apply the removed sets
-    set(masterdataset,which(Removed & masterdataset$DateRemoved==""),"DateRemoved",curdate)
+    set(masterdataset,Removed & is.na(masterdataset$DateRemoved),"DateRemoved",curdate)
     set(masterdataset,which(Removed),"Status_ID","Removed")
     masterdataset = rbind(masterdataset,mindataset[which(Added),])
-    setkey(masterdataset,ID_unique) 
+    setkey(masterdataset,ID_unique)
     
     # Save backups every 6 cycles
     if (n%%6 == 0) {
@@ -162,7 +142,10 @@ AHA_Data_NOR_Log = function(NORtable, source="file")
     
     toc()}
   }
-  cat("Finished!! Saving to files\n"); save(masterdataset,changes,dataclasses,file=paste0(outputfolder,"/masterdataset_",NORtable,".Rda"))   
+}
+  cat("Finished!! Saving to file 1\n"); save(changes,dataclasses,file=paste0(outputfolder,"/masterdataset_",NORtable,".Rda"))   
+  cat("Finished!! Saving to file 2\n"); save(masterdataset,dataclasses,file=paste0(outputfolder,"/changes_",NORtable,".Rda"))   
+
 }
 
 ###########################################################################################################################################
@@ -188,3 +171,14 @@ fixnumber = function(x) {
 }
 
 invwhich = function(indices, totlength) is.element(seq_len(totlength), indices)
+
+firstFri = function(initialdate)
+{
+#   Aproximate date of NOR generation, first friday + 2 days
+  date = as.Date(paste0(initialdate,"01"), "%y%m%d")
+  dow = sapply(seq(0,6),function(x) wday(date+days(x)))
+  firstFriday = date + days(which(dow==5)-1)+2
+  return(firstFriday)
+}
+
+

@@ -2,8 +2,8 @@ AHA_RDCtoGPS = function(coordinates)
 # Converts for RDS to GPS coordinates
 # Created by R Stijl, Bearingpoint
   {
-  x = coordinates[,1]
-  y = coordinates[,2]
+  x = coordinates[,1,with=FALSE]
+  y = coordinates[,2,with=FALSE]
   Lon = 
     5.387206+((5260.52916 * ((x- 155000) * 10 ^ -5)) + (105.94684 * ((x- 155000) * 10 ^ -5) 
     * (y - 463000) * 10 ^ -5) + (2.45656 * ((x- 155000) * 10 ^ -5) * (y - 463000) * 10 ^ -5 ^ 2) + 
