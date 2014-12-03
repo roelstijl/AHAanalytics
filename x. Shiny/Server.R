@@ -2,8 +2,6 @@ library(shiny)
 # Server component, notice that <<- denotes a global call. Else this won't work
 
 # Load the datasets required
-load("dataset.Rda",envir = .GlobalEnv);
-load("header.Rda",envir = .GlobalEnv);
 len = length(dataset[,1])
 
 # Start the service and update with content
@@ -46,12 +44,12 @@ shinyServer(function(input, output,session) {
   output$value <- renderText({ 
     input$volgende_x[1]
     paste0(names(checkboxes)[elements[1]-1+as.numeric(input$radiobutton[1])], 
-           "[",(length(dataset[,as.numeric(input$radiobutton[1])+elements[1]-1])),"]");
+           "[",(length(dataset[,as.numeric(input$radiobutton[1])+elements[1]-1])),"]: ",class(dataset[,as.numeric(input$radiobutton[1])+elements[1]-1]));
     })    
 
   output$piechart <- renderPlot({
     
-    tables=sort(table(dataset[1:min(len,50000),as.numeric(input$radiobutton[1])+elements[1]-1],useNA="always"),decreasing=TRUE);
+    tables=sort(table(dataset[,as.numeric(input$radiobutton[1])+elements[1]-1],useNA="always"),decreasing=TRUE);
     
     par(mfrow=c(1, 1), mar=c(2, 15, 0, 2))
     barplot(tables[1:25],
@@ -61,7 +59,7 @@ shinyServer(function(input, output,session) {
   
   output$tableout <- renderTable ({
     
-    tables=sort(table(dataset[1:min(len,50000),as.numeric(input$radiobutton[1])+elements[1]-1],useNA="always"),decreasing=TRUE);
+    tables=sort(table(dataset[,as.numeric(input$radiobutton[1])+elements[1]-1],useNA="always"),decreasing=TRUE);
     Frequenties = tables[1:10];
     Frequenties = Frequenties[!is.na(Frequenties)];
     Frequenties = as.data.frame(Frequenties);
@@ -70,7 +68,7 @@ shinyServer(function(input, output,session) {
     
   output$tableout2 <- renderTable ({
     Eerste_waarden = dataset[1:10,as.numeric(input$radiobutton[1])+elements[1]-1]
-    as.data.frame(Eerste_waarden);
+    as.data.frame(as.character(Eerste_waarden));
   })
 
 })

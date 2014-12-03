@@ -8,9 +8,9 @@ AHA_Data_NOR_Log = function(NORtable, source="file")
   #   NORtable = "ELCVERBINDINGSDELEN"
   datafolder    = paste0(settings$Ruwe_Datasets,"/6. NOR");
   outputfolder  = paste0(settings$Input_Datasets,"/6. NOR");
+  firstfile = 1
   
   par(mfrow=c(1,1))
-
   files = list.files(pattern=paste0(NORtable,".*\\.Rda"), path=datafolder,full.names=TRUE)
   filesshort = list.files(pattern=paste0(NORtable,".*\\.Rda"), path=datafolder)
   files=files[!grepl("masterdataset_backup",filesshort)]
@@ -19,17 +19,26 @@ AHA_Data_NOR_Log = function(NORtable, source="file")
   # Select which collumns to compare
   comparecols = switch (NORtable,ELCVERBINDINGSKNOOPPUNTEN=c("ID_unique","ID_NAN","BRONSYSTEEM","Spanningsniveau", "Soort",	"Constructie",	"Isolatiemedium",	"Fabrikant"),
                         ELCVERBINDINGSDELEN=c("ID_unique","Lengte","BRONSYSTEEM","ID_NAN","Status","Geleidermateriaal","Spanningsniveau","Diameter","Netverbinding"),
-                        ELCVERBINDINGEN=c("ID_unique","Beheerder","BRONSYSTEEM","Lengte", "ID_Hoofdleiding",	"SpanningsNiveau",	"SOORT",	"SOORTNET"),
+                        ELCVERBINDINGEN=c("ID_unique","Beheerder","Lengte", "BRONSYSTEEM",	"SpanningsNiveau",	"SOORT",	"SOORTNET"),
                         cat("Please add headers to compute\n\n"))
   plot(file.info(files)$size)
 
+  if (source == "backup") {
+    backups = list.files(pattern=paste0("masterdataset_backup",".*\\.Rda"), path=outputfolder,full.names=TRUE);
+    print(backups)
+    filenumber <- readline(prompt="Select a backup file: ")
+    load(paste0(backups[as.numeric(filenumber)]))
+    print(filesshort)
+    firstfile <- readline(prompt= "Continue from what file?: "); firstfile = as.numeric(firstfile)-1
+  };
 
-for (n in 1:length(files))
+for (n in firstfile:length(files))
 {
   
 # Load some data -------------------------------------
   toc(); 
   curdate = firstFri(gsub("[^0-9]","",filesshort[n]));
+
   cat(paste0("Starting import of dataset: ",filesshort[n],"\n"));tic()
   load(files[n]) 
   
@@ -41,11 +50,16 @@ for (n in 1:length(files))
   toc();cat("Preparing sets\n");tic()
   ID_unique = switch (NORtable,
                       ELCVERBINDINGSDELEN       = mindataset[,ID_unique:=paste0(ID_Kabel,PC_6_van)],
-                      ELCVERBINDINGEN           = mindataset[,ID_unique:=paste0(ID_Verbinding,BRONSYSTEEM)],
+                      ELCVERBINDINGEN           = mindataset[,ID_unique:=paste0(ID_Verbinding,ID_Hoofdleiding)],
                       ELCVERBINDINGSKNOOPPUNTEN = mindataset[,ID_unique:=paste0(ID_Bron,PC_6)],
                       cat("Please add headers to compute\n\n"))
+  setkey(mindataset,ID_unique) 
+  mindataset = unique(mindataset)
 
-  mindataset$file = n;  mindataset$DateAdded = curdate; mindataset$DateRemoved = as.Date(NA); mindataset$Status_ID = "Active"
+  mindataset$file         = n;  
+  mindataset$DateAdded    = curdate; 
+  mindataset$DateRemoved  = as.Date(NA); 
+  mindataset$Status_ID    = "Active"
 
   if(n!=1) {if(any(!(colnames(masterdataset) %in% colnames(mindataset))))
   {set(mindataset,,colnames(masterdataset)[!(colnames(masterdataset) %in% colnames(mindataset))],(NA))}}
@@ -54,7 +68,6 @@ for (n in 1:length(files))
   if(!any(colnames(mindataset)=="ID_NAN")){mindataset$ID_NAN=as.character(NA)}
   if(!any(colnames(mindataset)=="BRONSYSTEEM")){mindataset$BRONSYSTEEM=as.character(NA)}
 
-  
   if(!any(colnames(mindataset)=="ID_Verbinding")) 
   {switch (NORtable,
            ELCVERBINDINGSKNOOPPUNTEN={mindataset$ID_Verbinding=as.character(NA)}
@@ -62,42 +75,22 @@ for (n in 1:length(files))
 
 
 # Create the master dataset from the first file ---------------------------
-if (n==1){
+if (n<=firstfile){
 cat("Loading master set\n");tic()
-  
-  switch(source,
-         file={                  
-           # Add some stuff
-           mindataset$file = 1; mindataset$DateAdded = firstFri("0701"); mindataset$DateRemoved = as.Date(NA); mindataset$Status_ID = "Active"
-           
-           # Initiate master set
-           masterdataset = unique(mindataset)
-           firstfile = 2     
-           
+  if (source=="file"){                  
            # Load some variables for later
+           masterdataset = mindataset
            dataclasses = as.data.frame(t(as.data.frame(sapply(masterdataset, class))))
            colnames(dataclasses)= colnames(masterdataset)
-           changes     = data.table(matrix(1,0,length(comparecols)+1));setnames(changes,c(comparecols,"Date"))
-           
-         },
-         
-         # Or load from a backup
-         backup ={
-           backups = list.files(pattern=paste0("masterdataset_backup",".*\\.Rda"), path=outputfolder,full.names=TRUE);
-           print(backups)
-           filenumber <- readline(prompt="Select a backup file: ")
-           load(paste0(backups[as.numeric(filenumber)]))
-           print(filesshort)
-           firstfile <- readline(prompt= "Continue from what file?: "); firstfile = as.numeric(firstfile)
-         });
+         }
+
   toc();par(mfrow=c(2,1))  
 }
 # Calculate the difference between the master dataset and each file -------
-if(n!=1){
+if(n>firstfile){
     # Convert to data table for speed
     toc(); cat("Converting to data table\n"); tic()    
     mindataset = mindataset[,colnames(masterdataset),with=FALSE]
-    setkey(mindataset,ID_unique) 
     mindataset = unique(mindataset)
       
     toc(); cat("Calculating classes\n"); tic()
@@ -112,25 +105,30 @@ if(n!=1){
     # Merge the old and new IDs for comparison
     toc();cat("Starting comparison of sets (duplicated)\n");tic()
     
-    combinedset  = rbind(masterdataset[which(!Removed),comparecols,with=FALSE],mindataset[which(!Added),comparecols,with=FALSE])
-    differences = !(duplicated(combinedset) | duplicated(combinedset,fromLast=TRUE))
+    combinedset  = rbind(masterdataset[which(!Removed),comparecols,with=FALSE],
+                         mindataset[which(!Added),comparecols,with=FALSE])
+    differences = !(duplicated(combinedset,by=comparecols) | duplicated(combinedset,by=comparecols,fromLast=TRUE))
     
-    changed = combinedset[differences]
-    set(changed,i=NULL,"Date",curdate)
-    changes = rbind(changes, changed)
     
+    if (!exists("changes")){
+      changes = combinedset[differences];  
+      changes[,Date:=curdate]
+    } else {
+      temp    = combinedset[differences]
+      temp[,Date:=curdate]
+      changes = rbind(changes, temp)
+    }
+        
     # Write the result in a changelog    
     toc(); cat("Correcting to new values\n"); tic()
     updatedmstr = 1:nrow(masterdataset)==0; updatedmstr[!Removed]= differences[1:sum(!Removed)]
-    updatedmind = 1:nrow(mindataset)==0   ; updatedmind[!Added]  =differences[(sum(!Removed)+1):(sum(!Removed)+sum(!Added))]
-    set(masterdataset,which(updatedmstr),comparecols,mindataset[which(updatedmind),comparecols,with=FALSE])   
-    setkey(masterdataset,ID_unique)  
+    updatedmind = 1:nrow(mindataset)==0   ; updatedmind[!Added]  = differences[(sum(!Removed)+1):(sum(!Removed)+sum(!Added))]
+    set(masterdataset,which(updatedmstr),comparecols,mindataset[updatedmind,comparecols,with=FALSE])   
     
     # Apply the removed sets
-    set(masterdataset,Removed & is.na(masterdataset$DateRemoved),"DateRemoved",curdate)
+    set(masterdataset,which(Removed & is.na(masterdataset$DateRemoved)),"DateRemoved",curdate)
     set(masterdataset,which(Removed),"Status_ID","Removed")
     masterdataset = rbind(masterdataset,mindataset[which(Added),])
-    setkey(masterdataset,ID_unique)
     
     # Save backups every 6 cycles
     if (n%%6 == 0) {

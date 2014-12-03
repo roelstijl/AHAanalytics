@@ -1,8 +1,5 @@
 library(shiny)
 
-# Load the datasets required
-load("header.Rda",envir = .GlobalEnv);
-
 # Prepare some variables for the first run
 update_no <<- 0;
 save_to_file <<- 0;
@@ -20,8 +17,9 @@ radiobuttons <<- elements; names(radiobuttons) <<- matrix("-",elements[length(el
 shinyUI(fluidPage(
   
   # Application title
-  titlePanel(img(src = "logo-alliander1-300x118.jpg", height = 118, width = 300),
-             paste0("Dataset tool AHA (c) Bearingpoint 2014, dataset: ", colnames(header)[1])),
+  titlePanel(
+    h2(paste0("Dataset: ", colnames(header)[1])),
+       h4("Dataset tool AHA (c) Bearingpoint 2014")),
   
   # Sidebar with a slider input for the number of bins
     sidebarPanel
