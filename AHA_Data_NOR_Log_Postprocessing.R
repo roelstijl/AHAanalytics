@@ -19,7 +19,9 @@ AHA_Data_NOR_Log_Postprocessing  = function(){
 
   # Correct for missing PC6 naar
   XYinPC = AHA_Data_Determine_PC(assets$kabels[,c("Coo_X_naar","Coo_Y_naar","ID_unique","PC_6_van"),with=FALSE],"PC_6","Coo_X_naar","Coo_Y_naar")
-  save("XYinPC",file="XYinPC.Rda");
+  save(XYinPC,file="XYinPC.Rda");
+  setnames(XYinPC,"PC_6","PC_6_naar")
+  a= merge(assets$kabels[PC_6_naar:=NULL],XYinPC[,c("ID_unique","PC_6_naar"),with=FALSE],all.x=TRUE,by("ID_unique"))
   assets$kabels[,PC_6_naar:=XYinPC$POSTCODE]; 
   remove("XYinPC")
 

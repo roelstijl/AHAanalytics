@@ -5,9 +5,9 @@ AHA_Data_BAR_GEOMETRY = function(mdsys,mode="polygons"){
   # polygons (export plotable polygons)
   # beginend (export the beginning and end of each polygon)
   # position (export the avg location of the polygon)
-  cl <- makeCluster(getOption("cl.cores", 3))
+  cat("Starting cluster with multiple processor cores\n")
   
-  output = list(); 
+  tic();cl <<- makeCluster(getOption("cl.cores", 3));toc()
   
   cat("Converting to list of coordinates\n"); tic()
   seperated = strsplit(mdsys, "\\(|\\)"); 
@@ -22,8 +22,6 @@ AHA_Data_BAR_GEOMETRY = function(mdsys,mode="polygons"){
                        beginend = parLapply(cl,data,function(x) cbind(x[1,],x[nrow(x),])),
                        position = parLapply(cl,data,function(x) sapply(x,mean)))
   
-    
-  
   finaloutput = switch(mode,
                        polygons = SpatialPolygons(output,proj4string=CRS("+init=epsg:28992")),
                        beginend = data.table(t(matrix(unlist(output),4,length(output)))),
@@ -34,6 +32,6 @@ AHA_Data_BAR_GEOMETRY = function(mdsys,mode="polygons"){
                        position = {setnames(finaloutput,c("Coo_X","Coo_Y"))})
   toc()
 #   map= plotGoogleMaps(finaloutput,legend=FALSE,strokeColor = "Blue",strokeWeight = 100)
-  stopCluster(cl)
+#   stopCluster(cl)
   return(finaloutput)
 }

@@ -1,6 +1,6 @@
 AHA_Data_Determine_PC=function(datatable,polygon="PC_6",x="Coo_X",y="Coo_Y"){
 # Prepare Polygons -----------------------
-  cat("Preparing Polygons\n");tic()
+  cat("Preparing Polygons for comparison to PC_6 regions\n");tic()
   polyset = switch(polygon,
      PC_6 = {load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_6_Spatial.Rda")); pc6},
      PC_4 = readShapePoly(paste0(settings$Ruwe_Datasets,"/10. BAG/PC4.shp")))
@@ -27,7 +27,7 @@ AHA_Data_Determine_PC=function(datatable,polygon="PC_6",x="Coo_X",y="Coo_Y"){
     coordinatenset = datatable[PC_4==postcodes[n]]
     coordinates(coordinatenset) = coordinatenset[,c(x,y),with=FALSE]
     proj4string(coordinatenset) <- CRS("+init=epsg:28992")
-    datatable[PC_4 == postcodes[n],PC_6:=over(coordinatenset,polyset[polyset$PC_4 %in% postcodes[n],])$POSTCODE]
+    try(datatable[PC_4 == postcodes[n],PC_6:=over(coordinatenset,polyset[polyset$PC_4 %in% postcodes[n],])$POSTCODE])
     setTxtProgressBar(pb, n)
   }
   toc();

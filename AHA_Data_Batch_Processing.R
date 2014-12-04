@@ -8,6 +8,16 @@ AHA_Data_Import("BARlog","MH_NRG_LS_MOFFEN","MH_NRG_LS_MOFFEN",mode)
 AHA_Data_Import("BARlog","MH_NRG_MS_HLD","MH_NRG_MS_HLD",mode)
 AHA_Data_Import("BARlog","MH_NRG_MS_KABELS","MH_NRG_MS_KABELS",mode)
 AHA_Data_Import("BARlog","MH_NRG_MS_MOFFEN","MH_NRG_MS_MOFFEN",mode)
+
+# Kabels --------------------------------------
+cat("Processing kabel data\n")
+mode="beginend"
+file="MH_NRG_MS_KABELS"
+
+processXY("MH_NRG_MS_KABELS","beginend")
+# processXY("MH_NRG_LS_KABELS","beginend")
+processXY("MH_NRG_MS_MOFFEN","position")
+processXY("MH_NRG_LS_MOFFEN","position")
   
 # NOR processing ------------------
   folder="NOR"
@@ -28,4 +38,11 @@ source('C:/Dropbox/1. BearingPoint/1. Billable projects/2. Alliander/3. Asset he
 AHA_Data_NOR_Log("ELCVERBINDINGEN")
 AHA_Data_NOR_Log("ELCVERBINDINGSDELEN")
 AHA_Data_NOR_Log("ELCVERBINDINGSKNOOPPUNTEN")
+}
+
+processXY = function(file,mode) 
+{load(paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,".Rda"));cat("starting\n")
+ mindataset = cbind(mindataset,AHA_Data_BAR_GEOMETRY(mindataset$Ligging,mode))
+ mindataset[,Ligging:=NULL]; cat("saving\n")
+ save(mindataset,file=paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_XY.Rda"))
 }

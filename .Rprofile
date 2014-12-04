@@ -13,6 +13,7 @@ source("AHA_Visual_Google_Maps_Plot.R")
 source("AHA_Data_Batch_Processing.R")
 source("AHA_Data_NOR_Log.R")
 source('AHA_Data_Determine_PC.R')
+source("AHA_Data_BAR_GEOMETRY.R")
 
 # Install required packages if not installed already
 if (FALSE){
