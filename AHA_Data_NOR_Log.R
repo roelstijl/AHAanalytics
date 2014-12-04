@@ -24,7 +24,7 @@ AHA_Data_NOR_Log = function(NORtable, source="file")
   plot(file.info(files)$size)
 
   if (source == "backup") {
-    backups = list.files(pattern=paste0("masterdataset_backup",".*\\.Rda"), path=outputfolder,full.names=TRUE);
+    backups = list.files(pattern=paste0("masterdataset_backup",".*\\.Rda"), path=paste0(outputfolder,"/backup"),full.names=TRUE);
     print(backups)
     filenumber <- readline(prompt="Select a backup file: ")
     load(paste0(backups[as.numeric(filenumber)]))
@@ -133,7 +133,7 @@ if(n>firstfile){
     # Save backups every 6 cycles
     if (n%%6 == 0) {
     cat("Saving backup\n");tic(); 
-    save(masterdataset,changes,dataclasses,file=paste0(outputfolder,"/masterdataset_backup_",filesshort[n])); toc()    
+    save(masterdataset,changes,dataclasses,file=paste0(outputfolder,"/backup/masterdataset_backup_",filesshort[n])); toc()    
     cat("Plotting\n"); tic()
     barplot(rbind(table(masterdataset$DateRemoved)[2:n],table(masterdataset$DateAdded)[2:n]),beside=TRUE);  
     barplot(table(changes$Date))
@@ -141,8 +141,8 @@ if(n>firstfile){
     toc()}
   }
 }
-  cat("Finished!! Saving to file 1\n"); save(changes,dataclasses,file=paste0(outputfolder,"/masterdataset_",NORtable,".Rda"))   
-  cat("Finished!! Saving to file 2\n"); save(masterdataset,dataclasses,file=paste0(outputfolder,"/changes_",NORtable,".Rda"))   
+  cat("Finished!! Saving to file 1\n"); save(changes,dataclasses,file=paste0(outputfolder,"/changes_",NORtable,".Rda"))   
+  cat("Finished!! Saving to file 2\n"); save(masterdataset,dataclasses,file=paste0(outputfolder,"/masterdataset_",NORtable,".Rda"))   
 
 }
 

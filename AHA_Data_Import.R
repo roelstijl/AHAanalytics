@@ -68,6 +68,7 @@ AHA_Data_Import= function(folder,dataname,headername,mode="save"){
   for(i in header[header[,5]=="numeric",1]) {mindataset[,i] = as.numeric(mindataset[,i])}
   for(i in header[header[,5]=="date",1])    {mindataset[,i] = dmy(mindataset[,i])} #Timezone note taken into account for perforamnce
   for(i in header[header[,5]=="datetime",1]){mindataset[,i] = dmy_hms(mindataset[,i])}
+  for(i in header[header[,5]=="datetimeM",1]){mindataset[,i] = dmy_hm(mindataset[,i])}
   for(i in header[header[,5]=="integer",1]) {mindataset[,i] = as.integer(mindataset[,i])}
 
 
@@ -100,7 +101,7 @@ AHA_Data_Import= function(folder,dataname,headername,mode="save"){
 AHA_inspect_raw_data = function(mindataset,header,headerfile){
   shinyfolder  = "x. Shiny"
   
-  dataset   <<- mindataset[sample(nrow(mindataset),10000),]
+  dataset   <<- mindataset[sample(nrow(mindataset),min(nrow(mindataset),10000)),]
   header    <<- header
   
   cat("Starting shiny .\n")  

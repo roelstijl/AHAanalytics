@@ -12,6 +12,7 @@ source("AHA_Data_Import.R")
 source("AHA_Visual_Google_Maps_Plot.R")
 source("AHA_Data_Batch_Processing.R")
 source("AHA_Data_NOR_Log.R")
+source('AHA_Data_Determine_PC.R')
 
 # Install required packages if not installed already
 if (FALSE){
@@ -25,9 +26,13 @@ install.packages("data.table");
 install.packages("pracma") 
 install.packages("plotGoogleMaps")
 install.packages("lubridate")
+install.packages("PBSmapping")
+install.packages("foreach")
 }
   
 # Activate some scripts that might be usefull
+suppressMessages(require("foreach"))
+suppressMessages(require("parallel"))
 suppressMessages(require("xlsx"))
 suppressMessages(require("plyr"))
 suppressMessages(require("lubridate"))
@@ -35,6 +40,12 @@ suppressMessages(require("shiny"))
 suppressMessages(require("data.table"))
 suppressMessages(library("pracma"))
 suppressMessages(library("hash"))
+suppressMessages(library("plotGoogleMaps"))
+suppressMessages(require("PBSmapping"))
+suppressMessages(require("maptools"))
+suppressMessages(require("stringr"))
+suppressMessages(require("rgeos"))
+
 
 # Determine settings based on computer
   settings = data.frame(1)
@@ -44,6 +55,7 @@ if (Sys.info()["nodename"] =="NLAMS4043734X") {
   settings[,"Ruwe_Datasets"] = "C:/Datasets/AHAdata/1. Ruwe Datasets"
   settings[,"Input_Datasets"] = "C:/Datasets/AHAdata/2. Input Datasets"
   settings[,"Analyse_Datasets"] = "C:/Datasets/AHAdata/3. Analyse Datasets"
+  settings[,"Visuals"] = "C:/Datasets/AHAdata/5. Visuals and Tableau workbooks"
   settings[,"Results"] = "C:/Datasets/AHAdata/6. Results"}
 
 # Laptop Jacco Heres Alliander
