@@ -1,18 +1,21 @@
 AHA_Data_Batch_Processing = function(range)
 {
-# BARlog processing ---------------
+# Settings ---------------------
 mode ="save"
+
+# KLAK/GISm processing ----------------
+AHA_Data_Import("KLAK","KLAK_KOPPEL_MELDING_GROEP","KLAK_KOPPEL_MELDING_GROEP",mode)
+AHA_Data_Import("KLAK","KLAK_LS","KLAK_LS",mode)
+AHA_Data_Import("KLAK","KLAK_MS","KLAK_MS",mode)
+AHA_Data_Import("GIS-mutaties","GISMUTATIE","GISMUTATIE",mode)
+  
+# BARlog processing ---------------
 AHA_Data_Import("BARlog","MH_NRG_LS_HLD","MH_NRG_LS_HLD",mode)
 AHA_Data_Import("BARlog","MH_NRG_LS_KABELS","MH_NRG_LS_KABELS",mode)
 AHA_Data_Import("BARlog","MH_NRG_LS_MOFFEN","MH_NRG_LS_MOFFEN",mode)
 AHA_Data_Import("BARlog","MH_NRG_MS_HLD","MH_NRG_MS_HLD",mode)
 AHA_Data_Import("BARlog","MH_NRG_MS_KABELS","MH_NRG_MS_KABELS",mode)
 AHA_Data_Import("BARlog","MH_NRG_MS_MOFFEN","MH_NRG_MS_MOFFEN",mode)
-
-# Kabels --------------------------------------
-cat("Processing kabel data\n")
-mode="beginend"
-file="MH_NRG_MS_KABELS"
 
 processXY("MH_NRG_MS_KABELS","beginend")
 # processXY("MH_NRG_LS_KABELS","beginend")

@@ -18,14 +18,18 @@ AHA_Data_NOR_Log_Postprocessing  = function(){
   assets$kabels = merge(assets$kabels,Conv_voltage,by="Spanningsniveau",all.x=TRUE); 
 
   # Correct for missing PC6 naar
-  XYinPC = AHA_Data_Determine_PC(assets$kabels[,c("Coo_X_naar","Coo_Y_naar","ID_unique","PC_6_van"),with=FALSE],"PC_6","Coo_X_naar","Coo_Y_naar")
-  save(XYinPC,file="XYinPC.Rda");
-  setnames(XYinPC,"PC_6","PC_6_naar")
-  a= merge(assets$kabels[PC_6_naar:=NULL],XYinPC[,c("ID_unique","PC_6_naar"),with=FALSE],all.x=TRUE,by("ID_unique"))
-  assets$kabels[,PC_6_naar:=XYinPC$POSTCODE]; 
+#   XYinPC = AHA_Data_Determine_PC(assets$kabels[,c("Coo_X_naar","Coo_Y_naar","ID_unique","PC_6_van"),with=FALSE],"PC_6","Coo_X_naar","Coo_Y_naar")
+#   save(XYinPC,file=paste0(settings$Input_Datasets,"/6. NOR/XYinPC.Rda"));
+  
+  load(paste0(settings$Input_Datasets,"/6. NOR/XYinPC.Rda")); try(assets$kabels[,PC_6_naar:=NULL])
+  setnames(XYinPC,"PC_6","PC_6_naar"); 
+  setkeyv(XYinPC,c("Coo_X_naar","Coo_Y_naar")); 
+  setkeyv(assets$kabels,c("Coo_X_naar","Coo_Y_naar"))
+  assets$kabels= merge(assets$kabels,XYinPC[!duplicated(XYinPC,by=c("Coo_X_naar","Coo_Y_naar")),c("PC_6_naar","Coo_X_naar","Coo_Y_naar"),with=FALSE],all.x=TRUE,by=c("Coo_X_naar","Coo_Y_naar"))
   remove("XYinPC")
 
   # Add the length changes
+  load(paste0(settings$Input_Datasets,"/6. NOR/changes_ELCVERBINDINGSDELEN.Rda"))
   setorder(changes,"Date","ID_unique");  i= 2*(1:(nrow(changes)/2)); 
   lengthch = data.table(changes$Lengte[i-1]-changes$Lengte[i]); 
   setnames(lengthch,"V1","Length_ch")
@@ -41,8 +45,6 @@ AHA_Data_NOR_Log_Postprocessing  = function(){
   # Add the HLD
   assets$kabels = merge(assets$kabels,verbindingen[,c("ID_Verbinding","Beheerder","ID_Hoofdleiding"),with=FALSE],all.x=TRUE,by=c("ID_Verbinding","Beheerder"))
   toc()
-  save(assets,file=paste0(settings$Input_Datasets,"/Asset_Data_NOR_assets_",Sys.Date(),".Rda"))
-
   
 
 # assets$moffen --------------------------

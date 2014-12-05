@@ -17,7 +17,7 @@ AHA_Data_Import= function(folder,dataname,headername,mode="save"){
 # Do all the loading and modifying of files -------------------------------
   # Define the location of your data based on the system used
   setfolder     = list.files(settings$Bron_Datasets,pattern=folder)[1]; dir.create(paste0(settings$Ruwe_Datasets,"/",setfolder), showWarnings = FALSE)
-  datafiles     = list.files(paste0(settings$Bron_Datasets,"/",setfolder),pattern=paste0(dataname,".{0,}\\.csv|",dataname,".{0,}\\.ssv|",dataname,".{0,}\\.tsv"))
+  datafiles     = list.files(paste0(settings$Bron_Datasets,"/",setfolder),pattern=paste0(dataname,".{0,}\\.csv|",dataname,".{0,}\\.ssv|",dataname,".{0,}\\.tsv|",dataname,".{0,}\\.xlsx|",dataname,".{0,}\\.shp"))
   headerfile    = paste0(headername,"_headers.xlsx");
   shinyfolder   = "x. Shiny"
   if (is.na(datafiles[1]) | is.na(setfolder[1])) stop("Wrong file, check file name")
@@ -32,12 +32,13 @@ AHA_Data_Import= function(folder,dataname,headername,mode="save"){
   
   # Choose the correct import method
   if(mode!="header"){colclass=rep("character",1)} else {colclass=NULL}
- switch (curdataext,
+  mindataset  = switch (curdataext,
           csv = {if(folder =="NOR" & !any(pmatch(paste0("ELCVERBINDINGEN_140",1:8), curdataname,dup = TRUE,nomatch=0)>0) & any(pmatch("ELCVERBINDINGEN",curdataname,dup = TRUE,nomatch=0)>0))
-                  {mindataset = data.frame(read.csv(paste0(settings$Bron_Datasets,"/",setfolder,"/",datafiles[filenumber]),row.names=NULL,colClasses=colclass));names(mindataset)[1:(length(names(mindataset))-1)]= names(mindataset)[2:length(names(mindataset))]; names(mindataset)[(length(names(mindataset)))]="DUPLICATE"}
-                  else {mindataset  = data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=",",colClasses=colclass))}},
-          tsv = {mindataset  = data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep="\t",colClasses=colclass))},
-          ssv = {mindataset  = data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=";",colClasses=colclass))}
+                  {data.frame(read.csv(paste0(settings$Bron_Datasets,"/",setfolder,"/",datafiles[filenumber]),row.names=NULL,colClasses=colclass));names(mindataset)[1:(length(names(mindataset))-1)]= names(mindataset)[2:length(names(mindataset))]; names(mindataset)[(length(names(mindataset)))]="DUPLICATE"}
+                  else {data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=",",colClasses=colclass))}},
+          tsv = {data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep="\t",colClasses=colclass))},
+          ssv = {data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=";",colClasses=colclass))},
+          lsx= {data.frame(read.xlsx(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),1))}
          )
 
   
@@ -67,6 +68,7 @@ AHA_Data_Import= function(folder,dataname,headername,mode="save"){
   # Set colclasses to the desired (excel sheet)
   for(i in header[header[,5]=="numeric",1]) {mindataset[,i] = as.numeric(mindataset[,i])}
   for(i in header[header[,5]=="date",1])    {mindataset[,i] = dmy(mindataset[,i])} #Timezone note taken into account for perforamnce
+  for(i in header[header[,5]=="dateymd",1])    {mindataset[,i] = ymd(mindataset[,i])} #Timezone note taken into account for perforamnce
   for(i in header[header[,5]=="datetime",1]){mindataset[,i] = dmy_hms(mindataset[,i])}
   for(i in header[header[,5]=="datetimeM",1]){mindataset[,i] = dmy_hm(mindataset[,i])}
   for(i in header[header[,5]=="integer",1]) {mindataset[,i] = as.integer(mindataset[,i])}
