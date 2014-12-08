@@ -59,6 +59,15 @@ if (Sys.info()["nodename"] =="NLAMS4043734X") {
   settings[,"Visuals"] = "C:/Datasets/AHAdata/5. Visuals and Tableau workbooks"
   settings[,"Results"] = "C:/Datasets/AHAdata/6. Results"}
 
+# Laptop Roel Stijl Alliander
+if (Sys.info()["nodename"] =="L-AW89JB") {
+  settings[,"Bron_Datasets"] = "E:/2. Datasets/1. Alliander/AHAdata/0. Ongebruikte en brondata"
+  settings[,"Ruwe_Datasets"] = "E:/2. Datasets/1. Alliander/AHAdata/1. Ruwe Datasets"
+  settings[,"Input_Datasets"] = "E:/2. Datasets/1. Alliander/AHAdata/2. Input Datasets"
+  settings[,"Analyse_Datasets"] = "E:/2. Datasets/1. Alliander/AHAdata/3. Analyse Datasets"
+  settings[,"Visuals"] = "E:/2. Datasets/1. Alliander/AHAdata/5. Visuals and Tableau workbooks"
+  settings[,"Results"] = "E:/2. Datasets/1. Alliander/AHAdata/6. Results"}
+
 # Laptop Jacco Heres Alliander
 else if (Sys.info()["nodename"] =="L-AW23JB") {
   settings[,"Bron_Datasets"] = "N:/Multivariate Analyse/AHAdata/0. Ongebruikte en brondata"

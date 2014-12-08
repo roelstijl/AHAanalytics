@@ -38,8 +38,8 @@ AHA_Data_NOR_Log_Postprocessing  = function(){
   remove("changes");
   setnames(lengthch,"Date","Date_Length_ch")
   lengthch$Status_ID = "Length changed"
-  assets$kabels$Date_Length_ch=NA
-  assets$kabels$Length_ch=NA
+  assets$kabels$Date_Length_ch=as.Date(NA)
+  assets$kabels$Length_ch=as.numeric(NA)
   assets$kabels = rbind(assets$kabels,lengthch); remove("lengthch");
   
   # Add the HLD
@@ -66,7 +66,7 @@ AHA_Data_NOR_Log_Postprocessing  = function(){
 # Seperate the data based on the asset and voltage --------------------------------------------------
   toc(); cat("Saving to file\n"); tic()
 
-  save(assets,file=paste0(settings$Input_Datasets,"/Asset_Data_NOR_assets_",Sys.Date(),".Rda"))
+  save(assets,file=paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_assets.Rda"))
   toc()  
 
 }

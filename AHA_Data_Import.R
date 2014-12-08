@@ -76,11 +76,23 @@ AHA_Data_Import= function(folder,dataname,headername,mode="save"){
 
 # Choose what output to generate (last element of input) ---------------------------
   if(mode=="shiny"){
-    AHA_inspect_raw_data(mindataset,header,headerfile); 
+    
+    # Shiny visualisation
+    shinyfolder  = "x. Shiny"
+    dataset   <<- mindataset[sample(nrow(mindataset),min(nrow(mindataset),10000)),]
+    remove ("mindataset")
+    header    <<- header  
+    cat("Starting shiny .\n")  
+    header = runApp(shinyfolder)
+    cat("Closing shiny .\n")
+    file.rename(paste0(shinyfolder ,"/header.xlsx"),paste0(shinyfolder,"/",headerfile));
+    
     cat("Copy file\n"); 
     file.copy(paste0(shinyfolder,"/",headerfile),paste0(settings$Ruwe_Datasets, "/", setfolder,"/",headerfile),overwrite=TRUE);      
     cat("Done\n") ;    return()} 
   else if(mode=="load") {
+    
+    # Load to memory
     cat("Done\n");    return(mindataset[,header[header[,3]==1,1]])
   } else if(mode=="save") {
     toc();cat("Saving to file\n");tic()
@@ -97,19 +109,4 @@ AHA_Data_Import= function(folder,dataname,headername,mode="save"){
     cat("Wrong mode selected, load, save or shiny\n")
   }  
   }
-}
-
-# Other functions -------------------------------
-AHA_inspect_raw_data = function(mindataset,header,headerfile){
-  shinyfolder  = "x. Shiny"
-  
-  dataset   <<- mindataset[sample(nrow(mindataset),min(nrow(mindataset),10000)),]
-  header    <<- header
-  
-  cat("Starting shiny .\n")  
-  header = runApp(shinyfolder)
-  
-  cat("Closing shiny .\n")
-  file.rename(paste0(shinyfolder ,"/header.xlsx"),paste0(shinyfolder,"/",headerfile));
-  
 }

@@ -17,30 +17,37 @@ AHA_Data_Import("BARlog","MH_NRG_MS_HLD","MH_NRG_MS_HLD",mode)
 AHA_Data_Import("BARlog","MH_NRG_MS_KABELS","MH_NRG_MS_KABELS",mode)
 AHA_Data_Import("BARlog","MH_NRG_MS_MOFFEN","MH_NRG_MS_MOFFEN",mode)
 
+# Add the XY coordinates in the same way NOR has them
 processXY("MH_NRG_MS_KABELS","beginend")
 # processXY("MH_NRG_LS_KABELS","beginend")
 processXY("MH_NRG_MS_MOFFEN","position")
 processXY("MH_NRG_LS_MOFFEN","position")
+
+# Add the XY coordinates in a spatial file
+# processXY("MH_NRG_MS_KABELS","beginend")
+# processXY("MH_NRG_LS_KABELS","beginend")
+# processXY("MH_NRG_MS_MOFFEN","position")
+# processXY("MH_NRG_LS_MOFFEN","position")
+
   
 # NOR processing ------------------
   folder="NOR"
   setfolder     = list.files(settings$Bron_Datasets,pattern=folder)[1]; 
   dir.create(paste0(settings$Ruwe_Datasets,"/",setfolder), showWarnings = FALSE)
-  a=list.files(paste0(settings$Bron_Datasets,"/",setfolder))
-  all = substr(a[1:95], 17, 20)
-  all = substr(a[range], 17, 20)
+  a=list.files(paste0(settings$Bron_Datasets,"/",setfolder),pattern = "ELCVERBINDINGEN.csv")
 
-  for (n in all) {
-  AHA_Data_Import("NOR",paste0("ELCVERBINDINGEN_",n),"ELCVERBINDINGEN",mode)
+  for (n in substr(a[1:95],17,20)) {
+   AHA_Data_Import("NOR",paste0("ELCVERBINDINGEN_",n),"ELCVERBINDINGEN",mode)
    AHA_Data_Import("NOR",paste0("ELCVERBINDINGSDELEN_",n),"ELCVERBINDINGSDELEN",mode)
    AHA_Data_Import("NOR",paste0("ELCVERBINDINGSKNOOPPUNTEN_",n),"ELCVERBINDINGSKNOOPPUNTEN",mode)
   }
 
-
-source('C:/Dropbox/1. BearingPoint/1. Billable projects/2. Alliander/3. Asset health/AHAanalytics/AHA_Data_NOR_Log.R')
 AHA_Data_NOR_Log("ELCVERBINDINGEN")
 AHA_Data_NOR_Log("ELCVERBINDINGSDELEN")
 AHA_Data_NOR_Log("ELCVERBINDINGSKNOOPPUNTEN")
+
+# Post processing
+AHA_Data_NOR_Log_Postprocessing()
 }
 
 processXY = function(file,mode) 

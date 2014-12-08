@@ -3,7 +3,7 @@ AHA_Data_KA_Proxy_Preprocessing = function(datasets=c("storingen","assets","nett
   # Loads several months of AHA datasets and puts this into a dataset
 
 # Settings ----------------------------------------------------------------  
-
+initialdate="1401";months=12
   dates = as.Date(paste0(initialdate,"01"), "%y%m%d")
   month(dates) = month(dates)+(1:months)-1
   maandenold = format(dates, format="%y%m")
@@ -15,15 +15,41 @@ for (m in datasets)
 assets = {        
 # NOR Data ----------------------------------------------------------------
   cat("Load NOR data\n"); tic();
-
+  # Laad de assets en converteer de datums als deze verkeerd staan 
   load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_assets.Rda"))
-  assets$moffen = assets$moffen[c %in% maanden | assets$moffen$DateRemoved %in% maanden]
-  setnames(assets$moffen,"PC_XY","PC_6")
-  assets$moffen$PC_4=substr(assets$moffen$PC_XY,1,4)
+  assets$kabels[,Date_Length_ch := as.Date(assets$kabel$Date_Length_ch,"1970-01-01")]
+#   assets$moffen[,DateAdded   := sapply(assets$moffen$DateAdded,firstFri)]
+#   assets$moffen[,DateRemoved := sapply(assets$moffen$DateRemoved,firstFri)]
+#   assets$kabels[,DateAdded   := sapply(assets$kabels$DateAdded,firstFri)]
+#   assets$kabels[,DateRemoved := sapply(assets$kabels$DateRemoved,firstFri)]
+
+  # Laad alleen dat deel van de assets dat binnen de periode valt
+  assets$moffen = assets$moffen[assets$moffen$DateAdded %in% maanden | assets$moffen$DateRemoved %in% maanden]
+  try(setnames(assets$moffen,"PC_XY","PC_6"))
   assets$kabels = assets$kabels[assets$kabels$DateAdded %in% maanden | assets$kabels$DateRemoved %in% maanden | assets$kabels$Date_Length_ch %in% maanden]
-  setnames(assets$kabels,c("PC_XY_van","PC_XY_naar"),c("PC_6_van","PC_6_naar"))
-  assets$kabels$PC_4_van=substr(assets$kabels$PC_6_van,1,4)  
-  assets$kabels$PC_4_naar=substr(assets$kabels$PC_6_naar,1,4)  
+  try(setnames(assets$kabels,c("PC_XY_van","PC_XY_naar"),c("PC_6_van","PC_6_naar")))
+  try(setnames(assets$kabels,c("Coo_X","Coo_Y"),c("Coo_X_naar","Coo_Y_naar")))
+  
+  # Voeg routenamen toe aan de MS kabels
+  load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/nettopo_MSHLD_MSRing.Rda"))
+  nettopo_MSRing_hld = unique(data.table(nettopo_MSRing_hld),by="ID_Hoofdleiding")
+  try(setnames(nettopo_MSRing_hld,"Routenaam","Routenaam_MS"))
+  try(setnames(nettopo_MSRing_hld,"Nummer","ID_Hoofdleiding"))
+  assets$kabels<-merge(assets$kabels,nettopo_MSRing_hld[,c("ID_Hoofdleiding","Routenaam_MS"),with=FALSE],by="ID_Hoofdleiding",all.x=TRUE)
+  
+  # Bereken postcode 4
+  assets$moffen[,PC_4:=substr(assets$moffen$PC_6,1,4)]
+  assets$kabels[,PC_4_van:=substr(assets$kabels$PC_6_van,1,4)]
+  assets$kabels[,PC_4_naar:=substr(assets$kabels$PC_6_naar,1,4)]  
+  
+  # Opsplitsen in MS en LS, zo zit het in de BARlog ook
+  assets$LSkabels = assets$kabels[BRONTABEL == "ls_kabels"]
+  assets$MSkabels = assets$kabels[BRONTABEL == "ms_kabels"]
+  assets$LSmoffen = assets$moffen[Brontabel == "ls_moffen"]
+  assets$MSmoffen = assets$moffen[Brontabel == "ms_moffen"]
+  assets$moffen = NULL
+  assets$kabels = NULL
+
   save(assets,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets.Rda"))
   remove("assets")
   
@@ -34,6 +60,7 @@ nettopo = {
   load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/aansluitingen_stationinclbehuizing.Rda"))
   aansluitingen1 = data.table(mindataset)
   setkey(aansluitingen1,ID_EAN)
+
   load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/aansluitingengeotrace.Rda"))
   aansluitingen2 = data.table(mindataset)
   setkey(aansluitingen2,ID_EAN)
@@ -44,28 +71,38 @@ nettopo = {
   data3=data3[which(data3$Freq==1)]
   pm = pmatch(colnames(aansluitingen1),colnames(aansluitingen2))
   aansluitingen2 = aansluitingen2[,pm,with=FALSE]
-  load("C:/Datasets/AHAdata/1. Ruwe Datasets/8. CAR/CAR_2013_XY.Rda")
+
+  load(paste0(settings$Ruwe_Datasets,"/8. CAR/CAR_2013_XY.Rda"))
   mindataset$ID_EAN= as.character(mindataset$ID_EAN)
   EAN_to_XY_PC6 = (mindataset[,c("PC_6","Huisnr","Coo_X","Coo_Y","ID_EAN"),with=FALSE])
   EAN_to_XY_PC6$PC_4=substr(EAN_to_XY_PC6$PC_6,1,4)
   setkey(EAN_to_XY_PC6,ID_EAN)
-
   nettopo$EAN_koppel<-merge(rbind(aansluitingen2,data3[,1:9,with=FALSE]),EAN_to_XY_PC6,by="ID_EAN",all.x=TRUE)
+  
+  load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/nettopo_EAN_MSRING.Rda"))
+  nettopo_new = unique(data.table(nettopo_new),by=c("ID_EAN"))
+  try(setnames(nettopo_new,"Routenaam","Routenaam_MS"))
+  nettopo$EAN_koppel<-merge(nettopo$EAN_koppel,nettopo_new[,c("ID_EAN","Routenaam_MS"),with=FALSE],by="ID_EAN",all.x=TRUE)
+  
   save(nettopo,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_nettopo.Rda"))
 },
 storingen = {
 # Storingsdata uit KLAK ------------------------
   toc(); cat("Load KLAK data\n"); tic();
+  # Laad de data om adressen te koppelen
   load("C:/Datasets/AHAdata/1. Ruwe Datasets/8. CAR/CAR_2013_XY.Rda")
   mindataset$ID_EAN= as.character(mindataset$ID_EAN)
   EAN_to_XY_PC6 = (mindataset[,c("PC_6","Huisnr","Coo_X","Coo_Y","ID_EAN"),with=FALSE])
   EAN_to_XY_PC6$PC_4=substr(EAN_to_XY_PC6$PC_6,1,4)
   setkey(EAN_to_XY_PC6,ID_EAN)
   storingen=list()
+
+  # Laad LS
   load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_LS.Rda"))
   mindataset$Maand = format(mindataset$Datum, format="%y%m")
   storingen$LS= data.table(mindataset[pmatch(mindataset$Maand, maandenold, dup = TRUE,nomatch=0)>0,]);
   
+  # Laad MS
   load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_MS.Rda"))
   mindataset$Maand = format(mindataset$Datum, format="%y%m")
   storingen$MS= data.table(mindataset[pmatch(mindataset$Maand, maandenold, dup = TRUE,nomatch=0)>0,])
