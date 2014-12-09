@@ -1,4 +1,4 @@
-AHA_Data_Import= function(folder,dataname,headername,mode="save"){
+AHA_Data_Import= function(folder,dataname,headername,mode="save",override="no"){
   
   # Asset health analytics import script, 
   # Load project first
@@ -31,13 +31,15 @@ AHA_Data_Import= function(folder,dataname,headername,mode="save"){
   cat(paste0("Start data-import of file : ",datafiles[filenumber]),".\n" ); tic()  
   
   # Choose the correct import method
-  if(mode!="header"){colclass=rep("character",1)} else {colclass=NULL}
+  if(mode!="header"){colclass=rep("character",1)} else {colclass = switch (override,yes=NA,no=NULL)}
   mindataset  = switch (curdataext,
           csv = {if(folder =="NOR" & !any(pmatch(paste0("ELCVERBINDINGEN_140",1:8), curdataname,dup = TRUE,nomatch=0)>0) & any(pmatch("ELCVERBINDINGEN",curdataname,dup = TRUE,nomatch=0)>0))
                   {data.frame(read.csv(paste0(settings$Bron_Datasets,"/",setfolder,"/",datafiles[filenumber]),row.names=NULL,colClasses=colclass));names(mindataset)[1:(length(names(mindataset))-1)]= names(mindataset)[2:length(names(mindataset))]; names(mindataset)[(length(names(mindataset)))]="DUPLICATE"}
                   else {data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=",",colClasses=colclass))}},
-          tsv = {data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep="\t",colClasses=colclass))},
-          ssv = {data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=";",colClasses=colclass))},
+          tsv = {switch(override,no=data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep="\t",colClasses=colclass)),
+                        yes=data.frame(read.csv(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep="\t",colClasses=colclass)))},
+          ssv = {switch(override,no=data.frame(fread(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=";",colClasses=colclass)),
+                        yes=data.frame(read.csv(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),sep=";",colClasses=colclass)))},
           lsx= {data.frame(read.xlsx(paste0(settings$Bron_Datasets, "/", setfolder,"/",datafiles[filenumber]),1))}
          )
 
@@ -95,7 +97,7 @@ AHA_Data_Import= function(folder,dataname,headername,mode="save"){
     # Load to memory
     cat("Done\n");    return(mindataset[,header[header[,3]==1,1]])
   } else if(mode=="save") {
-    toc();cat("Saving to file\n");tic()
+    toc();cat(paste0("Saving to file, rows: ", nrow(mindataset)," cols: ",ncol(mindataset), "\n")); tic()
     dataclasses= sapply(mindataset, class)
     mindataset = data.table(mindataset[,header[header[,3]==1,1]])
     setkeyv(mindataset, colnames(mindataset)[1])
