@@ -97,10 +97,11 @@ Proxy_PC_6 = function(klakl,klakmelders,assettype)
   ###voeg datumverschillen toe
   assetl$Adiff<-assetl$DateAdded   - klakl$Tijdstip_begin_storing
   assetl$Rdiff<-assetl$DateRemoved - klakl$Tijdstip_begin_storing # Voor kabels ook lengte
-  kabelsklak[,c("Ldiff")]<-as.Date(paste0(kabelsklak$Date_Length_ch,"04"),format="%y%m%d")-as.Date(kabelsklak$Tijdstip_begin_storing,format="%d-%m-%Y")
+  assetl$Rdiff<-assetl$length - klakl$Tijdstip_begin_storing # Voor kabels ook lengte
   
   klakl$Valid.diff<- (assetl$Adiff > config$timediff$min) & (assetl$Adiff < config$timediff$max) | 
-                     (assetl$Rdiff > config$timediff$min) & (assetl$Rdiff < config$timediff$max)
+                     (assetl$Rdiff > config$timediff$min) & (assetl$Rdiff < config$timediff$max) |
+    
   
   ### Maak dataframe met mogelijk gevonden klakstoringen
   klaktabel<-data.frame(table(klakl$ID_KLAK_Melding))
@@ -124,6 +125,14 @@ Proxy_PC_6 = function(klakl,klakmelders,assettype)
 
 Proxy_filter = function()
 {
+  #Selecteer alleen LS kabels
+  kabelsklak        <- kabelsklak[which(kabelsklak$Voltage %in% c("400V","Onbekend")),]
   
+  #Selecteer verwijderde moffen die in de rondom de storing vervangen zijn
+  LSkabelsklakhld <- kabelsklak[which((kabelsklak$Rdiffc==1 & kabelsklak$vervc ==1)|kabelsklak$Ldiffc ==1),]
+  LSkabelsklakhld <- transform(LSkabelsklakhld, freq.KLAKmelding=ave(seq(nrow(LSkabelsklakhld)),ID_KLAK_Melding,FUN=length))
+  LSkabelsklakhld <- LSkabelsklakhld[which(LSkabelsklakhld$freq.KLAKmelding<6),]
+  table(table(LSkabelsklakhld$ID_KLAK_Melding))
+  table(LSkabelsklakhld$Netcomponent)
 }
   
