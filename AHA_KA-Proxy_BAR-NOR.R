@@ -17,6 +17,11 @@ if (!exists("assets")) {
   load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"),envir = .GlobalEnv);toc()
 }
 
+#Quick Fixes
+names(storingen$LS)[names(storingen$LS)==c("PC_6.x")] <-"PC_6"
+#storingen$LS                                          <- data.frame(storingen$LS )   #Quick fix
+#storingen$MS                                          <- data.frame(storingen$MS )   #Quick fix
+
 # Omzetten assetset -------------------------------------------------------
 
 #assetstemp    <- assets
@@ -44,6 +49,7 @@ switch(method,
          setkey(assets$LSkabels,Coo_X_naar,Coo_Y_naar,Coo_X_van,Coo_Y_van)
          setkey(assets$MSkabels,Coo_X_naar,Coo_Y_naar,Coo_X_van,Coo_Y_van)
        })
+setkey(storingen$KLAKMELDERS,ID_Groep)
 
 # Loop over assettype --------------------------------------------------
 for (assettype in assettypes) {
@@ -55,10 +61,20 @@ for (assettype in assettypes) {
       assetklak[,Gmu_Verwerking_Gereed:=NA]   ; assetklak[,Gmu_Verwerking_Gereed:=as.character(Gmu_Verwerking_Gereed)]
       assetklak[,PC_6:=NA]                    ; assetklak[,PC_6:=as.character(PC_6)]
       assetklak[,ID_Groep:=NA]                ; assetklak[,ID_Groep:=as.double(ID_Groep)]
-      
       print(paste(assettype,voltage,nrow(storingen[[voltage]])))
-      for(i in 1:nrow(storingen[[voltage]])){
-              }
+      #aanmaken klakgegevenstabel
+      klaktabel    <- storingen[[voltage]][,c('ID_KLAK_Melding','Netcomponent','Tijdstip_begin_storing',"Datum_Verwerking_Gereed", 'PC_6', 'ID_Groep'),with=FALSE]   #aanmaken tabel met klakmeldingen
+      
+for(ii in 1:nrow(klaktabel)){
+      ifelse(is.na(klaktabel$ID_Groep[ii]),
+             klakmelders         <- data.table(data.frame(ID_KLAK_Melding=klaktabel$ID_KLAK_Melding[ii], ID_Groep=0,
+                                               ST_Groep_eerste="Ja",PC_6=klaktabel$ID_KLAK_Melding,
+                                               Huisnr=NA,Straat=NA,Klacht=NA, SubKlacht=NA)),                                                                   #Indien ID_groep onebekend is, kijk alleen naar KLAK-melding
+            {klakmelders         <- storingen$KLAKMELDERS[klaktabel$ID_Groep[as.integer(ii)],] #Koppel alle klakmelders aan melding
+             klakmelders         <- klakmelders   [which(complete.cases(klakmelders$ID_Hoofdleiding)),]}) 
+      
+      
+      }
 } #einde for-loop over assettypes
 
 }  #einde functie
