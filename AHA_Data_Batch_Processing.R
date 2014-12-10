@@ -3,10 +3,13 @@ AHA_Data_Batch_Processing = function(range)
 # Settings ---------------------
 mode ="save"
 
+# Processing of registered NAN-KLAK---------------
+AHA_Data_Import("Validatie_data","Koppeling KLAK-NRG","Koppeling KLAK-NRG",mode)
+
 # KLAK/GISm processing ----------------
 AHA_Data_Import("KLAK","KLAK_KOPPEL_MELDING_GROEP","KLAK_KOPPEL_MELDING_GROEP",mode)
-AHA_Data_Import("KLAK","KLAK_LS","KLAK_LS",mode)
-AHA_Data_Import("KLAK","KLAK_MS","KLAK_MS",mode)
+AHA_Data_Import("KLAK","KLAK_LS","KLAK_LS",mode,"yes")
+AHA_Data_Import("KLAK","KLAK_MS","KLAK_MS",mode,"yes")
 AHA_Data_Import("GIS-mutaties","GISMUTATIE","GISMUTATIE",mode)
   
 # BARlog processing ---------------
@@ -28,7 +31,6 @@ processXY("MH_NRG_LS_MOFFEN","position")
 # processXY("MH_NRG_LS_KABELS","beginend")
 # processXY("MH_NRG_MS_MOFFEN","position")
 # processXY("MH_NRG_LS_MOFFEN","position")
-
   
 # NOR processing ------------------
   folder="NOR"

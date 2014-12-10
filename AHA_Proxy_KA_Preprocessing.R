@@ -1,14 +1,13 @@
-AHA_Data_KA_Proxy_Preprocessing = function(datasets=c("storingen","assets","nettopo"),initialdate="1401",months=12)
+AHA_Data_KA_Proxy_Preprocessing = function(datasets=c("storingen","assets","nettopo"),
+                                           firstdate="2014-01-01",lastdate="2015-01-01")
   {
   # Loads several months of AHA datasets and puts this into a dataset
 
 # Settings ----------------------------------------------------------------  
-initialdate="1401";months=12
-  dates = as.Date(paste0(initialdate,"01"), "%y%m%d")
-  month(dates) = month(dates)+(1:months)-1
-  maandenold = format(dates, format="%y%m")
-  maanden = sapply(format(dates, format="%y%m"),firstFri)
-  
+firstdate = as.Date("2014-01-01")
+lastdate  = as.Date("2015-01-01")
+
+# switch between datasets
 for (m in datasets)
   {switch (m,
           
@@ -18,15 +17,15 @@ assets = {
   # Laad de assets en converteer de datums als deze verkeerd staan 
   load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_assets.Rda"))
   assets$kabels[,Date_Length_ch := as.Date(assets$kabel$Date_Length_ch,"1970-01-01")]
-#   assets$moffen[,DateAdded   := sapply(assets$moffen$DateAdded,firstFri)]
-#   assets$moffen[,DateRemoved := sapply(assets$moffen$DateRemoved,firstFri)]
-#   assets$kabels[,DateAdded   := sapply(assets$kabels$DateAdded,firstFri)]
-#   assets$kabels[,DateRemoved := sapply(assets$kabels$DateRemoved,firstFri)]
 
   # Laad alleen dat deel van de assets dat binnen de periode valt
-  assets$moffen = assets$moffen[assets$moffen$DateAdded %in% maanden | assets$moffen$DateRemoved %in% maanden]
+  assets$moffen = assets$moffen[(assets$moffen$DateAdded > firstdate & assets$moffen$DateAdded < lastdate)| 
+                                (assets$moffen$DateRemoved > firstdate & assets$moffen$DateRemoved < lastdate)]
   try(setnames(assets$moffen,"PC_XY","PC_6"))
-  assets$kabels = assets$kabels[assets$kabels$DateAdded %in% maanden | assets$kabels$DateRemoved %in% maanden | assets$kabels$Date_Length_ch %in% maanden]
+  assets$kabels = assets$kabels[(assets$kabels$DateAdded > firstdate & assets$kabels$DateAdded < lastdate)| 
+                                (assets$kabels$Date_Length_ch > firstdate & assets$kabels$Date_Length_ch < lastdate)|  
+                                (assets$kabels$DateRemoved > firstdate & assets$kabels$DateRemoved < lastdate)]
+                                
   try(setnames(assets$kabels,c("PC_XY_van","PC_XY_naar"),c("PC_6_van","PC_6_naar")))
   try(setnames(assets$kabels,c("Coo_X","Coo_Y"),c("Coo_X_naar","Coo_Y_naar")))
   
@@ -99,14 +98,14 @@ storingen = {
 
   # Laad LS
   load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_LS.Rda"))
-  mindataset$Maand = format(mindataset$Datum, format="%y%m")
-  storingen$LS= data.table(mindataset[pmatch(mindataset$Maand, maandenold, dup = TRUE,nomatch=0)>0,]);
-  
+  mindataset[,Datum:=as.Date(mindataset$Datum)]
+  storingen$LS= mindataset[(mindataset$Datum > firstdate & mindataset$Datum < lastdate)]
+
   # Laad MS
   load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_MS.Rda"))
-  mindataset$Maand = format(mindataset$Datum, format="%y%m")
-  storingen$MS= data.table(mindataset[pmatch(mindataset$Maand, maandenold, dup = TRUE,nomatch=0)>0,])
-  
+  mindataset[,Datum:=as.Date(mindataset$Datum)]
+  storingen$MS= mindataset[(mindataset$Datum > firstdate & mindataset$Datum < lastdate)]
+
   load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_COMPENSATIE.Rda"))  
   storingen$Compensatie = data.table(mindataset);
 

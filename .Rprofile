@@ -18,6 +18,7 @@ source("AHA_Data_BAR_GEOMETRY.R")
 # Install required packages if not installed already
 if (FALSE){
 install.packages(c("xlsxjars", "xlsx"))
+install.packages("SSOAP", repos = "http://www.omegahat.org/R", dependencies = TRUE, type = "source")
 install.packages("plyr")
 install.packages("Rserve"); 
 install.packages("shiny");
@@ -60,7 +61,7 @@ if (Sys.info()["nodename"] =="NLAMS4043734X") {
   settings[,"Results"] = "C:/Datasets/AHAdata/6. Results"}
 
 # Laptop Roel Stijl Alliander
-if (Sys.info()["nodename"] =="L-AW89JB") {
+else if (Sys.info()["nodename"] =="L-AW89JB") {
   settings[,"Bron_Datasets"] = "E:/2. Datasets/1. Alliander/AHAdata/0. Ongebruikte en brondata"
   settings[,"Ruwe_Datasets"] = "E:/2. Datasets/1. Alliander/AHAdata/1. Ruwe Datasets"
   settings[,"Input_Datasets"] = "E:/2. Datasets/1. Alliander/AHAdata/2. Input Datasets"
