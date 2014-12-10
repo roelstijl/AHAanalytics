@@ -8,17 +8,29 @@ AHA_Proxy_KA_BAR_NOR =
     # Method refers to the proxy method used, GEO, PC, HLD or OLD
     # Asset refers to the asset type, e.g. moffen, kabels or both
     # Voltage refers to the voltage to use, can be MS, LS or both
+    
+# Configuration parameters and settings ---------------------------
+config = list()
+config$timediff$min = -30 # Aantal dagen tussen storing en verwijdering assets
+config$timediff$max = 70  # Aantal dagen tussen storing en verwijdering assets
+config <<- config
 
-# Load data if not available
+# Load data if not available -----------------------------
 if (!exists("assets")) {
-  cat("Importing data file \n");tic()
+  cat("Importing data file \n"); tic()
   load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets.Rda"),envir = .GlobalEnv)
   load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_nettopo.Rda"),envir = .GlobalEnv)
-  load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"),envir = .GlobalEnv);toc()
-}
+  load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"),envir = .GlobalEnv)
+  toc();
+  }; 
 
-#Quick Fixes
-names(storingen$LS)[names(storingen$LS)==c("PC_6.x")] <-"PC_6"
+# Quick Fixes -------------------------------------
+try(setnames(storingen$LS,"PC_6.x","PC_6"))
+storingen$LS[,PC_6:=gsub(" ","",storingen$LS$PC_6, fixed=TRUE)]
+storingen$MS[,PC_6:=gsub(" ","",storingen$MS$PC_6, fixed=TRUE)]
+storingen$LS = as.Date(storingen$LS$Tijdstip_begin_storing)
+storingen$MS = as.Date(storingen$MS$Tijdstip_begin_storing)
+
 #storingen$LS                                          <- data.frame(storingen$LS )   #Quick fix
 #storingen$MS                                          <- data.frame(storingen$MS )   #Quick fix
 
@@ -52,33 +64,66 @@ switch(method,
 setkey(storingen$KLAKMELDERS,ID_Groep)
 
 # Loop over assettype --------------------------------------------------
+cat("")
 for (assettype in assettypes) {
       voltage = substr(paste(assettype),1,2)
-      assetklak <- assets[[assettype]][0,] #aanmaken koppeltabel
-      assetklak[,ID_KLAK_Melding:=NA]         ; assetklak[,ID_KLAK_Melding:=as.integer(ID_KLAK_Melding)]
-      assetklak[,Netcomponent:=NA]            ; assetklak[,Netcomponent:=as.character(Netcomponent)]
-      assetklak[,Tijdstip_begin_storing:=NA]  ; assetklak[,Tijdstip_begin_storing:=as.character(Tijdstip_begin_storing)]
-      assetklak[,Gmu_Verwerking_Gereed:=NA]   ; assetklak[,Gmu_Verwerking_Gereed:=as.character(Gmu_Verwerking_Gereed)]
-      assetklak[,PC_6:=NA]                    ; assetklak[,PC_6:=as.character(PC_6)]
-      assetklak[,ID_Groep:=NA]                ; assetklak[,ID_Groep:=as.double(ID_Groep)]
-      print(paste(assettype,voltage,nrow(storingen[[voltage]])))
+      assetklak= data.table(
+                   ID_KLAK_Melding        =character(), 
+                   Netcomponent           =character(), 
+                   Tijdstip_begin_storing = as.Date(character()),
+                   Gmu_Verwerking_Gereed  = as.Date(character()),
+                   PC_6                   = character(),
+                   ID_Groep               = character())
+                     
+      cat(paste(assettype,voltage,nrow(storingen[[voltage]]),"\n"))
       #aanmaken klakgegevenstabel
       klaktabel    <- storingen[[voltage]][,c('ID_KLAK_Melding','Netcomponent','Tijdstip_begin_storing',"Datum_Verwerking_Gereed", 'PC_6', 'ID_Groep'),with=FALSE]   #aanmaken tabel met klakmeldingen
       
-for(ii in 1:nrow(klaktabel)){
-      ifelse(is.na(klaktabel$ID_Groep[ii]),
-             klakmelders         <- data.table(data.frame(ID_KLAK_Melding=klaktabel$ID_KLAK_Melding[ii], ID_Groep=0,
-                                               ST_Groep_eerste="Ja",PC_6=klaktabel$ID_KLAK_Melding,
-                                               Huisnr=NA,Straat=NA,Klacht=NA, SubKlacht=NA)),                                                                   #Indien ID_groep onebekend is, kijk alleen naar KLAK-melding
-            {klakmelders         <- storingen$KLAKMELDERS[klaktabel$ID_Groep[as.integer(ii)],] #Koppel alle klakmelders aan melding
-             klakmelders         <- klakmelders   [which(complete.cases(klakmelders$ID_Hoofdleiding)),]}) 
-      
-      
+for(klaknr in klaktabel$ID_KLAK_Melding){
+  Proxy_PC_6(klaktabel[ID_KLAK_Melding==klaknr],storingen$KLAKMELDERS[ID_KLAK_Melding==klaknr],assettype) 
       }
-} #einde for-loop over assettypes
 
-}  #einde functie
-    
-    
-    
+}
+}
 
+#  Postcode 6 proxy ---------------------------------    
+Proxy_PC_6 = function(klakl,klakmelders,assettype)
+{
+    assetl<-assets[[assettype]][PC_6_van==klakl$PC_6] # Verschil kabel/mof
+    
+    if sum(klakadd$Status_ID=="Removed"|klakadd$Status_ID=="Removed") >0
+    
+  { # minimaal 1 asset
+  ###voeg datumverschillen toe
+  assetl$Adiff<-assetl$DateAdded   - klakl$Tijdstip_begin_storing
+  assetl$Rdiff<-assetl$DateRemoved - klakl$Tijdstip_begin_storing # Voor kabels ook lengte
+  kabelsklak[,c("Ldiff")]<-as.Date(paste0(kabelsklak$Date_Length_ch,"04"),format="%y%m%d")-as.Date(kabelsklak$Tijdstip_begin_storing,format="%d-%m-%Y")
+  
+  klakl$Valid.diff<- (assetl$Adiff > config$timediff$min) & (assetl$Adiff < config$timediff$max) | 
+                     (assetl$Rdiff > config$timediff$min) & (assetl$Rdiff < config$timediff$max)
+  
+  ### Maak dataframe met mogelijk gevonden klakstoringen
+  klaktabel<-data.frame(table(klakl$ID_KLAK_Melding))
+  assetl$countadded<-sapply(klaktabel$Var1,function(x) sum(klakl$Adiffc[which(klakl$ID_KLAK_Melding==x)]))     #aantal toegevoegde moffen
+  assetl$countremoved<-sapply(klaktabel$Var1,function(x) sum(klakl$Rdiffc[which(klakl$ID_KLAK_Melding==x)]))   #aantal weggehaalde moffen
+  #max(klaktabel$countremoved)
+  klaktabel[,c("storing")]<-sapply(klaktabel$countadded, function (x) if(x>0){1}else{0})*sapply(klaktabel$countremoved, function (x) if(x>0 & x<6){1}else{0})
+  
+  colnames(klaktabel)[1]<-"ID_KLAK_Melding"
+  klaktabel[,c("asset1","asset2","asset3","asset4","asset5")]<-NA
+  
+  tabel<-sapply(klaktabel$ID_KLAK_Melding,function(x) klak$ID_Bron[which(klak$ID_KLAK_Melding==x)])
+  tabel<-t(data.frame(lapply(tabel,function(x) x[1:5])))
+  
+  klaktabel[,c("asset1","asset2","asset3","asset4","asset5")]<-tabel
+  klaktabel<-klaktabel[which(klaktabel$storing==1),]
+  
+  klaktabelkabelsLS<-klaktabel
+    }
+}
+
+Proxy_filter = function()
+{
+  
+}
+  
