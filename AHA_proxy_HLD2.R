@@ -43,7 +43,6 @@ kabelsklak[,PC_6:=NA]                    ; kabelsklak[,PC_6:=as.character(PC_6)]
 kabelsklak[,ID_Groep:=NA]                ; kabelsklak[,ID_Groep:=as.double(ID_Groep)]
 
 
-klaktabel    <- storingen$LS[,c('ID_KLAK_Melding','Netcomponent','Tijdstip_begin_storing',"Gmu_Verwerking_Gereed", 'PC_6', 'ID_Groep'),with=FALSE]   #aanmaken tabel met klakmeldingen
 ll<-0
 for(i in 1:nrow(klaktabel)){
   ifelse(is.na(klaktabel$ID_Groep[i]),

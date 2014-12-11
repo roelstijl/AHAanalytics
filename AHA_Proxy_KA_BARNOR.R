@@ -1,4 +1,4 @@
-AHA_Proxy_KA_BAR_NOR = function(method,assets=c("moffen","kabels"),voltage=("LS","MS") 
+AHA_Proxy_KA_BAR_NOR = function(method,assets=c("moffen","kabels"),voltages=("LS","MS") 
 # This function calculates the asset id - klak id proxy for the asset health analytics project
 # Data should be loaded using the AHA_Proxy_Dataset function (global environment)
 #
@@ -8,15 +8,23 @@ AHA_Proxy_KA_BAR_NOR = function(method,assets=c("moffen","kabels"),voltage=("LS"
 # Voltage refers to the voltage to use, can be MS, LS or both
 {
 
-# Load some things
+# Load partial data
 if (!exists("moffen")) {
-  load("N:Multivariate Analyse/AHAdata/2. Input Datasets/AHA_Proxy_partial_data.Rda") #AHA_Proxy_Datasets("load")
+  load(paste0(settings[,"Input_Datasets"],"/AHA_Proxy_partial_data.Rda")) #Load partiële dataset
 }
+setnames(assets$moffen, c("PC_XY"),c("PC_6"))
+setnames(assets$kabels, c("PC_XY_van","PC_XY_naar"),c("PC_6_van","PC_6_naar"))
+#load("C:/Data/AHAdata/2. Input Datasets/AHA_Proxy_partial_data_2014-11-18.Rda") #Load partiële dataset
 
 # Loop over voltage and asset --------------------------------------------------
-for (asset in assets) {
-  for (voltage in voltages){
+for(type in assets) {
+  for (voltage in c("LS","MS")){
+#aanmaken koppeltabel, toevoegen kolommen voor klakinfo
+assetklak   <- assets$type[0,]              
+   
 
+  }
+}
 # Generic functions ------------------------------------------------------------------------
 # The functions that are identical for all methods
 
