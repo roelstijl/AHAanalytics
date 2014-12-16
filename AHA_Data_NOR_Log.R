@@ -54,7 +54,7 @@ for (n in firstfile:length(files))
                       ELCVERBINDINGSKNOOPPUNTEN = mindataset[,ID_unique:=paste0(ID_Bron,PC_6)],
                       cat("Please add headers to compute\n\n"))
   setkey(mindataset,ID_unique) 
-  mindataset = unique(mindataset)
+  mindataset = unique(mindataset,by=NULL)
 
   mindataset$file         = n;  
   mindataset$DateAdded    = curdate; 
@@ -91,7 +91,6 @@ if(n>firstfile){
     # Convert to data table for speed
     toc(); cat("Converting to data table\n"); tic()    
     mindataset = mindataset[,colnames(masterdataset),with=FALSE]
-    mindataset = unique(mindataset)
       
     toc(); cat("Calculating classes\n"); tic()
     dataclasses = rbind(dataclasses,as.data.frame(t(as.data.frame(sapply(mindataset[,colnames(masterdataset),with=FALSE], class)))));
@@ -105,8 +104,7 @@ if(n>firstfile){
     # Merge the old and new IDs for comparison
     toc();cat("Starting comparison of sets (duplicated)\n");tic()
     
-    combinedset  = rbind(masterdataset[which(!Removed),comparecols,with=FALSE],
-                         mindataset[which(!Added),comparecols,with=FALSE])
+    combinedset  = rbind(masterdataset[which(!Removed),comparecols,with=FALSE],mindataset[which(!Added),comparecols,with=FALSE])
     differences = !(duplicated(combinedset,by=comparecols) | duplicated(combinedset,by=comparecols,fromLast=TRUE))
     
     
@@ -141,8 +139,8 @@ if(n>firstfile){
     toc()}
   }
 }
-  cat("Finished!! Saving to file 1\n"); save(changes,dataclasses,file=paste0(outputfolder,"/changes_",NORtable,".Rda"))   
-  cat("Finished!! Saving to file 2\n"); save(masterdataset,dataclasses,file=paste0(outputfolder,"/masterdataset_",NORtable,".Rda"))   
+  cat("Finished!! Saving to file 1\n"); save(changes,file=paste0(outputfolder,"/changes_",NORtable,".Rda"))   
+  cat("Finished!! Saving to file 2\n"); save(masterdataset,file=paste0(outputfolder,"/masterdataset_",NORtable,".Rda"))   
 
 }
 

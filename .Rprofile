@@ -54,6 +54,7 @@ suppressMessages(require("rgeos"))
 # Laptop Roel Stijl Bearingpoint
 if (Sys.info()["nodename"] =="NLAMS4043734X") {
   settings[,"Bron_Datasets"] = "I:/2. Datasets/1. Alliander/AHAdata/0. Ongebruikte en brondata"
+#   settings[,"Bron_Datasets"] = "C:/Datasets/AHAdata/0. Ongebruikte en brondata"
   settings[,"Ruwe_Datasets"] = "C:/Datasets/AHAdata/1. Ruwe Datasets"
   settings[,"Input_Datasets"] = "C:/Datasets/AHAdata/2. Input Datasets"
   settings[,"Analyse_Datasets"] = "C:/Datasets/AHAdata/3. Analyse Datasets"
@@ -90,6 +91,7 @@ else{
   settings[,"Ruwe_Datasets"] = paste0(substr(getwd(),1,nchar(getwd())-13), "/AHAdata/1. Ruwe Datasets")
   settings[,"Input_Datasets"] = paste0(substr(getwd(),1,nchar(getwd())-13),"/AHAdata/2. Input Datasets")
   settings[,"Analyse_Datasets"] = paste0(substr(getwd(),1,nchar(getwd())-13),"/AHAdata/3. Analyse Datasets")
+  warning("Computer hostname unknown please check\n")
 }
 
 settings<<-settings

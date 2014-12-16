@@ -6,7 +6,7 @@ mode ="save"
 # Processing of registered NAN-KLAK---------------
 AHA_Data_Import("Validatie_data","Koppeling KLAK-NRG","Koppeling KLAK-NRG",mode)
 
-# KLAK/GISm processing ----------------
+# KLAK/GISmutaties processing ----------------
 AHA_Data_Import("KLAK","KLAK_KOPPEL_MELDING_GROEP","KLAK_KOPPEL_MELDING_GROEP",mode)
 AHA_Data_Import("KLAK","KLAK_LS","KLAK_LS",mode,"yes")
 AHA_Data_Import("KLAK","KLAK_MS","KLAK_MS",mode,"yes")
@@ -27,10 +27,16 @@ processXY("MH_NRG_MS_MOFFEN","position")
 processXY("MH_NRG_LS_MOFFEN","position")
 
 # Add the XY coordinates in a spatial file
-# processXY("MH_NRG_MS_KABELS","beginend")
-# processXY("MH_NRG_LS_KABELS","beginend")
-# processXY("MH_NRG_MS_MOFFEN","position")
-# processXY("MH_NRG_LS_MOFFEN","position")
+processXY("MH_NRG_LS_KABELS","polygons")
+processXY("MH_NRG_MS_KABELS","polygons")
+processXY("MH_NRG_MS_MOFFEN","polygons")
+processXY("MH_NRG_LS_MOFFEN","polygons")
+
+# Add the PC_6 locations of the assets
+processPC6("MH_NRG_LS_KABELS","van_naar")
+processPC6("MH_NRG_MS_KABELS","van_naar")
+processPC6("MH_NRG_MS_MOFFEN","punt")
+processPC6("MH_NRG_LS_MOFFEN","punt")
   
 # NOR processing ------------------
   folder="NOR"
@@ -52,9 +58,42 @@ AHA_Data_NOR_Log("ELCVERBINDINGSKNOOPPUNTEN")
 AHA_Data_NOR_Log_Postprocessing()
 }
 
-processXY = function(file,mode) 
-{load(paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,".Rda"));cat("starting\n")
- mindataset = cbind(mindataset,AHA_Data_BAR_GEOMETRY(mindataset$Ligging,mode))
- mindataset[,Ligging:=NULL]; cat("saving\n")
- save(mindataset,file=paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_XY.Rda"))
+processXY = function(file,mode){
+  cat("Loading file");tic();
+  load(paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,".Rda"));toc();
+  cat(paste0("Starting ", mode," file: ",file, "\n"))
+  
+  veld = switch (file,
+                 MH_NRG_MS_KABELS= "Ligging",
+                 MH_NRG_LS_KABELS= "Ligging",
+                 MH_NRG_MS_MOFFEN= "Locatie",
+                 MH_NRG_LS_MOFFEN= "Lokatie")
+  setnames(mindataset,veld,"veld")
+  
+  if (mode == "polygons")
+  {mindataset = SpatialPolygonsDataFrame(AHA_Data_BAR_GEOMETRY(mindataset$veld,mode),data=mindataset[,veld:=NULL])}
+  else
+  {mindataset = cbind(mindataset,AHA_Data_BAR_GEOMETRY(mindataset$veld,mode))}
+  
+  try(mindataset[,veld:=NULL]) 
+  cat("saving\n")
+  save(mindataset,file=paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_", mode,".Rda"))
+}
+
+
+processPC6 = function(file,mode){
+# Function calculates the PC6 of files-----------------
+  cat("starting\n")
+  a=1
+  
+  switch (mode,
+        van_naar= {
+                load(paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_beginend.Rda"));
+                mindataset = AHA_Data_Determine_PC(mindataset,polygon="PC_6",x="Coo_X_naar",y="Coo_X_naar",PC="PC_6_naar")
+                mindataset = AHA_Data_Determine_PC(mindataset,polygon="PC_6",x="Coo_X_van",y="Coo_Y_van",PC="PC_6_naar")
+        },        
+        punt= {load(paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_position.Rda"));
+               mindataset=AHA_Data_Determine_PC(mindataset,polygon="PC_6",x="Coo_X",y="Coo_Y")}
+)
+  save(mindataset,file=paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_XY_PC6.Rda"))
 }

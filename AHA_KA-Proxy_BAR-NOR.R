@@ -1,5 +1,5 @@
 AHA_Proxy_KA_BAR_NOR = 
-  function(method,assettypes=c("LSkabels","MSkabels","LSmoffen","MSmoffen")) 
+  function(method)
   {
     # This function calculates the asset id - klak id proxy for the asset health analytics project
     # Data should be loaded using the AHA_Proxy_Dataset function (global environment)
@@ -10,6 +10,11 @@ AHA_Proxy_KA_BAR_NOR =
     # Voltage refers to the voltage to use, can be MS, LS or both
     
 # Configuration parameters and settings ---------------------------
+<<<<<<< HEAD
+=======
+assettypes=c("kabels","moffen")
+voltages  = c("MS","LS")
+>>>>>>> Added nonfunctioning proxy
 config = list()
 config$timediff$min = -30 # Aantal dagen tussen storing en verwijdering assets
 config$timediff$max = 70  # Aantal dagen tussen storing en verwijdering assets
@@ -23,6 +28,7 @@ if (!exists("assets")) {
   load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"),envir = .GlobalEnv)
   toc();
   }; 
+<<<<<<< HEAD
 
 # Quick Fixes -------------------------------------
 try(setnames(storingen$LS,"PC_6.x","PC_6"))
@@ -35,14 +41,19 @@ storingen$MS = as.Date(storingen$MS$Tijdstip_begin_storing)
 #storingen$MS                                          <- data.frame(storingen$MS )   #Quick fix
 
 # Omzetten assetset -------------------------------------------------------
+=======
+>>>>>>> Added nonfunctioning proxy
 
-#assetstemp    <- assets
-#assets        <- list()
-#assets$moffen <- rbind(assetstemp$mof_LS,assetstemp$mof_MS)
-#assets$kabels <- rbind(assetstemp$kbl_LS,assetstemp$kbl_MS)
+# Quick Fixes -------------------------------------
+try(setnames(storingen$LS,"PC_6.x","PC_6")) # doe dit altijd met TRY -> als ik de data dan fix draait het programma ook dan nog
+storingen$LS[,PC_6:=gsub(" ","",storingen$LS$PC_6, fixed=TRUE)]
+storingen$MS[,PC_6:=gsub(" ","",storingen$MS$PC_6, fixed=TRUE)]
+storingen$LS = as.Date(storingen$LS$Tijdstip_begin_storing)
+storingen$MS = as.Date(storingen$MS$Tijdstip_begin_storing)
 
+# Omzetten assetset -------------------------------------------------------
 #set keys for different methods
-switch(method,
+switch(method, #netjes
        "PC"={
          setkey(assets$LSmoffen,PC_6)
          setkey(assets$MSmoffen,PC_4)
@@ -65,6 +76,7 @@ setkey(storingen$KLAKMELDERS,ID_Groep)
 
 # Loop over assettype --------------------------------------------------
 cat("")
+<<<<<<< HEAD
 for (assettype in assettypes) {
       voltage = substr(paste(assettype),1,2)
       assetklak= data.table(
@@ -76,10 +88,24 @@ for (assettype in assettypes) {
                    ID_Groep               = character())
                      
       cat(paste(assettype,voltage,nrow(storingen[[voltage]]),"\n"))
+=======
+for (voltage in voltages) { # Je hoeft alleen over voltages te loopen - je weet nog niet wat voor asset
+      assetklak= data.table( # dit kan dus zo ;), ik weet alleen niet of dit ècht nodig is
+         ID_KLAK_Melding        =character(), 
+         Netcomponent           =character(), 
+         Tijdstip_begin_storing = as.Date(character()),
+         Gmu_Verwerking_Gereed  = as.Date(character()),
+         PC_6                   = character(),
+         ID_Groep               = character())
+                     
+      cat(paste(assettype,voltage,nrow(storingen[[voltage]]),"\n"))
+      
+>>>>>>> Added nonfunctioning proxy
       #aanmaken klakgegevenstabel
       klaktabel    <- storingen[[voltage]][,c('ID_KLAK_Melding','Netcomponent','Tijdstip_begin_storing',"Datum_Verwerking_Gereed", 'PC_6', 'ID_Groep'),with=FALSE]   #aanmaken tabel met klakmeldingen
       
 for(klaknr in klaktabel$ID_KLAK_Melding){
+<<<<<<< HEAD
   Proxy_PC_6(klaktabel[ID_KLAK_Melding==klaknr],storingen$KLAKMELDERS[ID_KLAK_Melding==klaknr],assettype) 
       }
 
@@ -120,11 +146,43 @@ Proxy_PC_6 = function(klakl,klakmelders,assettype)
   klaktabel<-klaktabel[which(klaktabel$storing==1),]
   
   klaktabelkabelsLS<-klaktabel
+=======
+  assets.suspect = # De output bestaat uit een lijst met mogelijke assets removed, assets added
+    switch (method,
+          PC = Proxy_PC_6(klaktabel[ID_KLAK_Melding==klaknr],
+                          storingen$KLAKMELDERS[ID_KLAK_Melding==klaknr],
+                          voltage) # Hier vindt je alle moffen EN kabels die passen bij de melding
+          NETTOPO =  functie()
+          XY = functie())
+  
+  # Bepaal vervolgens wel assets in out 
+}}}
+
+#  Postcode 6 proxy ---------------------------------    
+Proxy_PC_6 = function(klakl,klakmelders,voltage,assettype)
+{
+  # Kies de assets die voldoen aan de PC6
+  assetl = switch (assettype,
+          assets = assets[[assettype]][PC_6_van==klakl$PC_6]|assets[[assettype]][PC_6_naar==klakl$PC_6], # Verschil kabel/mof
+          moffen = assets[[assettype]][PC_6==klakl$PC_6] # Verschil kabel/mof)  
+    
+ if sum(assetl$Status_ID=="Removed"|assetl$Status_ID=="Active"|assetl$Status_ID=="Lengthch") ==0 { 
+  } else  
+  {
+  # Bereken de datum verschillen 
+  klaklmoffen = calc.date.diff(assetl,klakl,"kabels") # is een funtie die hieronder staat
+  
+  # Maak dataframe met mogelijk gevonden assets
+  assets.suspect = assetl[klakl$Valid.diff]
+  
+  return(assetl)
+>>>>>>> Added nonfunctioning proxy
     }
 }
 
 Proxy_filter = function()
 {
+<<<<<<< HEAD
   #Selecteer alleen LS kabels
   kabelsklak        <- kabelsklak[which(kabelsklak$Voltage %in% c("400V","Onbekend")),]
   
@@ -136,3 +194,32 @@ Proxy_filter = function()
   table(LSkabelsklakhld$Netcomponent)
 }
   
+=======
+  #Selecteer alleen de verwachte asset
+  kabelsklak        <- 
+  
+  #Selecteer verwijderde moffen die in de rondom de storing vervangen zijn
+
+}
+  
+calc.date.diff = function(assetl,klakl,assettype){ # je moet deze even fixen voor moffen + kabels
+  diff = 
+    switch(moffen = data.table(
+        a = assetl$DateAdded   - klakl$Tijdstip_begin_storing,
+        b = assetl$DateRemoved - klakl$Tijdstip_begin_storing),
+          kabel = data.table(
+        a = assetl$DateAdded   - klakl$Tijdstip_begin_storing,
+        b = assetl$DateRemoved - klakl$Tijdstip_begin_storing, # Voor kabels ook lengte
+        c = assetl$DateLength_ch - klakl$Tijdstip_begin_storing) # Voor kabels ook lengte
+    )
+  if assettype == "moffen"{
+    diff[c:=NULL]}
+  
+  cbind(diff[1], mycol = na.omit(unlist(diff[-1])))
+  
+  assetl$in.timediff((assetl$Adiff > config$timediff$min) & (assetl$Adiff < config$timediff$max) | 
+    (assetl$Rdiff > config$timediff$min) & (assetl$Rdiff < config$timediff$max) |
+    (assetl$Ldiff > config$timediff$min) & (assetl$Ldiff < config$timediff$max) )
+  return(assetl)
+}
+>>>>>>> Added nonfunctioning proxy

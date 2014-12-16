@@ -91,7 +91,7 @@ AHA_Data_Import= function(folder,dataname,headername,mode="save",override="no"){
     
     cat("Copy file\n"); 
     file.copy(paste0(shinyfolder,"/",headerfile),paste0(settings$Ruwe_Datasets, "/", setfolder,"/",headerfile),overwrite=TRUE);      
-    cat("Done\n") ;    return()} 
+    cat("Done\n")} 
   else if(mode=="load") {
     
     # Load to memory
@@ -106,9 +106,22 @@ AHA_Data_Import= function(folder,dataname,headername,mode="save",override="no"){
     cat(paste0("Saved: ",paste0(settings$Ruwe_Datasets, "/", setfolder,"/",curdataname,".Rda"),"\n"));toc();
     }else if(mode=="header"){
     cat("Saved header file to xlsx\n")
-    return()
     }else{
     cat("Wrong mode selected, load, save or shiny\n")
   }  
   }
 }
+
+cNA = function(dataset)
+{
+  par(mfrow=c(1, 1), mar=c(2, 15, 0, 2))
+  barplot(t(cbind(sapply(dataset,function(x) sum(is.na(x))),
+  sapply(dataset,function(x) sum(!is.na(x))))), horiz=TRUE,las=1,cex.names=0.5)
+}
+  
+row.sample <- function(dta, rep = 20) {
+  dta <- as.data.frame(dta) # for single variables
+  dta[sample(1:nrow(dta), rep, replace=FALSE), ] 
+} 
+  
+  
