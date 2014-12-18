@@ -69,23 +69,21 @@ function(method,assettypes=c("LSkabels","MSkabels","LSmoffen","MSmoffen"))
   setkey(storingen$KLAKMELDERS,ID_Groep)
   
 
+assetsltb <- list()
 # Aanmaken klakgegevenstabel, for-loop over klakmeldingen, aanroepen proxyfunctie --------------------------
   for(voltage in c("LS","MS")){ 
     klaktabel    <- storingen[[voltage]]            #aanmaken tabel met klakmeldingen
-    if (!exists("assetsl")) { assetsl <- list()}    #aanmaken tabel met gekoppelde assets
-    for(klaknr in klaktabel$ID_KLAK_Melding[c(1:4)]){
+    if (!exists("assetsltb")) { assetsltb <- list()}    #aanmaken tabel met gekoppelde assets
+    for(klaknr in klaktabel$ID_KLAK_Melding){
       klak          = klaktabel[ID_KLAK_Melding==klaknr]
       klakmeldingen = storingen$KLAKMELDERS[as.list(klak$ID_Groep)]
       #switch functie invoegen voor overige methodes
-      assetsl       = Proxy_PC_6(klak,klakmeldingen,voltage,assets,assetsl) 
-      
-      
-      
+      assetsltb       = Proxy_PC_6(klak,klakmeldingen,voltage,assets,assetsltb) 
       }
   } 
   develop <<- develop                                                        # wegschrijven developers parameters
   filename=paste0(settings$Analyse_Datasets,"/assetslPC",gsub(":",".",paste0(Sys.time())),".Rda")  # definiëren file van weg te schrijven assets
-  save(assetsl,file=filename)
+  save(assetsltb,file=filename)
 }
 
 # Postcode 6 proxy ---------------------------------    
@@ -98,14 +96,17 @@ Proxy_PC_6 = function(klakl,klakmelders,voltage,assets,assetsl)
   assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[klakl$PC_6]                                              # Zoeken op Postcode 6
   assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels")  # Aanroepen functie om tijdsverschillen e.d. te berekenen
   
-  assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[klakl$PC_6] # Zoeken op Postcode 6
-  assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen")
+  assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[klakl$PC_6]                                              # Zoeken op Postcode 6
+  assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen")  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
   },
   MS={
   assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = assets$MSkabels[klakl$PC_4] # Zoeken op Postcode 4
+  assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels")  # Aanroepen functie om tijdsverschillen e.d. te berekenen
+  
   assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = assets$MSmoffen[klakl$PC_4] # Zoeken op postcode 4
+  assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen")  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
   }) 
-  #Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
+  
   
   
   return(assetsl)
@@ -113,10 +114,14 @@ Proxy_PC_6 = function(klakl,klakmelders,voltage,assets,assetsl)
 
 # Hoofdleidingen proxy -------------------------------------
 
-# Uitrekenen tijdsverschillen------------------------------------------------  
-process.table = function(assetstb,klakl,assettype){ # je moet deze even fixen voor moffen + kabels
+# Uitrekenen tijdsverschillen,wel of niet verwijderd------------------------------------------------  
+process.table = function(assetstb,klakl,assettype){
+    #uitrekenen tijdsverschillen met storing
+    try(print(paste(length(assetstb),sum(complete.cases(assetstb$ID_unique)), nrow(assetstb),class(assetstb),assettype)))
+    try({if(sum(class(assetstb)              ==   "character")){print(head(assetstb))}
+    if(sum(complete.cases(assetstb$ID_unique)) ==   0          ){}else{
     if(sum(assetstb$Status_ID=="Removed"|assetstb$Status_ID=="Lengthch") ==0){ 
-    assetstb <- "Geen verwijderde/veranderde assets gevonden"
+    assetstb <- assetstb[0,]
     } else  
     {
     diff = 
@@ -129,9 +134,10 @@ process.table = function(assetstb,klakl,assettype){ # je moet deze even fixen vo
         Rdiff = assetstb$DateRemoved - klakl$Tijdstip_begin_storing, # Voor kabels ook lengte
         Ldiff = assetstb$DateLength_ch - klakl$Tijdstip_begin_storing) # Voor kabels ook lengte
       )
-    #kopieren voor assets en moffen
-    
+    #Dicht genoeg op storing?
+    develop$countremoved <<- develop$countremoved + 1
     assetstb             <- cbind(assetstb,diff)
+    
     switch(assettype, 
            moffen = {assetstb$in.timediff <- ((assetstb$Adiff > config$timediff$min) & (assetstb$Adiff < config$timediff$max) | 
                                               (assetstb$Rdiff > config$timediff$min) & (assetstb$Rdiff < config$timediff$max) )},
@@ -139,7 +145,27 @@ process.table = function(assetstb,klakl,assettype){ # je moet deze even fixen vo
                                               (assetstb$Rdiff > config$timediff$min) & (assetstb$Rdiff < config$timediff$max) |
                                               (assetstb$Ldiff > config$timediff$min) & (assetstb$Ldiff < config$timediff$max))}
           )
-    }
+    switch(assettype, 
+           moffen = {
+             tdiff = sapply(assetstb$DateAdded,function(x){x-assetstb$DateRemoved})
+             
+             xdiff = sapply(assetstb$Coo_X,function(x){x-assetstb$Coo_X})
+             
+             ydiff = sapply(assetstb$Coo_Y,function(x){x-assetstb$Coo_Y})
+             
+             sdiff = xdiff^2+ydiff^2
+             
+             in.verv = rowSums((sdiff<2)&(tdiff>  config$vervdiff$min & tdiff< config$vervdiff$max))
+    
+             assetstb             <- cbind(assetstb, in.verv)
+             assetstb$koppelc     <- assetstb$in.timediff & assetstb$in.verv
+           },
+           kabels={}
+    )
+    }}})
+    
+    
+    
     return(assetstb)
   
   
@@ -158,3 +184,8 @@ Proxy_filter = function()
   table(table(LSkabelsklakhld$ID_KLAK_Melding))
   table(LSkabelsklakhld$Netcomponent)
 }
+
+
+#Output Rdata naar csv
+#OutputRdatocsv=function
+
