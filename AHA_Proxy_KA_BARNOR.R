@@ -23,6 +23,8 @@ function(method,assettypes=c("LSkabels","MSkabels","LSmoffen","MSmoffen"))
   develop$countremoved  <-  0
   develop               <<- develop
   
+  #progress bar
+  pb <- txtProgressBar()
 
 # Load data if not available -----------------------------
   if (!exists("assets")) {
@@ -71,15 +73,18 @@ function(method,assettypes=c("LSkabels","MSkabels","LSmoffen","MSmoffen"))
 
 assetsltb <- list()
 # Aanmaken klakgegevenstabel, for-loop over klakmeldingen, aanroepen proxyfunctie --------------------------
-  for(voltage in c("LS","MS")){ 
-    klaktabel    <- storingen[[voltage]]            #aanmaken tabel met klakmeldingen
-    if (!exists("assetsltb")) { assetsltb <- list()}    #aanmaken tabel met gekoppelde assets
+for(voltage in c("LS","MS")){ 
+  cat(voltage) 
+  klaktabel    <- storingen[[voltage]]                  # aanmaken tabel met klakmeldingen
+    if (!exists("assetsltb")) { assetsltb <- list()}    # aanmaken tabel met gekoppelde assets
+    counter    <- 0
     for(klaknr in klaktabel$ID_KLAK_Melding){
-      klak          = klaktabel[ID_KLAK_Melding==klaknr]
-      klakmeldingen = storingen$KLAKMELDERS[as.list(klak$ID_Groep)]
+      klak          <- klaktabel[ID_KLAK_Melding==klaknr]
+      klakmeldingen <- storingen$KLAKMELDERS[as.list(klak$ID_Groep)]
       #switch functie invoegen voor overige methodes
-      assetsltb       = Proxy_PC_6(klak,klakmeldingen,voltage,assets,assetsltb) 
-      }
+      assetsltb     <- Proxy_PC_6(klak,klakmeldingen,voltage,assets,assetsltb) 
+      counter       <- counter +1; setTxtProgressBar(pb, counter/nrow(klaktabel)) 
+     }
   } 
   develop <<- develop                                                        # wegschrijven developers parameters
   filename=paste0(settings$Analyse_Datasets,"/assetslPC",gsub(":",".",paste0(Sys.time())),".Rda")  # definiëren file van weg te schrijven assets
@@ -117,8 +122,8 @@ Proxy_PC_6 = function(klakl,klakmelders,voltage,assets,assetsl)
 # Uitrekenen tijdsverschillen,wel of niet verwijderd------------------------------------------------  
 process.table = function(assetstb,klakl,assettype){
     #uitrekenen tijdsverschillen met storing
-    try(print(paste(length(assetstb),sum(complete.cases(assetstb$ID_unique)), nrow(assetstb),class(assetstb),assettype)))
-    try({if(sum(class(assetstb)              ==   "character")){print(head(assetstb))}
+    #try(print(paste(length(assetstb),sum(complete.cases(assetstb$ID_unique)), nrow(assetstb),class(assetstb),assettype)))
+    try({ #if(sum(class(assetstb)              ==   "character")){print(head(assetstb))}
     if(sum(complete.cases(assetstb$ID_unique)) ==   0          ){}else{
     if(sum(assetstb$Status_ID=="Removed"|assetstb$Status_ID=="Lengthch") ==0){ 
     assetstb <- assetstb[0,]
@@ -162,7 +167,7 @@ process.table = function(assetstb,klakl,assettype){
            },
            kabels={}
     )
-    }}})
+    }}},silent=T)
     
     
     
@@ -184,8 +189,3 @@ Proxy_filter = function()
   table(table(LSkabelsklakhld$ID_KLAK_Melding))
   table(LSkabelsklakhld$Netcomponent)
 }
-
-
-#Output Rdata naar csv
-#OutputRdatocsv=function
-
