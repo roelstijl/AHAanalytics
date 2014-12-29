@@ -1,36 +1,69 @@
-Tableau_Create_Polygons = function()
+Tableau_Create_Polygons = function(fileout="polygons",sources="spd",combine = FALSE)
 {
- ShapeFile <- readShapeSpatial(file.choose())
- FileName = paste0(settings$Visuals,"/PC_4")
- 
- Data <- as(ShapeFile, "data.frame")
- Data$PolygonID <- as.numeric(rownames(Data))
- 
- #extracts the coodinates and polygon IDs
- Polygons <- slot(ShapeFile,"polygons")
- coordinates <- list(Latitude = numeric(0),
-                     Longitude = numeric(0),
-                     PolygonID = numeric(0),
-                     PlotOrder = numeric(0))
- 
- #A slow looping aproach
- for(i in 1:length(Polygons)){
-   Polygon <- Polygons[[i]]
-   ID <- slot(Polygon, "ID")
-   coords <- data.frame(slot(slot(Polygon,"Polygons")[[1]],"coords"))
-   coords$PlotOrder <- c(1:nrow(coords))
-   coordinates$Longitude <- c(coordinates$Longitude, coords[,1])
-   coordinates$Latitude <- c(coordinates$Latitude, coords[,2])
-   coordinates$PolygonID <- c(coordinates$PolygonID, rep(ID,nrow(coords)))
-   coordinates$PlotOrder <- c(coordinates$PlotOrder, c(1:nrow(coords)))
- }
- 
- out = AHA_RDCtoGPS(data.table(cbind(coordinates$Longitude,coordinates$Latitude)))
-  coordinates$Longitude= out$V1
-  coordinates$Latitude = out$V2
+# Roel Stijl, Bearingpoint 2015. 
+# Converts shp or R spatial files to tableau.
+# Select the source and which file to output (filename)
+# Combine selects wether to attach the entire data table to the spatials (space inefficient)
+# Next select the file(s) (prompted) to import and wait
+#  
+# Settings ---------------------
+FileName = paste0(settings$Visuals,"/2. Tableau Polygons/",fileout)
 
- CombinedData <- merge(Data,coordinates)
+# Load stuff -----------------------
+switch (sources,
+# shapefile
+sf = {
+  cat("Select a shapefile \n")
+  ShapeFile <- readShapeSpatial(file.choose())
+#   Data <- as(ShapeFile, "data.frame")
+  Data <- as(ShapeFile, "data.table")
+  Data$PolygonID <- as.numeric(rownames(Data))
+},
+
+# spatialpolygonsdataframe
+spd = {
+ cat("Select a spatialpolygons R file \n")
+ fc = file.choose(); cat(paste0("Loading ",fc,"........\n\n" ))
+ load(fc);  ShapeFile = mindataset
  
- filename <- paste(FileName,".csv", sep = "")
- write.csv(CombinedData, filename, row.names = FALSE)
+ cat("Select a datatable R file \n")
+ fc = file.choose(); cat(paste0("Loading ",fc,"........\n\n" ))
+ load(fc);  Data      = mindataset
+ Data$PolygonID <- as.numeric(rownames(Data))
+ remove(mindataset)
+},
+
+# else
+ error("Invalid source filetype methode")
+)
+ 
+# Extracts the coodinates and polygon IDs -----------------------
+Polygons <- slot(ShapeFile,"polygons")
+# coordinates = llply(Polygons,createpoly, .progress = "text")
+coordinates = data.tableldply(Polygons,createpoly, .progress = "text"))
+ 
+ out = AHA_RDCtoGPS(coordinates[,list(Longitude,Latitude)])
+  coordinates[Longitude:= out$V1]
+  coordinates[Latitude := out$V2]
+  
+if (combine) {coordinates <- merge(Data,coordinates)}
+
+ write.csv(coordinates, paste0(FileName,".csv"), row.names = FALSE)
+}
+
+# Create the polygons ------------------------------
+createpoly = function (Polygon)
+{  
+  ID <- slot(Polygon, "ID")
+  coords <- data.frame(slot(slot(Polygon,"Polygons")[[1]],"coords"))
+  coords$PlotOrder <- c(1:nrow(coords))
+  
+  return(
+    data.frame(
+      
+        Longitude = coords[,1],
+        Latitude  = coords[,2],
+        PolygonID = rep(ID,nrow(coords)),
+        PlotOrder = c(1:nrow(coords))
+  ))
 }
