@@ -37,11 +37,11 @@ function(method,assettypes=c("LSkabels","MSkabels","LSmoffen","MSmoffen"))
     
 
 # Quick Fixes -------------------------------------
-  try(setnames(storingen$LS,"PC_6.x","PC_6"),silent=T)
-  storingen$LS[,PC_6:=gsub(" ","",storingen$LS$PC_6, fixed=TRUE)]
-  storingen$MS[,PC_6:=gsub(" ","",storingen$MS$PC_6, fixed=TRUE)]
-  storingen$LS$Tijdstip_begin_storing <- as.Date(storingen$LS$Tijdstip_begin_storing)
-  storingen$MS$Tijdstip_begin_storing <- as.Date(storingen$MS$Tijdstip_begin_storing)
+  storingen$LS[,PC_6:=gsub(" ","",storingen$LS$PC_6, fixed=TRUE)]  #verwijderen spaties uit postcodes
+  storingen$MS[,PC_6:=gsub(" ","",storingen$MS$PC_6, fixed=TRUE)]  #verwijderen spaties uit postcodes
+  storingen$LS$Tijdstip_begin_storing <- as.Date(storingen$LS$Tijdstip_begin_storing) #converteren tijdstippen naar datumnotatie
+  storingen$MS$Tijdstip_begin_storing <- as.Date(storingen$MS$Tijdstip_begin_storing) #converteren tijdstippen naar datumnotatie
+
   
   #storingen$LS                                          <- data.frame(storingen$LS )   #Quick fix
   #storingen$MS                                          <- data.frame(storingen$MS )   #Quick fix
@@ -72,18 +72,19 @@ function(method,assettypes=c("LSkabels","MSkabels","LSmoffen","MSmoffen"))
   
 
 assetsltb <- list()
+
 # Aanmaken klakgegevenstabel, for-loop over klakmeldingen, aanroepen proxyfunctie --------------------------
 for(voltage in c("LS","MS")){ 
   cat(voltage) 
   klaktabel    <- storingen[[voltage]]                  # aanmaken tabel met klakmeldingen
     if (!exists("assetsltb")) { assetsltb <- list()}    # aanmaken tabel met gekoppelde assets
     counter    <- 0
-    for(klaknr in klaktabel$ID_KLAK_Melding){
+    for(klaknr in klaktabel$ID_KLAK_Melding[1:20]){
       klak          <- klaktabel[ID_KLAK_Melding==klaknr]
       klakmeldingen <- storingen$KLAKMELDERS[as.list(klak$ID_Groep)]
       #switch functie invoegen voor overige methodes
       assetsltb     <- Proxy_PC_6(klak,klakmeldingen,voltage,assets,assetsltb) 
-      counter       <- counter +1; setTxtProgressBar(pb, counter/nrow(klaktabel)) 
+      counter       <- counter + 1; setTxtProgressBar(pb, counter/nrow(klaktabel)) 
      }
   } 
   develop <<- develop                                                        # wegschrijven developers parameters
@@ -95,7 +96,7 @@ for(voltage in c("LS","MS")){
 Proxy_PC_6 = function(klakl,klakmelders,voltage,assets,assetsl)
 {
   # Kies de assets die voldoen aan de PC6
-  # aanmaken koppeltabel
+  # teruggeven koppeltabel
   switch(voltage,
   LS={
   assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[klakl$PC_6]                                              # Zoeken op Postcode 6
@@ -109,7 +110,7 @@ Proxy_PC_6 = function(klakl,klakmelders,voltage,assets,assetsl)
   assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels")  # Aanroepen functie om tijdsverschillen e.d. te berekenen
   
   assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = assets$MSmoffen[klakl$PC_4] # Zoeken op postcode 4
-  assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen")  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
+  assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen")  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
   }) 
   
   
@@ -121,11 +122,14 @@ Proxy_PC_6 = function(klakl,klakmelders,voltage,assets,assetsl)
 
 # Uitrekenen tijdsverschillen,wel of niet verwijderd------------------------------------------------  
 process.table = function(assetstb,klakl,assettype){
+
+      #try(print(paste(klakl$ID_KLAK_Melding,length(assetstb),nrow(assetstb),class(assetstb),assettype)))
+      #try(print(paste(sum(complete.cases(assetstb$ID_unique)), nrow(assetstb),class(assetstb),assettype)))
+      #if(sum(class(assetstb)              ==   "character")){print(head(assetstb))}
+    try({ 
+    if(sum(complete.cases(assetstb$ID_unique)) ==   0          ){}else{            # Verwijder rijen met enkel NA's
+    if(sum(assetstb$Status_ID=="Removed"|assetstb$Status_ID=="Lengthch") ==0){     # 
     #uitrekenen tijdsverschillen met storing
-    #try(print(paste(length(assetstb),sum(complete.cases(assetstb$ID_unique)), nrow(assetstb),class(assetstb),assettype)))
-    try({ #if(sum(class(assetstb)              ==   "character")){print(head(assetstb))}
-    if(sum(complete.cases(assetstb$ID_unique)) ==   0          ){}else{
-    if(sum(assetstb$Status_ID=="Removed"|assetstb$Status_ID=="Lengthch") ==0){ 
     assetstb <- assetstb[0,]
     } else  
     {
@@ -160,14 +164,14 @@ process.table = function(assetstb,klakl,assettype){
              
              sdiff = xdiff^2+ydiff^2
              
-             in.verv = rowSums((sdiff<2)&(tdiff>  config$vervdiff$min & tdiff< config$vervdiff$max))
+             in.verv = rowSums(matrix((sdiff<2)&(tdiff >  config$vervdiff$min & tdiff < config$vervdiff$max),ncol=nrow(tdiff)))
     
              assetstb             <- cbind(assetstb, in.verv)
              assetstb$koppelc     <- assetstb$in.timediff & assetstb$in.verv
            },
            kabels={}
     )
-    }}},silent=T)
+    }}},silent=F)
     
     
     
