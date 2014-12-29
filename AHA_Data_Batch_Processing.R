@@ -21,16 +21,16 @@ AHA_Data_Import("BARlog","MH_NRG_MS_KABELS","MH_NRG_MS_KABELS",mode)
 AHA_Data_Import("BARlog","MH_NRG_MS_MOFFEN","MH_NRG_MS_MOFFEN",mode)
 
 # Add the XY coordinates in the same way NOR has them
-processXY("MH_NRG_MS_KABELS","beginend")
-processXY("MH_NRG_LS_KABELS","beginend")
-processXY("MH_NRG_MS_MOFFEN","position")
-processXY("MH_NRG_LS_MOFFEN","position")
+processXY("MH_NRG_MS_KABELS","beginend",atype="kabels")
+processXY("MH_NRG_LS_KABELS","beginend",atype="kabels")
+processXY("MH_NRG_MS_MOFFEN","position",atype="moffen")
+processXY("MH_NRG_LS_MOFFEN","position",atype="moffen")
 
 # Add the XY coordinates in a spatial file
-processXY("MH_NRG_LS_KABELS","polygons")
-processXY("MH_NRG_MS_KABELS","polygons")
-processXY("MH_NRG_MS_MOFFEN","polygons")
-processXY("MH_NRG_LS_MOFFEN","polygons")
+processXY("MH_NRG_LS_KABELS","polygons",atype="kabels")
+processXY("MH_NRG_MS_KABELS","polygons",atype="kabels")
+processXY("MH_NRG_MS_MOFFEN","polygons",atype="moffen") # Add version for points
+processXY("MH_NRG_LS_MOFFEN","polygons",atype="moffen")
 
 # Add the PC_6 locations of the assets
 processPC6("MH_NRG_LS_KABELS","van_naar")
@@ -58,7 +58,7 @@ AHA_Data_NOR_Log("ELCVERBINDINGSKNOOPPUNTEN")
 AHA_Data_NOR_Log_Postprocessing()
 }
 
-processXY = function(file,mode){
+processXY = function(file,mode,atype){
   cat("Loading file");tic();
   load(paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,".Rda"));toc();
   cat(paste0("Starting ", mode," file: ",file, "\n"))
@@ -71,9 +71,9 @@ processXY = function(file,mode){
   setnames(mindataset,veld,"veld")
   
   if (mode == "polygons")
-  {mindataset = SpatialPolygonsDataFrame(AHA_Data_BAR_GEOMETRY(mindataset$veld,mode),data=mindataset[,veld:=NULL])}
+  {mindataset = SpatialPolygonsDataFrame(AHA_Data_BAR_GEOMETRY(mindataset$veld,mode,atype),data=mindataset[,veld:=NULL])}
   else
-  {mindataset = cbind(mindataset,AHA_Data_BAR_GEOMETRY(mindataset$veld,mode))}
+  {mindataset = cbind(mindataset,AHA_Data_BAR_GEOMETRY(mindataset$veld,mode,atype))}
   
   try(mindataset[,veld:=NULL]) 
   cat("saving\n")
