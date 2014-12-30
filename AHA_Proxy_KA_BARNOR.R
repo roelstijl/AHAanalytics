@@ -31,7 +31,6 @@ function(method,assettypes=c("LSkabels","MSkabels","LSmoffen","MSmoffen"))
   #progress bar
   pb  <- txtProgressBar()
 
-
 # Load data if not available -----------------------------
   if (!exists("assets")) {
     cat("Importing data file \n"); tic()
@@ -101,21 +100,26 @@ for(voltage in c("LS","MS")){
 # Postcode 6 proxy ---------------------------------    
 Proxy_PC_6 = function(klakl,klakmelders,voltage,assets,assetsl)
 {
-  # Kies de assets die voldoen aan de PC6
+  # Postcodelijst samenstellen
+    # Kies de assets die voldoen aan de PC6
   # teruggeven koppeltabel
   switch(voltage,
   LS={
-  assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[klakl$PC_6]                                              # Zoeken op Postcode 6
-  assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels")  # Aanroepen functie om tijdsverschillen e.d. te berekenen
+  PClijst = list(unique(c(klakl$PC_6,klakmelders$PC_6)))
   
-  assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[klakl$PC_6]                                              # Zoeken op Postcode 6
+  assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[PClijst]                                                 # Zoeken op Postcode 6
+  assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels")  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
+  
+  assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[PClijst]                                                 # Zoeken op Postcode 6
   assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen")  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
   },
   MS={
-  assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = assets$MSkabels[klakl$PC_4] # Zoeken op Postcode 4
-  assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels")  # Aanroepen functie om tijdsverschillen e.d. te berekenen
+  PClijst = list(unique(c(klakl$PC_4,substr(klakmelders$PC_6,1,4))))
+    
+  assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = assets$MSkabels[PClijst] # Zoeken op Postcode 4
+  assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels")  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
   
-  assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = assets$MSmoffen[klakl$PC_4] # Zoeken op postcode 4
+  assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = assets$MSmoffen[klakl$PClijst] # Zoeken op postcode 4
   assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen")  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
   }) 
   
@@ -125,6 +129,30 @@ Proxy_PC_6 = function(klakl,klakmelders,voltage,assets,assetsl)
 }
 
 # Hoofdleidingen proxy -------------------------------------
+Proxy_HLD = function(klakl,klakmelders,voltage,assets,assetsl)
+{
+  # Kies de assets die voldoen aan de PC6
+  # teruggeven koppeltabel
+  switch(voltage,
+         LS={
+           assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[klakl$PC_6]                                              # Zoeken op Postcode 6
+           assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels")  # Aanroepen functie om tijdsverschillen e.d. te berekenen
+           
+           assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[klakl$PC_6]                                              # Zoeken op Postcode 6
+           assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen")  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
+         },
+         MS={
+           assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = assets$MSkabels[klakl$PC_4] # Zoeken op Postcode 4
+           assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels")  # Aanroepen functie om tijdsverschillen e.d. te berekenen
+           
+           assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = assets$MSmoffen[klakl$PC_4] # Zoeken op postcode 4
+           assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen")  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
+         }) 
+  
+  
+  
+  return(assetsl)
+}
 
 # Uitrekenen tijdsverschillen, wel of niet verwijderd------------------------------------------------  
 process.table = function(assetstb,klakl,assettype){
@@ -133,11 +161,12 @@ process.table = function(assetstb,klakl,assettype){
       #try(print(paste(sum(complete.cases(assetstb$ID_unique)), nrow(assetstb),class(assetstb),assettype)))
       #if(sum(class(assetstb)              ==   "character")){print(head(assetstb))}
     try({ 
-    if (sum(complete.cases(assetstb$ID_unique)) ==   0          ){}else{            # Verwijder rijen met enkel NA's
+    assetstb  <-    assetstb[!is.na(assetstb$ID_unique)]                                                 # Verwijder rijen met enkel NA's
+    if (sum(complete.cases(assetstb$ID_unique)) ==   0          ){assetstb <- assetstb[0,]}else{         # Verwijder sets met enkel NA's
       
     if (sum(assetstb$Status_ID=="Removed"|assetstb$Status_ID=="Lengthch") ==0){assetstb <- assetstb[0,]} #Indien alleen toegevoegde assets -> verwijder alle rijen
     else  {
-    #uitrekenen tijdsverschillen met storing
+    # uitrekenen tijdsverschillen met storing
     if (is.na(klakl$Datum_Verwerking_Gereed)){     #calculate differences between the changes in the NOR/BARlog and the time of start interruption, if time of processing is NA
       diff = 
         switch(assettype, 
@@ -177,25 +206,25 @@ process.table = function(assetstb,klakl,assettype){
           )
     switch(assettype, 
            moffen = {
-             tdiff       <- sapply(assetstb$DateAdded,function(x){x-assetstb$DateRemoved})  # Uitrekenen tijdsverschillen tussen tijd van verwijdering en toevoeging
+             tdiff         <- sapply(assetstb$DateAdded,function(x){x-assetstb$DateRemoved})  # Uitrekenen tijdsverschillen tussen tijd van verwijdering en toevoeging
              
-             xdiff       <- sapply(assetstb$Coo_X,function(x){x-assetstb$Coo_X})            # Uitrekenen afstandsverschillen in horizontale richting
+             xdiff         <- sapply(assetstb$Coo_X,function(x){x-assetstb$Coo_X})            # Uitrekenen afstandsverschillen in horizontale richting
              
-             ydiff       <- sapply(assetstb$Coo_Y,function(x){x-assetstb$Coo_Y})            # Uitrekenen afstandsverschillen in verticale richting
+             ydiff         <- sapply(assetstb$Coo_Y,function(x){x-assetstb$Coo_Y})            # Uitrekenen afstandsverschillen in verticale richting
              
-             sdiff       <- xdiff^2+ydiff^2                                                 # Uitrekenen afstandsverschillen totaal
+             sdiff         <- xdiff^2+ydiff^2                                                 # Uitrekenen afstandsverschillen totaal
              
-             matrix      <- matrix((sdiff < config$sdiff$max) & (tdiff >  config$vervdiff$min & tdiff < config$vervdiff$max),ncol=max(nrow(tdiff),1))
-             diag(matrix)<- FALSE                                                           #Zorg ervoor dat assets niet door zichzelf vervangen kunnen worden
+             matrixvv      <- matrix((sdiff < config$sdiff$max) & (tdiff >  config$vervdiff$min & tdiff < config$vervdiff$max),ncol=max(nrow(tdiff),1))
+             diag(matrixvv)<- FALSE                                                           #Zorg ervoor dat assets niet door zichzelf vervangen kunnen worden
              
-             in.verv <- rowSums()
+             in.verv       <- rowSums(matrixvv)
     
              assetstb             <- cbind(assetstb, in.verv)
              assetstb$koppelc     <- assetstb$in.timediff & assetstb$in.verv
            },
            kabels={
-             tdiff <- sapply(assetstb$DateAdded,function(x){x-assetstb$DateRemoved})
-             
+             tdiff   <- sapply(assetstb$DateAdded,function(x){x-assetstb$DateRemoved})
+
              xdiffvv <- sapply(assetstb$Coo_X_van, function(x){x-assetstb$Coo_X_van})
              xdiffvn <- sapply(assetstb$Coo_X_van, function(x){x-assetstb$Coo_X_naar})
              xdiffnv <- sapply(assetstb$Coo_X_naar,function(x){x-assetstb$Coo_X_van})
@@ -206,17 +235,19 @@ process.table = function(assetstb,klakl,assettype){
              ydiffnv <- sapply(assetstb$Coo_Y_naar,function(x){x-assetstb$Coo_Y_van})
              ydiffnn <- sapply(assetstb$Coo_Y_naar,function(x){x-assetstb$Coo_Y_naar})
              
-             sdiffvv <- xdiffvv^2+ydiffvv^2
-             sdiffvn <- xdiffvn^2+ydiffvn^2
-             sdiffnv <- xdiffnv^2+ydiffnv^2
-             sdiffnn <- xdiffnn^2+ydiffnn^2
+             sdiffar <- array(c(xdiffvv^2+ydiffvv^2,xdiffvn^2+ydiffvn^2,xdiffnv^2+ydiffnv^2,xdiffnn^2+ydiffnn^2),dim=c(max(1,ncol(tdiff)),max(1,nrow(tdiff)),4))
+             sdiff   <- aaply(sdiffar,1:2,min)
              
-             in.verv <-  ifelse(assetstb$Length_ch < 0 ,1,
-                         ifelse(assetstb$Length_ch >= 0,0,
-                         ifelse(assetstb$Status_ID == "Active",0,1
-                               
-                             
-                             )))
+             matrixvv      <- matrix((sdiff < config$sdiff$max) & (tdiff >  config$vervdiff$min & tdiff < config$vervdiff$max),ncol=max(nrow(tdiff),1))
+             diag(matrixvv)<- FALSE
+             
+             in.verv <-  ifelse(is.na(assetstb$Length_ch),
+                         ifelse(assetstb$Status_ID == "Active", 0,rowSums(matrixvv)),
+                         ifelse(assetstb$Length_ch < 0, 1, 0)
+                                )
+             
+             assetstb             <- cbind(assetstb, in.verv)
+             assetstb$koppelc     <- assetstb$in.timediff & assetstb$in.verv
              
            }
     )
@@ -241,3 +272,4 @@ Proxy_filter = function()
   table(table(LSkabelsklakhld$ID_KLAK_Melding))
   table(LSkabelsklakhld$Netcomponent)
 }
+
