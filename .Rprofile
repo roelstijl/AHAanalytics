@@ -14,43 +14,7 @@
   source("AHA_Data_NOR_Log.R")
   source('AHA_Data_Determine_PC.R')
   source("AHA_Data_BAR_GEOMETRY.R")
-  
-  # Install required packages if not installed already
-  if (FALSE){
-    install.packages(c("xlsxjars", "xlsx"))
-    install.packages("SSOAP", repos = "http://www.omegahat.org/R", dependencies = TRUE, type = "source")
-    install.packages("plyr")
-    install.packages("Rserve"); 
-    install.packages("tcltk2")
-    install.packages("shiny");
-    install.packages("XML");
-    install.packages("hash")
-    install.packages("data.table");
-    install.packages("pracma") 
-    install.packages("plotGoogleMaps")
-    install.packages("lubridate")
-    install.packages("PBSmapping")
-    install.packages("foreach")
-  }
-  
-  # Activate some scripts that might be usefull
-  suppressMessages(require("foreach"))
-  suppressMessages(require("parallel"))
-  suppressMessages(require("tcltk2"))
-  suppressMessages(require("xlsx"))
-  suppressMessages(require("plyr"))
-  suppressMessages(require("lubridate"))
-  suppressMessages(require("shiny"))
-  suppressMessages(require("data.table"))
-  suppressMessages(library("pracma"))
-  suppressMessages(library("hash"))
-  suppressMessages(library("plotGoogleMaps"))
-  suppressMessages(require("PBSmapping"))
-  suppressMessages(require("maptools"))
-  suppressMessages(require("stringr"))
-  suppressMessages(require("rgeos"))
-  
-  
+
   # Determine settings based on computer
   settings = data.frame(1)
   # Laptop Roel Stijl Bearingpoint
@@ -88,6 +52,13 @@
     settings[,"Input_Datasets"] = "N:/Multivariate Analyse/AHAdata/2. Input Datasets"
     settings[,"Analyse_Datasets"] = "N:/Multivariate Analyse/AHAdata/3. Analyse Datasets"}
   
+  # Citrix server liander
+  else if (Sys.info()["nodename"] =="ST0067") {
+    settings[,"Bron_Datasets"] = "N:/Multivariate Analyse/AHAdata/0. Ongebruikte en brondata"
+    settings[,"Ruwe_Datasets"] = "N:/Multivariate Analyse/AHAdata/1. Ruwe Datasets"
+    settings[,"Input_Datasets"] = "N:/Multivariate Analyse/AHAdata/2. Input Datasets"
+    settings[,"Analyse_Datasets"] = "N:/Multivariate Analyse/AHAdata/3. Analyse Datasets"}
+  
   # Christopher
   else if (Sys.info()["nodename"] =="NLAMS4044343A") {
     settings[,"Bron_Datasets"] = paste0(substr(getwd(),1,nchar(getwd())-13), "/AHAdata/0. Ongebruikte en brondata")
@@ -98,14 +69,31 @@
   
   # Laptop Pieter Stel en overig
   else{
-    settings[,"Bron_Datasets"] = paste0(substr(getwd(),1,nchar(getwd())-13), "/AHAdata/0. Ongebruikte en brondata")
-    settings[,"Ruwe_Datasets"] = paste0(substr(getwd(),1,nchar(getwd())-13), "/AHAdata/1. Ruwe Datasets")
-    settings[,"Input_Datasets"] = paste0(substr(getwd(),1,nchar(getwd())-13),"/AHAdata/2. Input Datasets")
-    settings[,"Analyse_Datasets"] = paste0(substr(getwd(),1,nchar(getwd())-13),"/AHAdata/3. Analyse Datasets")
+    settings[,"Bron_Datasets"] = "N:/Multivariate Analyse/AHAdata/0. Ongebruikte en brondata"
+    settings[,"Ruwe_Datasets"] = "N:/Multivariate Analyse/AHAdata/1. Ruwe Datasets"
+    settings[,"Input_Datasets"] = "N:/Multivariate Analyse/AHAdata/2. Input Datasets"
+    settings[,"Analyse_Datasets"] = "N:/Multivariate Analyse/AHAdata/3. Analyse Datasets"}
     warning("Computer hostname unknown please check\n")
   }
   
   settings<<-settings
+
+
+# Install required packages if not installed already
+  packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","XML","hash",
+               "data.table","pracma","plotGoogleMaps","lubridate","PBSmapping")
+
+# Install if not present
+if(FALSE)  sapply(packages,function(x) install.packages(x))
+
+# Download from ZIP if not present
+if(FALSE)  sapply(packages,1,function(x) download.packages(x,paste0(settings$Ruwe_Datasets,"/0. Packages")))
+
+# Install from ZIP if not present
+if(FALSE) sapply(list.files(paste0(settings$Ruwe_Datasets,"/0. Packages"),full.names =TRUE),1,function(x) install.packages(x))
+
+# require packages
+sapply(packages,function(x) suppressMessages(require(x)))
   
   cat("Loaded settings, built by R Stijl (Bearingpoint), J Heres (Alliander)")  
 }

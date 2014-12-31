@@ -29,10 +29,10 @@ assets$kabels = Conv_voltage[assets$kabels];
 
 # Generate a file for missing PC6_naar in NOR. Has to be run once on a new load!!
 # Takes a long time to calculate ....
-if(FALSE){
+if(TRUE){
   XYinPC = AHA_Data_Determine_PC(
     assets$kabels[,c("Coo_X_naar","Coo_Y_naar","ID_unique","PC_6_van"),with=FALSE],
-    "PC_6","Coo_X_naar","Coo_Y_naar")
+    "Coo_X_naar","Coo_Y_naar","PC_6_naar")
   save(XYinPC,file=paste0(settings$Input_Datasets,"/6. NOR/XYinPC.Rda"))}
 
 # Load the PC6_Naar files for a new data
