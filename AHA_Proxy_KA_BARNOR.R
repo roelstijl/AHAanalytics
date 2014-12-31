@@ -47,8 +47,10 @@ function(method,assettypes=c("LSkabels","MSkabels","LSmoffen","MSmoffen"))
   storingen$MS$Tijdstip_begin_storing  <- as.Date(storingen$MS$Tijdstip_begin_storing) #converteren tijdstippen naar datumnotatie
   storingen$LS$Datum_Verwerking_Gereed <- as.Date(storingen$LS$Datum_Verwerking_Gereed) #converteren tijdstippen naar datumnotatie
   storingen$MS$Datum_Verwerking_Gereed <- as.Date(storingen$MS$Datum_Verwerking_Gereed) #converteren tijdstippen naar datumnotatie
+  if(names(assets$LSkabels)[1]=="ID_Hoofdleiding"){setnames(assets$LSkabels,c("ID_Verbinding","ID_Hoofdleiding"),c("ID_Hoofdleiding","ID_Verbinding"))}
   names(assets$LSkabels)[3:4]          <- c("Coo_X_van","Coo_Y_van")
   names(assets$MSkabels)[3:4]          <- c("Coo_X_van","Coo_Y_van")
+  nettopo$EAN_koppel$ID_Hoofdleiding_LS = as.character(nettopo$EAN_koppel$ID_Hoofdleiding_LS) #zorgen dat hoofdleidingen characters zijn
 
 # Set keys for different methods-----------------------
   switch(method,
@@ -60,7 +62,7 @@ function(method,assettypes=c("LSkabels","MSkabels","LSmoffen","MSmoffen"))
          },
          TOPO={
            setkey(assets$LSmoffen,ID_Hoofdleiding)
-           #setkey(assets$MSmoffen,MS_Routenaam)
+           setkey(assets$MSmoffen,Routenaam_MS)
            setkey(assets$LSkabels,ID_Hoofdleiding)
            setkey(assets$MSkabels,Routenaam_MS)
          },
@@ -87,12 +89,16 @@ for(voltage in c("LS","MS")){
       klak          <- klaktabel[ID_KLAK_Melding==klaknr]
       klakmeldingen <- storingen$KLAKMELDERS[as.list(klak$ID_Groep)]
       #switch functie invoegen voor overige methodes
-      assetsltb     <- Proxy_PC_6(klak,klakmeldingen,voltage,assets,assetsltb) 
+      switch(method,
+             PC   = {assetsltb     <- Proxy_PC_6(klak,klakmeldingen,voltage,assets,assetsltb)},
+             TOPO = {assetsltb     <- Proxy_TOPO(klak,klakmeldingen,voltage,assets,assetsltb,nettopo)}
+        )
+       
       counter       <- counter + 1; setTxtProgressBar(pb, counter/nrow(klaktabel),title=titlepb)
      }
   develop$storingen[voltage] <<- counter
   } 
-  filename=paste0(settings$Analyse_Datasets,"/assetslPC",gsub(":",".",paste0(Sys.time())),".Rda")  # definiëren file van weg te schrijven assets
+  filename=paste0(settings$Analyse_Datasets,"/assetsl",method,gsub(":",".",paste0(Sys.time())),".Rda")  # definiëren file van weg te schrijven assets
   save(assetsltb,file=filename)
   close(pb);
 }
@@ -119,7 +125,7 @@ Proxy_PC_6 = function(klakl,klakmelders,voltage,assets,assetsl)
   assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = assets$MSkabels[PClijst] # Zoeken op Postcode 4
   assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels")  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
   
-  assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = assets$MSmoffen[klakl$PClijst] # Zoeken op postcode 4
+  assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = assets$MSmoffen[PClijst] # Zoeken op postcode 4
   assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen")  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
   }) 
   
@@ -129,25 +135,37 @@ Proxy_PC_6 = function(klakl,klakmelders,voltage,assets,assetsl)
 }
 
 # Hoofdleidingen proxy -------------------------------------
-Proxy_HLD = function(klakl,klakmelders,voltage,assets,assetsl)
+Proxy_TOPO = function(klakl,klakmelders,voltage,assets,assetsl,nettopo)
 {
+  # Vind HLD bij klakmelders
   # Kies de assets die voldoen aan de PC6
   # teruggeven koppeltabel
   switch(voltage,
          LS={
-           assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[klakl$PC_6]                                              # Zoeken op Postcode 6
+           PCs        = c(klakl$PC_6,klakmelders$PC_6)
+           Huisnrs    = c(klakl$Huisnr,klakmelders$Huisnr)
+           HLDs       = nettopo$EAN_koppel$ID_Hoofdleiding_LS[which((nettopo$EAN_koppel$Huisnr %in% Huisnrs)  &  (nettopo$EAN_koppel$PC_6  %in% PCs))]
+           HLDs       = list(unique(HLDs))
+
+           assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[HLDs]                                              # Zoeken op Postcode 6
            assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels")  # Aanroepen functie om tijdsverschillen e.d. te berekenen
            
-           assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[klakl$PC_6]                                              # Zoeken op Postcode 6
+           assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[HLDs]                                              # Zoeken op Postcode 6
            assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen")  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
          },
          MS={
-           assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = assets$MSkabels[klakl$PC_4] # Zoeken op Postcode 4
-           assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels")  # Aanroepen functie om tijdsverschillen e.d. te berekenen
+           PCs        = c(klakl$PC_6,klakmelders$PC_6)
+           Huisnrs    = c(klakl$Huisnr,klakmelders$Huisnr)
+           Routes     = nettopo$EAN_koppel$Routenaam_MS[which((nettopo$EAN_koppel$Huisnr %in% Huisnrs)  &  (nettopo$EAN_koppel$PC_6  %in% PCs))]
+           Routes     = list(unique(Routes))
            
-           assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = assets$MSmoffen[klakl$PC_4] # Zoeken op postcode 4
-           assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen")  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
-         }) 
+           assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = assets$MSkabels[Routes]                                              # Zoeken op Postcode 6
+           assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels")  # Aanroepen functie om tijdsverschillen e.d. te berekenen
+           
+           assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = assets$MSmoffen[Routes]                                              # Zoeken op Postcode 6
+           assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen")  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
+           
+             }) 
   
   
   
@@ -157,12 +175,12 @@ Proxy_HLD = function(klakl,klakmelders,voltage,assets,assetsl)
 # Uitrekenen tijdsverschillen, wel of niet verwijderd------------------------------------------------  
 process.table = function(assetstb,klakl,assettype){
       #bugfixing regels:
-      #try(print(paste(klakl$ID_KLAK_Melding,length(assetstb),nrow(assetstb),class(assetstb),assettype)))
+      try(print(paste(klakl$ID_KLAK_Melding,length(assetstb),nrow(assetstb),class(assetstb),assettype)))
       #try(print(paste(sum(complete.cases(assetstb$ID_unique)), nrow(assetstb),class(assetstb),assettype)))
-      #if(sum(class(assetstb)              ==   "character")){print(head(assetstb))}
+    if(length(assetstb)              ==   0){print(head(assetstb))}else{
     try({ 
     assetstb  <-    assetstb[!is.na(assetstb$ID_unique)]                                                 # Verwijder rijen met enkel NA's
-    if (sum(complete.cases(assetstb$ID_unique)) ==   0          ){assetstb <- assetstb[0,]}else{         # Verwijder sets met enkel NA's
+    if (sum(complete.cases(assetstb$ID_unique)) ==   0   ){assetstb <- assetstb[0,]}else{         # Verwijder sets met enkel NA's
       
     if (sum(assetstb$Status_ID=="Removed"|assetstb$Status_ID=="Lengthch") ==0){assetstb <- assetstb[0,]} #Indien alleen toegevoegde assets -> verwijder alle rijen
     else  {
@@ -251,7 +269,7 @@ process.table = function(assetstb,klakl,assettype){
              
            }
     )
-    }}},silent=F)
+    }}},silent=F)}
     
    
     return(assetstb)
@@ -273,3 +291,5 @@ Proxy_filter = function()
   table(LSkabelsklakhld$Netcomponent)
 }
 
+storingen$MS["3590992"]
+assets$MSmoffen["8085"]
