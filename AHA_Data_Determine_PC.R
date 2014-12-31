@@ -1,61 +1,68 @@
-AHA_Data_Determine_PC=function(datatable,x="Coo_X",y="Coo_Y",PC="PC_6"){
+AHA_Data_Determine_PC=function(datatableinit="global",x="Coo_X",y="Coo_Y",PC="PC_6",extrainfo=FALSE){
+# Function calculated the postal codes for regions that lack this (i.e BAR and NOR sets)
+#
 # Prepare Polygons -----------------------
-  cat("Preparing Polygons for comparison to PC_6 regions\n");tic()
-  polyset = switch(polygon,
-     PC_6 = {load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_6_Spatial.Rda")); pc6},
-     PC_4 = readShapePoly(paste0(settings$Ruwe_Datasets,"/10. BAG/PC4.shp")))
-   proj4string(polyset) <- CRS("+init=epsg:28992")
-   polyset$PC_4=as.integer(substring(polyset$POSTCODE,1,4))
-   
-# # Prepare datapoints --------------------------
-if (FALSE)
-  
-  cat("Preparing dataset\n")
-  datatable=assets$kabels[,c("Coo_X_naar","Coo_Y_naar","ID_unique","PC_6_van"),with=FALSE]
-  datatable[,PC_4:= as.integer(substring(datatable[[PC]],1,4))]
-  setkey(datatable,PC_4)
-  datatable = datatable[as.logical(!is.na(datatable[,x,with=FALSE])),]  
-  datatable = datatable[as.logical(!is.na(datatable[,"PC_4",with=FALSE])),]
-  datatable = datatable[!duplicated(datatable,by=c(x,y,PC))]
-  datatable[[PC]] = as.character(NA)
+if(class (datatableinit)!="character")
+{datatable = datatableinit; rm("datatableinit")}
 
-# Compare datapoints in polygons ----------------------
-{  cat("Processing XY inside PC\n")
-  postcodes = unique(datatable$PC_4)
-  pb <- txtProgressBar(min = 0, max = length(postcodes), initial = 0,style = 3)
-  for (n in 1:length(postcodes))
-  {    
-    coordinatenset = datatable[PC_4==postcodes[n]]
-    coordinates(coordinatenset) = coordinatenset[,c(x,y),with=FALSE]
-    proj4string(coordinatenset) <- CRS("+init=epsg:28992")
-    try(datatable[PC_4 == postcodes[n],PC_6:=over(coordinatenset,polyset[polyset$PC_4 %in% postcodes[n],])$POSTCODE])
-    setTxtProgressBar(pb, n)
-  }
-  }
+pb <<- tkProgressBar (title = paste0("AHA_Data_Determine_PC, ",as.character(Sys.time())), label = "Preparing Polygons for comparison to pc6 regions", min = 0, max = 10000, initial = 0, width = 450);
+load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_6_Spatial.Rda"))
+load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial.Rda"))
+pc6$PC_4=substring(pc6$POSTCODE,1,4)
+pc6$POSTCODE=as.character(pc6$POSTCODE)
 
-datatable = datatable[!is.na(datatable[[x]])]
-coordinates(datatable) = datatable[!is.na(datatable[[x]]),c(x,y),with=FALSE]
-proj4string(datatable) <- CRS("+init=epsg:28992")
-datatable[,PC_6:=gIntersects(coordinatenset, polyset$POSTCODE)]
-a=gIntersects(datatable, polyset);toc()
-toc();
-  return(datatable)
+proj4string(pc6) <- CRS("+init=epsg:28992")
+proj4string(pc4) <- CRS("+init=epsg:28992")
+
+# First check in what PC 4 region the points are------------------
+setTkProgressBar (pb, 500,label = "Check what PC4 the points are in"); 
+datatable = datatable[(!is.na(datatable[,x,with=FALSE]))[,1],]
+co = data.table(as.character(1:nrow(datatable)))
+datatable[,V1:=co$V1]
+
+# Set the coordinates
+coordinates(co) = datatable[,c(x,y),with=FALSE]
+proj4string(co) <- CRS("+init=epsg:28992")
+
+# Extract PC4
+ret = data.table(co %over% pc4)
+co$PC_4 = as.character(ret$PC4CODE)
+datatable[,PC_4 := as.character(ret$PC4CODE)]
+
+if(extrainfo){
+datatable[,Woonplaats := as.character(ret$PC4NAAM)]
+datatable[,Gemeente   := as.character(ret$GEMNAAM)]
+datatable[,GemeenteCode   := as.character(ret$GEMCODE)]
 }
 
-# par(mfrow=c(1, 1))
-# 
-# polyset$PC_5=(substring(polyset$POSTCODE,1,5))
-# p=(polyset[polyset$PC_4=="1011","PC_5"])
-# spplot(p)
-# 
-# gIntersects(coordinatenset)
-# spplot(p)
-# rgeos::plot(gSimplify(p,tol=1));
-# title("tol: 10")
-# rgeos::plot(gSimplify(p,tol=5));
-# title("tol: 20")
-# rgeos::plot(gSimplify(p,tol=20));
-# 
-# object.size(gSimplify(p,tol=1));
-# object.size(gSimplify(p,tol=10));
-# object.size(gSimplify(p,tol=20));
+# Next repeat proces with the PC 6 regions-----------------
+postcodes = sort(unique(datatable[datatable$PC_4 %in% pc6$PC_4,PC_4]))
+co        = co[!is.na(co$PC_4)&datatable$PC_4 %in% pc6$PC_4,]
+
+# The magic function, wont work with alply :-(
+ret = data.table(matrix(as.numeric(NA),nrow(co),8))
+setnames(ret,c(colnames(pc6@data)))
+ret[,OBJECTID:=as.integer(OBJECTID)]
+ret[,POSTCODE:=as.character(POSTCODE)]
+ret[,PC_4:=as.character(PC_4)]
+ret[,V1:=co$V1]
+
+for (pc in postcodes)
+{
+  setTkProgressBar (pb, as.integer(pc),label = paste0("Calculating pc4: ",pc)); 
+  set(ret,which(co$PC_4==pc),1:8,co[co$PC_4==pc,] %over% pc6[pc6$PC_4 == pc,])
+}
+
+# Stitch it all together
+setTkProgressBar (pb, 9900,label = paste0("Stitching results together"));
+setkey(ret,V1); setkey(datatable,V1)
+datatable = ret[,list(POSTCODE,V1)][datatable]
+datatable[,V1:=NULL]
+setnames(datatable,"POSTCODE",PC)
+
+# Done -------------------
+setTkProgressBar (pb,10000, label = "Done"); 
+
+if(class(datatable)!="character")
+  {return(datatable)}
+}

@@ -29,8 +29,8 @@ processXY("MH_NRG_LS_MOFFEN","position",atype="moffen")
 # Add the XY coordinates in a spatial file
 processXY("MH_NRG_LS_KABELS","polygons",atype="kabels")
 processXY("MH_NRG_MS_KABELS","polygons",atype="kabels")
-processXY("MH_NRG_MS_MOFFEN","polygons",atype="moffen") # Add version for points
-processXY("MH_NRG_LS_MOFFEN","polygons",atype="moffen")
+processXY("MH_NRG_MS_MOFFEN","points",atype="moffen")
+processXY("MH_NRG_LS_MOFFEN","points",atype="moffen")
 
 # Add the PC_6 locations of the assets
 processPC6("MH_NRG_LS_KABELS","van_naar")
@@ -59,7 +59,7 @@ AHA_Data_NOR_Log_Postprocessing()
 }
 
 processXY = function(file,mode,atype){
-  cat("Loading file");tic();
+  cat("Loading file\n");tic();
   load(paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,".Rda"));toc();
   cat(paste0("Starting ", mode," file: ",file, "\n"))
   
@@ -70,14 +70,17 @@ processXY = function(file,mode,atype){
                  MH_NRG_LS_MOFFEN= "Lokatie")
   setnames(mindataset,veld,"veld")
   
-  if (mode == "polygons")
-  {mindataset = SpatialPolygonsDataFrame(AHA_Data_BAR_GEOMETRY(mindataset$veld,mode,atype),data=mindataset[,veld:=NULL])}
-  else
-  {mindataset = cbind(mindataset,AHA_Data_BAR_GEOMETRY(mindataset$veld,mode,atype))}
-  
+  mindataset = switch (mode,
+          polygons= SpatialPolygonsDataFrame(AHA_Data_BAR_GEOMETRY(mindataset$veld,mode,atype),data=mindataset[,veld:=NULL]),
+          points  = AHA_Data_BAR_GEOMETRY(mindataset$veld,mode,atype,mindataset),
+          cbind(mindataset,AHA_Data_BAR_GEOMETRY(mindataset$veld,mode,atype)))
   try(mindataset[,veld:=NULL]) 
+  
   cat("saving\n")
-  save(mindataset,file=paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_", mode,".Rda"))
+  if (mode == "polygons" | mode == "points"){
+  save(mindataset,file=paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_Geospatial.Rda"))}
+  else{
+  save(mindataset,file=paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_XY.Rda"))}
 }
 
 
@@ -88,12 +91,17 @@ processPC6 = function(file,mode){
   
   switch (mode,
         van_naar= {
-                load(paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_beginend.Rda"));
-                mindataset = AHA_Data_Determine_PC(mindataset,polygon="PC_6",x="Coo_X_naar",y="Coo_X_naar",PC="PC_6_naar")
-                mindataset = AHA_Data_Determine_PC(mindataset,polygon="PC_6",x="Coo_X_van",y="Coo_Y_van",PC="PC_6_naar")
+                load(paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_XY.Rda"));
+                datatable <<-mindataset; rm("mindataset")
+                cat("Coordinates naar\n")
+                AHA_Data_Determine_PC(x="Coo_X_naar",y="Coo_Y_naar",PC="PC_6_naar")
+                cat("Coordinates van\n")
+                AHA_Data_Determine_PC(x="Coo_X_van",y="Coo_Y_van",PC="PC_6_van",extrainfo=TRUE)
         },        
-        punt= {load(paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_position.Rda"));
-               mindataset=AHA_Data_Determine_PC(mindataset,polygon="PC_6",x="Coo_X",y="Coo_Y")}
+        punt= {load(paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_XY.Rda"));
+               datatable <<-mindataset; rm("mindataset")
+               AHA_Data_Determine_PC(extrainfo=TRUE)}
 )
+  mindataset = datatable; rm("datatable",envir=.GlobalEnv)
   save(mindataset,file=paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_XY_PC6.Rda"))
 }

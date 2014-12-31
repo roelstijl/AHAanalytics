@@ -1,47 +1,50 @@
-AHA_Data_NOR_Log = function(NORtable, source="file")
-  # Used to derive the monthly change version of the NOR using first month as a basis
-  # Source can be backup or file
-{
-  # Load functions and settings ----------------------------------------
-  #   source = "file"
-  #   NORtable = "ELCVERBINDINGSDELEN"
-  datafolder    = paste0(settings$Ruwe_Datasets,"/6. NOR");
-  outputfolder  = paste0(settings$Input_Datasets,"/6. NOR");
-  firstfile = 1
+AHA_Data_NOR_Log = function(NORtable, source="file",backups=TRUE){
+# Used to derive the monthly change version of the NOR using first month as a basis
+# Source can be backup or file, backups will be created every 6 months unless backup=FALSE
+#
+# Load functions and settings ----------------------------------------
+#   source = "file"
+#   NORtable = "ELCVERBINDINGSDELEN"
+datafolder    = paste0(settings$Ruwe_Datasets,"/6. NOR");
+outputfolder  = paste0(settings$Input_Datasets,"/6. NOR");
+firstfile = 1
   
-  par(mfrow=c(1,1))
-  files = list.files(pattern=paste0(NORtable,".*\\.Rda"), path=datafolder,full.names=TRUE)
-  filesshort = list.files(pattern=paste0(NORtable,".*\\.Rda"), path=datafolder)
-  files=files[!grepl("masterdataset_backup",filesshort)]
-  filesshort=filesshort[!grepl("masterdataset_backup",filesshort)]
+# File settings ----------------------------------------------------------------
+par(mfrow=c(1,1))
+files = list.files(pattern=paste0(NORtable,".*\\.Rda"), path=datafolder,full.names=TRUE)
+filesshort = list.files(pattern=paste0(NORtable,".*\\.Rda"), path=datafolder)
+files=files[!grepl("masterdataset_backup",filesshort)]
+filesshort=filesshort[!grepl("masterdataset_backup",filesshort)]
+
+pb = tkProgressBar(title = "AHA_Data_NOR_Log start", label = "Start", min = 0, max = length(filesshort)*3-1, initial = 0, width = 450); pc=0;
+
+# Select which collumns to compare
+comparecols = switch (NORtable,ELCVERBINDINGSKNOOPPUNTEN=c("ID_unique","ID_NAN","Bronsysteem","Spanningsniveau", "Soort",  "Constructie",	"Isolatiemedium",	"Fabrikant"),
+                      ELCVERBINDINGSDELEN=c("ID_unique","Lengte","Bronsysteem","ID_NAN","Status","Geleidermateriaal","Spanningsniveau","Diameter","Netverbinding"),
+                      ELCVERBINDINGEN=c("ID_unique","Beheerder","Lengte", "Bronsysteem",	"SpanningsNiveau",	"Soort",	"Soortnet"),
+                      cat("Please add headers to compute\n\n"))
+# Plot to check for anomolies in file sizes
+plot(file.info(files)$size)
   
-  pb = tkProgressBar(title = "AHA_Data_NOR_Log start", label = "Start", min = 0, max = length(filesshort)*3-1, initial = 0, width = 450); pc=0;
-  
-  # Select which collumns to compare
-  comparecols = switch (NORtable,ELCVERBINDINGSKNOOPPUNTEN=c("ID_unique","ID_NAN","Bronsysteem","Spanningsniveau", "Soort",  "Constructie",	"Isolatiemedium",	"Fabrikant"),
-                        ELCVERBINDINGSDELEN=c("ID_unique","Lengte","Bronsysteem","ID_NAN","Status","Geleidermateriaal","Spanningsniveau","Diameter","Netverbinding"),
-                        ELCVERBINDINGEN=c("ID_unique","Beheerder","Lengte", "Bronsysteem",	"SpanningsNiveau",	"Soort",	"Soortnet"),
-                        cat("Please add headers to compute\n\n"))
-  plot(file.info(files)$size)
-  
-  if (source == "backup") {
-    backups = list.files(pattern=paste0("masterdataset_backup",".*\\.Rda"), path=paste0(outputfolder,"/backup"),full.names=TRUE);
-    print(backups)
-    filenumber <- readline(prompt="Select a backup file: ")
-    load(paste0(backups[as.numeric(filenumber)]))
-    print(filesshort)
-    firstfile <- readline(prompt= "Continue from what file?: "); firstfile = as.numeric(firstfile)-1
-  };
-  
+# Load from backup functions --------------------------------------------
+if (source == "backup") {
+  backups = list.files(pattern=paste0("masterdataset_backup",".*\\.Rda"), path=paste0(outputfolder,"/backup"),full.names=TRUE);
+  print(backups)
+  filenumber <- readline(prompt="Select a backup file: ")
+  load(paste0(backups[as.numeric(filenumber)]))
+  print(filesshort)
+  firstfile <- readline(prompt= "Continue from what file?: "); firstfile = as.numeric(firstfile)-1
+};
+
+# Loop over the files to be imported importing them one at a time --------------------------
   for (n in firstfile:length(files))
   {
-    
-    # Load some data -------------------------------------
+    # Determine date at which the file was created
     curdate = firstFri(gsub("[^0-9]","",filesshort[n]));
-    
     setTkProgressBar(pb, pc, title = paste0("AHA_Data_NOR_Log, file: ",filesshort[n]), label = "Starting import"); 
     setTkProgressBar(pb, pc, label = "Starting import"); pc=pc+1
     
+    # Load some data 
     load(files[n]) 
     
     # Prepare the data set
@@ -76,73 +79,72 @@ AHA_Data_NOR_Log = function(NORtable, source="file")
              ELCVERBINDINGSKNOOPPUNTEN={mindataset$ID_Verbinding=as.character(NA)}
     )}
     
-    
-    # Create the master dataset from the first file ---------------------------
-    if (n<=firstfile){
-      if (source=="file"){                  
-        # Load some variables for later
-        masterdataset = mindataset
-      }
-      par(mfrow=c(2,1))  
-    }
-    # Calculate the difference between the master dataset and each file -------
-    if(n>firstfile){
-      # Convert to data table for speed
-      mindataset = mindataset[,colnames(masterdataset),with=FALSE]
-      
-      # Check which IDs have been removed
-      setTkProgressBar(pb, pc, label = "Checking Added Removed"); pc=pc+1
-      
-      Added    = !(mindataset$ID_unique %in% masterdataset$ID_unique)
-      Removed  = !(masterdataset$ID_unique %in% mindataset$ID_unique)
-      
-      # Merge the old and new IDs for comparison    
-      combinedset  = rbind(masterdataset[which(!Removed),comparecols,with=FALSE],mindataset[which(!Added),comparecols,with=FALSE])
-      differences = !(duplicated(combinedset,by=comparecols) | duplicated(combinedset,by=comparecols,fromLast=TRUE))
-      
-      
-      if (!exists("changes")){
-        changes = combinedset[differences];  
-        changes[,Date:=curdate]
-      } else {
-        temp    = combinedset[differences]
-        temp[,Date:=curdate]
-        changes = rbind(changes, temp)
-      }
-      
-      # Write the result in a changelog    
-      setTkProgressBar(pb, pc, label = "Writing added removed"); pc=pc+1
-      updatedmstr = logical(nrow(masterdataset));
-      updatedmstr[!Removed]= differences[1:sum(!Removed)];
-      updatedmind = logical(nrow(mindataset)); 
-      updatedmind[!Added]  = differences[(sum(!Removed)+1):(sum(!Removed)+sum(!Added))]
-      
-      set(masterdataset,which(updatedmstr),comparecols,mindataset[updatedmind,comparecols,with=FALSE])   
-      
-      # Apply the removed sets
-      set(masterdataset,which(Removed & is.na(masterdataset$DateRemoved)),"DateRemoved",curdate)
-      set(masterdataset,which(Removed),"Status_ID","Removed")
-      masterdataset = rbind(masterdataset,mindataset[which(Added),])
-      
-      # Save backups every 6 cycles
-      if (n%%6 == 0) {
-        cat("Saving backup\n"); 
-        setTkProgressBar(pb, pc, label = "Saving backup");
-        save(masterdataset,changes,dataclasses,file=paste0(outputfolder,"/backup/masterdataset_backup_",filesshort[n]));   
+# Create the master dataset from the first file ---------------------------
+if (n<=firstfile){
+if (source=="file"){                  
+  # Load some variables for later
+  masterdataset = mindataset}
+par(mfrow=c(2,1))  # For double plotting
+}
+# Calculate the difference between the master dataset and each file -----------
+if(n>firstfile){
+# Convert to data table for speed
+mindataset = mindataset[,colnames(masterdataset),with=FALSE]
 
-        setTkProgressBar(pb, pc, label = "Plotting");
-        try({barplot(rbind(table(masterdataset$DateRemoved)[2:n],table(masterdataset$DateAdded)[2:n]),beside=TRUE);  
-        barplot(table(changes$Date))}
-        )}
-    }
-  }
-  cat("Finished!! Saving to file\n"); save(changes,file=paste0(outputfolder,"/changes_",NORtable,".Rda"))   
-  save(masterdataset,file=paste0(outputfolder,"/masterdataset_",NORtable,".Rda"))   
-  
+# Check which IDs have been removed and which added
+setTkProgressBar(pb, pc, label = "Checking Added Removed"); pc=pc+1
+
+Added    = !(mindataset$ID_unique %in% masterdataset$ID_unique)
+Removed  = !(masterdataset$ID_unique %in% mindataset$ID_unique)
+
+# Merge the old and new IDs for comparison    
+combinedset  = rbind(masterdataset[which(!Removed),comparecols,with=FALSE],mindataset[which(!Added),comparecols,with=FALSE])
+differences = !(duplicated(combinedset,by=comparecols) | duplicated(combinedset,by=comparecols,fromLast=TRUE))
+
+# Collect the changes in a data table
+if (!exists("changes")){
+  changes = combinedset[differences];  
+  changes[,Date:=curdate]
+} else {
+  temp    = combinedset[differences]
+  temp[,Date:=curdate]
+  changes = rbind(changes, temp)
 }
 
-###########################################################################################################################################
+# Write the result in a changelog    
+setTkProgressBar(pb, pc, label = "Writing added removed"); pc=pc+1
+updatedmstr = logical(nrow(masterdataset));
+updatedmstr[!Removed]= differences[1:sum(!Removed)];
+updatedmind = logical(nrow(mindataset)); 
+updatedmind[!Added]  = differences[(sum(!Removed)+1):(sum(!Removed)+sum(!Added))]
 
+set(masterdataset,which(updatedmstr),comparecols,mindataset[updatedmind,comparecols,with=FALSE])   
+
+# Apply the removed sets
+set(masterdataset,which(Removed & is.na(masterdataset$DateRemoved)),"DateRemoved",curdate)
+set(masterdataset,which(Removed),"Status_ID","Removed")
+masterdataset = rbind(masterdataset,mindataset[which(Added),])
+
+# Save backups every 6 cycles if on
+if (n%%6 == 0 & backups) {
+  cat("Saving backup\n"); 
+  setTkProgressBar(pb, pc, label = "Saving backup");
+  save(masterdataset,changes,dataclasses,file=paste0(outputfolder,"/backup/masterdataset_backup_",filesshort[n]));   
+
+  setTkProgressBar(pb, pc, label = "Plotting");
+  try({barplot(rbind(table(masterdataset$DateRemoved)[2:n],table(masterdataset$DateAdded)[2:n]),beside=TRUE);  
+  barplot(table(changes$Date))}
+  )}
+}
+}
+
+# Save to file ----------------------------------
+cat("Finished!! Saving to file\n"); 
+save(changes,file=paste0(outputfolder,"/changes_",NORtable,".Rda"))   
+save(masterdataset,file=paste0(outputfolder,"/masterdataset_",NORtable,".Rda"))   
+}
+
+# Fixes wrongly imported number if needed ---------------------
 fixnumber = function(x) {
   val= strsplit(x,",")[[1]];
   
@@ -165,6 +167,7 @@ fixnumber = function(x) {
 
 invwhich = function(indices, totlength) is.element(seq_len(totlength), indices)
 
+# Determine first sunday following first friday for nor creation date -------------------------------
 firstFri = function(initialdate)
 {
   #   Aproximate date of NOR generation, first friday + 2 days
