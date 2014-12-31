@@ -1,9 +1,8 @@
 AHA_Data_BAR_Log_Postprocessing  = function()
   {
 # Load and prepare some data --------------------------------------------------
-  
-assets = list(); changes = list();
-Conv_voltage = setkey(unique(data.table(read.xlsx(paste0(settings$Ruwe_Datasets,"/6. NOR/Conversion_of_voltages.xlsx"),1))),Spanningsniveau)  
+assets = list(); 
+changes = list();
   
 # Hoofdleidingen ------------------------------
 cat("Processing HLD data\n")

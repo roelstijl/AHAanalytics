@@ -92,11 +92,16 @@ processPC6 = function(file,mode){
   switch (mode,
         van_naar= {
                 load(paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_XY.Rda"));
-                mindataset = AHA_Data_Determine_PC(mindataset,x="Coo_X_naar",y="Coo_X_naar",PC="PC_6_naar")
-                mindataset = AHA_Data_Determine_PC(mindataset,x="Coo_X_van",y="Coo_Y_van",PC="PC_6_van")
+                datatable <<-mindataset; rm("mindataset")
+                cat("Coordinates naar\n")
+                AHA_Data_Determine_PC(x="Coo_X_naar",y="Coo_Y_naar",PC="PC_6_naar")
+                cat("Coordinates van\n")
+                AHA_Data_Determine_PC(x="Coo_X_van",y="Coo_Y_van",PC="PC_6_van",extrainfo=TRUE)
         },        
         punt= {load(paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_XY.Rda"));
-               mindataset=AHA_Data_Determine_PC(mindataset)}
+               datatable <<-mindataset; rm("mindataset")
+               AHA_Data_Determine_PC(extrainfo=TRUE)}
 )
+  mindataset = datatable; rm("datatable",envir=.GlobalEnv)
   save(mindataset,file=paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_XY_PC6.Rda"))
 }
