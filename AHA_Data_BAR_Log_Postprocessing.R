@@ -3,92 +3,81 @@ AHA_Data_BAR_Log_Postprocessing  = function()
 # Load and prepare some data --------------------------------------------------
 assets = list(); 
 changes = list();
-  
-# Hoofdleidingen ------------------------------
-cat("Processing HLD data\n")
-load(paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_MS_HLD.Rda"))
-assets$MSHLD    = unique(mindataset)
-
-load(paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_LS_HLD.Rda"))
-assets$LSHLD = unique(mindataset)
+pb = tkProgressBar(title = paste0("AHA_Data_BAR_Log_Postprocessing, ",as.character(Sys.time())), label = "Start", min = 0, max = 7, initial = 0, width = 450);
 
 # Kabels --------------------------------------
-cat("Processing HLD data\n")
-load(paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_MS_KABELS.Rda"))
-assets$MSkabels = unique(mindataset)
-rbind(assets$MSkabels,AHA_Data_BAR_GEOMETRY(assets$MSkabels$Ligging,"beginend"))
-assets$MSkabels[,Ligging:=NULL]
+setTkProgressBar(pb, 1,label = "Processing MS kabel data"); 
+load(paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_MS_KABELS_XY_PC6.Rda"))
+assets$MSkabels = (Calc_Dates(mindataset))
+try(setnames(assets$MSkabels,c("Invoeringsdatum","Hoofdleiding","ID_Hoofdleiding"),c("Datum_Invoering","ID_Hoofdleiding","ID_HLD_MS")))
 
-# load(paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_LS_KABELS.Rda"))
-# assets$LSkabels = mindataset
-# rbind(assets$LSkabels,AHA_Data_BAR_GEOMETRY(assets$LSkabels$Ligging,"beginend"))
-# assets$LSkabels[,Ligging:=NULL]
+setTkProgressBar(pb, 2,label = "Processing LS kabel data");
+load(paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_LS_KABELS_XY_PC6.Rda"))
+try(setnames(mindataset,c("Datum_begin","Datum_eind"),c("Datum_Begin","Datum_Eind")))
+assets$LSkabels = Calc_Dates(mindataset)
 
 # Moffen------------------------------ 
-load(paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_LS_MOFFEN.Rda"))
-assets$LSmoffen = unique(mindataset)
-rbind(assets$LSmoffen,AHA_Data_BAR_GEOMETRY(assets$LSmoffen$Ligging,"position"))
+setTkProgressBar(pb, 3,label = "Processing MS moffen data")
+load(paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_LS_MOFFEN_XY_PC6.Rda"))
+try(setnames(mindataset,"Datum_End","Datum_Eind"))
+assets$LSmoffen = (Calc_Dates(mindataset,"Moffen"))
 
-load(paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_MS_MOFFEN.Rda"))
-assets$MSmoffen = unique(mindataset)
-rbind(assets$MSmoffen,AHA_Data_BAR_GEOMETRY(assets$MSmoffen$Ligging,"position"))
+setTkProgressBar(pb, 4,label = "Processing LS moffen data")
+load(paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_MS_MOFFEN_XY_PC6.Rda"))
+try(setnames(mindataset,c("Datum_begin","Datum_eind"),c("Datum_Begin","Datum_Eind")))
+assets$MSmoffen = (Calc_Dates(mindataset,"Moffen"))
 
 # hoofdleidingen koppel ----------------------
-  cat("Loading verbindingen\n"); tic()
-  load(paste0(settings$Input_Datasets,"/6. NOR/masterdataset_ELCVERBINDINGEN.Rda"))
-  verbindingen = unique(setorder(masterdataset, "DateAdded"),by=c("ID_Verbinding","Beheerder"))
-  
-# kabels ---------------
-  # Add the correct voltage levels
-  toc(); cat("Loading verbindingsdelen\n"); tic()
-  load(paste0(settings$Input_Datasets,"/6. NOR/masterdataset_ELCVERBINDINGSDELEN.Rda"))
-  toc(); cat("Beginning calculations\n"); tic()
-  assets$kabels = masterdataset; rm("masterdataset")
-  assets$kabels = merge(assets$kabels,Conv_voltage,by="Spanningsniveau",all.x=TRUE); 
-  
-  # Correct for missing PC6 naar
-  XYinPC = AHA_Data_Determine_PC(assets$kabels[,c("Coo_X_naar","Coo_Y_naar","ID_unique"),with=FALSE],"PC_6","Coo_X_naar","Coo_Y_naar")
-  save("XYinPC",file="XYinPC.Rda");
-  assets$kabels[,PC_6_naar:=XYinPC$POSTCODE]; 
-  remove("XYinPC")
-  
-  # Add the length changes
-  setorder(changes,"Date","ID_unique");  i= 2*(1:(nrow(changes)/2)); 
-  lengthch = data.table(changes$Lengte[i-1]-changes$Lengte[i]); 
-  setnames(lengthch,"V1","Length_ch")
-  changes = changes[i-1][lengthch$Length_ch!=0,c("ID_unique","Date"),with=FALSE];
-  lengthch = merge(cbind(changes,lengthch[lengthch$Length_ch!=0]),assets$kabels,by="ID_unique",all.x=TRUE);
-  remove("changes");
-  setnames(lengthch,"Date","Date_Length_ch")
-  lengthch$Status_ID = "Length changed"
-  assets$kabels$Date_Length_ch=NA
-  assets$kabels$Length_ch=NA
-  assets$kabels = rbind(assets$kabels,lengthch); remove("lengthch");
-  
-  # Add the HLD
-  assets$kabels = merge(assets$kabels,verbindingen[,c("ID_Verbinding","Beheerder","ID_Hoofdleiding"),with=FALSE],all.x=TRUE,by=c("ID_Verbinding","Beheerder"))
-  toc()
-  save(assets,file=paste0(settings$Input_Datasets,"/Asset_Data_NOR_assets_",Sys.Date(),".Rda"))
-  
-# assets$moffen --------------------------
-  cat("Loading assets$moffen\n"); tic()
-  
-  load(paste0(settings$Input_Datasets,"/6. NOR/masterdataset_ELCVERBINDINGSKNOOPPUNTEN.Rda"))
-  toc(); cat("Beginning calculations\n"); tic()
-  assets$moffen = masterdataset; rm("masterdataset")
-  
-  missing       = is.na(assets$moffen$ID_Verbinding)
-  setnames(assets$kabels,c("Coo_X_naar","Coo_Y_naar"),c("Coo_X","Coo_Y"))
-  assets$moffen = rbind(
-    merge(assets$moffen[missing ],unique(assets$kabels[,c("Coo_X","Coo_Y","ID_Hoofdleiding"),with=FALSE]),by=c("Coo_X","Coo_Y"),all.x=TRUE),
-    merge(assets$moffen[!missing],unique(verbindingen[,c("ID_Verbinding","Beheerder","ID_Hoofdleiding"),with=FALSE]),all.x=TRUE,by=c("ID_Verbinding","Beheerder")))
-  assets$moffen = merge(assets$moffen ,Conv_voltage,by="Spanningsniveau",all.x=TRUE)
-  
-  rm("missing")  
+setTkProgressBar(pb, 5,label = "Processing MS routenamen data")
+load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/MS_hoofdleidingen.Rda"))
+try(setnames(mindataset,c("Nummer","Routenaam"),c("ID_Hoofdleiding","Routenaam_MS")))
+assets$MSHLDROUTE    = (mindataset)
+
+setkey(assets$MSkabels,ID_Hoofdleiding)
+setkey(assets$MSHLDROUTE,ID_Hoofdleiding)
+assets$MSkabels = unique(assets$MSHLDROUTE[,list(Routenaam_MS,ID_Hoofdleiding)])[assets$MSkabels]
   
 # Seperate the data based on the asset and voltage --------------------------------------------------
   toc(); cat("Saving to file\n"); tic()
-  
-  save(assets,file=paste0(settings$Input_Datasets,"/Asset_Data_NOR_assets_",Sys.Date(),".Rda"))
-  toc()
+  setTkProgressBar(pb, 6,label = "Saving to file")
+  save(assets,file=paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_BAR_assets.Rda"))
+  all_ID_NAN = laply(assets,function(x) try(unique(x$ID_NAN)))
+  save(all_ID_NAN,file=paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_BAR_all_ID_NAN.Rda"))
+  setTkProgressBar(pb, 7,label = "Done!")
+
 }
+
+# Function used to calculate the Assets added removed and length changed-------------------------
+Calc_Dates = function(mindataset,assettype="kabels")
+{# correct date format
+    l_ply(list("Datum_Begin","Datum_Eind","Datum_Wijziging"),
+        function(x) {tic();
+                     eval(parse(text=paste0("mindataset[,",x,":=",
+              switch (lapply(mindataset, class)[x][[1]][1],character ="dmy", Date      ="", POSIXct   = "as.Date")
+              ,"(",x,")]")))
+              toc()})
+  
+  # Added
+setkey(mindataset,ID_NAN)
+mindataset[,DateAdded:=min(Datum_Begin),by=ID_NAN]
+mindataset[,Status_R:="Active"]
+
+# Length changed
+if (assettype == "kabels")
+{
+  setkey(mindataset,ID_NAN,Datum_Wijziging)
+  setorder(mindataset,ID_NAN,Datum_Wijziging)
+  mindataset[,Lengte:= sqrt(abs(Coo_X_van-Coo_X_naar)^2+abs(Coo_Y_van-Coo_Y_naar)^2)]
+  lch = c(0,mindataset[2:nrow(mindataset),Lengte] - mindataset[1:(nrow(mindataset)-1),Lengte])
+  logi = duplicated(mindataset,by="ID_NAN")
+  mindataset[logi,Length_ch:=lch[logi]]
+  mindataset[Length_ch!=0,DateLength_ch:=(Datum_Wijziging)]
+  mindataset[!is.na(DateLength_ch),Status_R:="Length_changed"]}
+
+# Removed
+
+mindataset[,DateRemoved:=(max(Datum_Eind)),by=ID_NAN]
+mindataset[DateRemoved>"2090-01-01",DateRemoved:=NA]
+mindataset[!is.na(DateRemoved),Status_R:="Removed"]
+
+return(mindataset)}

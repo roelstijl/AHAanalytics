@@ -2,11 +2,14 @@ AHA_Proxy_Validation =function()
 {
 # Load some files ----------------------------
 load(paste0(settings$Ruwe_Datasets,"/23. Validatie_data/Koppeling KLAK-NRG Dick Grollers..Rda"))
-ValidatieSet = mindataset[,Regio := "Amsterdam"]
+ValidatieSet = mindataset[,Regio := "Zuid-Oost"]
 load(paste0(settings$Ruwe_Datasets,"/23. Validatie_data/Koppeling KLAK-NRG Robert Aikema..Rda"))
-ValidatieSet = rbind(ValidatieSet, mindataset[,Regio := "Zuid-Oost"])
+ValidatieSet = rbind(ValidatieSet, mindataset[,Regio := "Amsterdam"])
+try(setnames(ValidatieSet,"ID_KLAK","ID_KLAK_Melding"))
+ValidatieSet[,ID_Asset:=NULL]; 
 ValidatieSet = ValidatieSet[!is.na(ValidatieSet$ID_KLAK_Melding)]
 ValidatieSet$ID_KLAK_Melding = as.character(ValidatieSet$ID_KLAK_Melding)
+save(ValidatieSet,file=paste0(settings$Input_Datasets,"/23. Validatie_data/Validatie koppelingen.Rda"))
 
 load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_assets.Rda"))
 assets$moffen=unique(assets$moffen,by="ID_NAN")

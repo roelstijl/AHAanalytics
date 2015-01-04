@@ -28,12 +28,15 @@ plot(file.info(files)$size)
   
 # Load from backup functions --------------------------------------------
 if (source == "backup") {
-  backups = list.files(pattern=paste0("masterdataset_backup",".*\\.Rda"), path=paste0(outputfolder,"/backup"),full.names=TRUE);
-  print(backups)
-  filenumber <- readline(prompt="Select a backup file: ")
-  load(paste0(backups[as.numeric(filenumber)]))
-  print(filesshort)
-  firstfile <- readline(prompt= "Continue from what file?: "); firstfile = as.numeric(firstfile)-1
+#   backups = list.files(pattern=paste0("masterdataset_backup",".*\\.Rda"), path=paste0(outputfolder,"/backup"),full.names=TRUE);
+#   print(backups)
+#   filenumber <- readline(prompt="Select a backup file: ")
+  bfile = file.choose()  
+  print(filesshort)  
+  firstfile <- readline(prompt= "Continue from what file?: "); 
+  firstfile = as.numeric(firstfile)
+  load(bfile)
+  
 };
 
 # Loop over the files to be imported importing them one at a time --------------------------

@@ -35,7 +35,7 @@ AHA_Data_Import= function(folder="automatic",dataname,headername,mode="save",ove
   dir.create(paste0(settings$Ruwe_Datasets,"/",setfolder), showWarnings = FALSE)
   
   shinyfolder   = "x. Shiny"
-  pb = tkProgressBar (title = "Import", label = "Starting...", min = 0, max = length(datafiles)*3-1, initial = 0, width = 450); pc=0;
+  pb = tkProgressBar (title = "Import", label = "Starting...", min = 0, max = length(datafiles)*3, initial = 0, width = 450); pc=0;
   
   # Import data and rename cols
   for (filenumber in 1:length(datafiles))
@@ -60,6 +60,8 @@ AHA_Data_Import= function(folder="automatic",dataname,headername,mode="save",ove
                           tsv = {switch(override,
                                         no=data.frame(fread(sourcefile,header=TRUE,sep="\t",colClasses=colclass)),
                                         yes=data.frame(read.csv(sourcefile,sep="\t",colClasses=colclass)))},
+                          
+                          ldr = {data.frame(importldr(sourcefile,colclass))},
                           
                           ssv = {switch(override,
                                         no=data.frame(fread(sourcefile,header=TRUE,sep=";",colClasses=colclass)),
@@ -99,6 +101,7 @@ AHA_Data_Import= function(folder="automatic",dataname,headername,mode="save",ove
     for(i in header[header[,5]=="date",1])    {mindataset[,i] = dmy(mindataset[,i])} #Timezone note taken into account for perforamnce
     for(i in header[header[,5]=="dateymd",1]) {mindataset[,i] = ymd(mindataset[,i])} #Timezone note taken into account for perforamnce
     for(i in header[header[,5]=="datetime",1]){mindataset[,i] = dmy_hms(mindataset[,i])}
+    for(i in header[header[,5]=="datetimeYDM",1]){mindataset[,i] = ymd_hms(mindataset[,i])}
     for(i in header[header[,5]=="datetimeM",1]){mindataset[,i] = dmy_hm(mindataset[,i])}
     for(i in header[header[,5]=="integer",1]) {mindataset[,i] = as.integer(mindataset[,i])}
     
@@ -133,6 +136,7 @@ else if(mode=="load") {
   # Save to file
   savefile = paste0(settings$Ruwe_Datasets, "/", setfolder,"/",curdataname,".Rda")
   save(mindataset,dataclasses,file=savefile)
+  setTkProgressBar (pb, pc, title = paste0("AHA_Data_Import,file: ",datafiles[filenumber]), label = "Done!");
   
 }else if(mode=="header"){
   cat("Saved header file to xlsx\n")
@@ -142,7 +146,7 @@ else if(mode=="load") {
 }
 }
 
-cNA = function(dataset)
+cNA = function(sourcefile,dataset)
 {
   par(mfrow=c(1, 1), mar=c(2, 15, 0, 2))
   barplot(t(cbind(sapply(dataset,function(x) sum(is.na(x))),
@@ -153,3 +157,12 @@ row.sample <- function(dta, rep = 20) {
   dta <- as.data.frame(dta) # for single variables
   dta[sample(1:nrow(dta), rep, replace=FALSE), ] 
 } 
+
+importldr = function(sourcefile,colclass){ 
+  a = readLines(sourcefile)
+  b = paste(a, collapse = "")
+  c = gsub("\\{EOL\\}","\n",b)
+  d = fread(c,header=TRUE,colClasses=colclass)
+}
+  
+  

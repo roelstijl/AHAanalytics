@@ -1,10 +1,7 @@
-AHA_Data_Determine_PC=function(datatableinit="global",x="Coo_X",y="Coo_Y",PC="PC_6",extrainfo=FALSE){
+AHA_Data_Determine_PC=function(datatable,x="Coo_X",y="Coo_Y",PC="PC_6",extrainfo=FALSE){
 # Function calculated the postal codes for regions that lack this (i.e BAR and NOR sets)
 #
 # Prepare Polygons -----------------------
-if(class (datatableinit)!="character")
-{datatable = datatableinit; rm("datatableinit")}
-
 pb <<- tkProgressBar (title = paste0("AHA_Data_Determine_PC, ",as.character(Sys.time())), label = "Preparing Polygons for comparison to pc6 regions", min = 0, max = 10000, initial = 0, width = 450);
 load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_6_Spatial.Rda"))
 load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial.Rda"))
@@ -63,6 +60,5 @@ setnames(datatable,"POSTCODE",PC)
 # Done -------------------
 setTkProgressBar (pb,10000, label = "Done"); 
 
-if(class(datatable)!="character")
-  {return(datatable)}
+return(datatable)
 }

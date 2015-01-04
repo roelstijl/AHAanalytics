@@ -37,25 +37,26 @@ processPC6("MH_NRG_LS_KABELS","van_naar")
 processPC6("MH_NRG_MS_KABELS","van_naar")
 processPC6("MH_NRG_MS_MOFFEN","punt")
 processPC6("MH_NRG_LS_MOFFEN","punt")
+
+# Add the dates etc
+AHA_Data_BAR_Log_Postprocessing()
   
 # NOR processing ------------------
-  folder="NOR"
-  setfolder     = list.files(settings$Bron_Datasets,pattern=folder)[1]; 
-  dir.create(paste0(settings$Ruwe_Datasets,"/",setfolder), showWarnings = FALSE)
-  a=list.files(paste0(settings$Bron_Datasets,"/",setfolder),pattern = "ELCVERBINDINGEN.csv")
+mode = "save"
+AHA_Data_Import("NOR",paste0("ELCVERBINDINGEN_"),"ELCVERBINDINGEN",mode)
+AHA_Data_Import("NOR",paste0("ELCVERBINDINGSDELEN_"),"ELCVERBINDINGSDELEN",mode)
+AHA_Data_Import("NOR",paste0("ELCVERBINDINGSKNOOPPUNTEN_"),"ELCVERBINDINGSKNOOPPUNTEN",mode)
 
-  for (n in substr(a[1:95],17,20)) {
-   AHA_Data_Import("NOR",paste0("ELCVERBINDINGEN_",n),"ELCVERBINDINGEN",mode)
-   AHA_Data_Import("NOR",paste0("ELCVERBINDINGSDELEN_",n),"ELCVERBINDINGSDELEN",mode)
-   AHA_Data_Import("NOR",paste0("ELCVERBINDINGSKNOOPPUNTEN_",n),"ELCVERBINDINGSKNOOPPUNTEN",mode)
-  }
-
+# Convert into log
 AHA_Data_NOR_Log("ELCVERBINDINGEN")
 AHA_Data_NOR_Log("ELCVERBINDINGSDELEN")
 AHA_Data_NOR_Log("ELCVERBINDINGSKNOOPPUNTEN")
 
 # Post processing
 AHA_Data_NOR_Log_Postprocessing()
+
+# Preprocessing for Proxi
+AHA_Data_KA_Proxy_Preprocessing_NOR()
 }
 
 processXY = function(file,mode,atype){
@@ -92,16 +93,16 @@ processPC6 = function(file,mode){
   switch (mode,
         van_naar= {
                 load(paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_XY.Rda"));
-                datatable <<-mindataset; rm("mindataset")
                 cat("Coordinates naar\n")
-                AHA_Data_Determine_PC(x="Coo_X_naar",y="Coo_Y_naar",PC="PC_6_naar")
+                datatable = AHA_Data_Determine_PC(mindataset[,list(Coo_X_van,Coo_Y_van,Coo_Y_naar,Coo_X_naar)],
+                                                  x="Coo_X_naar",y="Coo_Y_naar",PC="PC_6_naar")
                 cat("Coordinates van\n")
-                AHA_Data_Determine_PC(x="Coo_X_van",y="Coo_Y_van",PC="PC_6_van",extrainfo=TRUE)
-        },        
-        punt= {load(paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_XY.Rda"));
-               datatable <<-mindataset; rm("mindataset")
-               AHA_Data_Determine_PC(extrainfo=TRUE)}
+                datatable = AHA_Data_Determine_PC(datatable,x="Coo_X_van",y="Coo_Y_van",PC="PC_6_van",extrainfo=TRUE)  
+                mindataset = cbind(mindataset,datatable[,list(PC_6_naar,PC_6_van,Woonplaats,Gemeente,GemeenteCode)])},
+        
+        punt= {
+               load(paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_XY.Rda"));
+               mindataset=AHA_Data_Determine_PC(mindataset,extrainfo=TRUE)}
 )
-  mindataset = datatable; rm("datatable",envir=.GlobalEnv)
   save(mindataset,file=paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_XY_PC6.Rda"))
 }

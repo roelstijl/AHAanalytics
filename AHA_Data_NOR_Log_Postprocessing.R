@@ -3,9 +3,8 @@ AHA_Data_NOR_Log_Postprocessing  = function(){
   
 assets = list(); changes = list();
 Conv_voltage = setkey(unique(data.table(read.xlsx(paste0(settings$Ruwe_Datasets,"/6. NOR/Conversion_of_voltages.xlsx"),1))),Spanningsniveau)  
-pb = tkProgressBar(title = paste0("AHA_Data_NOR_Log_Postprocessing, ",as.character(Sys.time())), label = "Start", min = 0, max = 5, initial = 0, width = 450);
+pb = tkProgressBar(title = paste0("AHA_Data_NOR_Log_Postprocessing, ",as.character(Sys.time())), label = "Start", min = 0, max = 10, initial = 0, width = 450);
 paste0("\nStarted at: ",as.character(Sys.time()),"\n" )
-
 
 # hoofdleidingen koppel ----------------------
 setTkProgressBar(pb, 1,label = "Loading verbindingen"); 
@@ -19,7 +18,7 @@ verbindingen = unique(setorder(verbindingen, "DateAdded"),by=c("ID_Verbinding","
 setTkProgressBar(pb, 2,label = "Loading verbindingsdelen"); 
 
 load(paste0(settings$Input_Datasets,"/6. NOR/masterdataset_ELCVERBINDINGSDELEN.Rda"))
-assets$kabels = masterdataset; rm("masterdataset")
+assets$kabels = masterdataset; rm("masterdataset");
 
 # Add the correct voltage levels
 setTkProgressBar(pb, 3,label = "Beginning calculations"); 
@@ -29,9 +28,9 @@ assets$kabels = Conv_voltage[assets$kabels];
 
 # Generate a file for missing PC6_naar in NOR. Has to be run once on a new load!!
 # Takes a long time to calculate ....
-if(TRUE){
+if(FALSE){
   XYinPC = AHA_Data_Determine_PC(
-    assets$kabels[,c("Coo_X_naar","Coo_Y_naar","ID_unique","PC_6_van"),with=FALSE],
+    assets$kabels[,c("Coo_X_naar","Coo_Y_naar","ID_unique"),with=FALSE],
     "Coo_X_naar","Coo_Y_naar","PC_6_naar")
   save(XYinPC,file=paste0(settings$Input_Datasets,"/6. NOR/XYinPC.Rda"))}
 
@@ -40,7 +39,6 @@ setTkProgressBar(pb, 4,label = "Loading XY in PC");
 
 load(paste0(settings$Input_Datasets,"/6. NOR/XYinPC.Rda")); 
 try(assets$kabels[,PC_6_naar:=NULL])
-setnames(XYinPC,"PC_6","PC_6_naar"); 
 setkeyv(XYinPC,c("Coo_X_naar","Coo_Y_naar")); 
 setkeyv(assets$kabels,c("Coo_X_naar","Coo_Y_naar"))
 assets$kabels= merge(assets$kabels,unique(XYinPC)[,list(PC_6_naar,Coo_X_naar,Coo_Y_naar)])
@@ -106,8 +104,10 @@ setTkProgressBar(pb, 8,label = "Add the HLD and MSRings to moffen ");
 
 setnames(assets$kabels,c("Coo_X_naar","Coo_Y_naar"),c("Coo_X","Coo_Y"))
 b = Add_HLD(c("Coo_X","Coo_Y"), assets$moffen, assets$kabels,"ID_Hoofdleiding")  
-setnames(assets$kabels,c("Coo_X_van","Coo_Y_van","Coo_X","Coo_Y"),c("Coo_X","Coo_Y","Coo_X_naar","Coo_Y_naar"))
+setnames(assets$kabels,c("Coo_X","Coo_Y"),c("Coo_X_naar","Coo_Y_naar"))
+setnames(assets$kabels,c("Coo_X_van","Coo_Y_van"),c("Coo_X","Coo_Y"))
 c = Add_HLD(c("Coo_X","Coo_Y"), assets$moffen, assets$kabels,"ID_Hoofdleiding")  
+setnames(assets$kabels,c("Coo_X","Coo_Y"),c("Coo_X_naar","Coo_Y_naar"))
 
 # Add to original dataset
 assets$moffen[!is.na(a$ID_Hoofdleiding),ID_Hoofdleiding:=a[!is.na(a$ID_Hoofdleiding),ID_Hoofdleiding]]
@@ -129,7 +129,10 @@ assets$moffen = Conv_voltage[assets$moffen]
 setTkProgressBar(pb, 9,label = "Saving to file"); 
 
 save(assets,file=paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_assets.Rda"))
- 
+
+all_ID_NAN = laply(assets,function(x) try(unique(x$ID_NAN)))
+save(all_ID_NAN,file=paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_all_ID_NAN.Rda"))
+
 setTkProgressBar(pb, 10,label = "Done"); 
 
 }
@@ -139,8 +142,7 @@ Add_HLD = function(usekey,asset,verbinding,Return = "ID_Hoofdleiding") {
   # Syntax of the 4th element is "col to return 1,col2,col3"
   setkeyv(verbinding,usekey)  
   setkeyv(asset,usekey)
-  try(setnames(verbinding,"Index","NOT USED"))
-  #   temp= unique(verbinding)[asset,j=list(Index,ID_Hoofdleiding)] 
+  try(verbinding[,"Index":=NULL])
   eval(parse(text=paste0("temp= unique(verbinding)[asset,j=list(Index,", Return, ")]")))
   setkey(temp,Index)
   return(temp)

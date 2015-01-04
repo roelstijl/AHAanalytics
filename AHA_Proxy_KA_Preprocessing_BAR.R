@@ -4,55 +4,60 @@ AHA_Data_KA_Proxy_Preprocessing_NOR = function(datasets=c("storingen","assets","
   # Loads several months of AHA datasets and puts this into a dataset
 
 # Settings ----------------------------------------------------------------  
+cat("Starting\n")
+pb = tkProgressBar(title = paste0("AHA_Data_KA_Proxy_Preprocessing_NOR, ",as.character(Sys.time())), label = "Start", min = 0, max = 6, initial = 0, width = 450);
+
 firstdate = as.Date("2014-01-01")
 lastdate  = as.Date("2015-01-01")
 
 # switch between datasets
+setTkProgressBar(pb, 1,label = "Loading verbindingen");
 for (m in datasets)
   {switch (m,
-          
+           
 assets = {        
 # NOR Data ----------------------------------------------------------------
-  cat("Load NOR data\n"); tic();
+   setTkProgressBar(pb, 1,label = "Load NOR data\n"); ;
   # Laad de assets en converteer de datums als deze verkeerd staan 
-   load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_assets.Rda"))
-   assets$kabels[,DateLength_ch := as.Date(assets$kabel$DateLength_ch,"1970-01-01")]
+   load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_BAR_assets.Rda"))
 
   # Laad alleen dat deel van de assets dat binnen de periode valt
-  assets$moffen = assets$moffen[(assets$moffen$DateAdded > firstdate & assets$moffen$DateAdded < lastdate)| 
-                                (assets$moffen$DateRemoved > firstdate & assets$moffen$DateRemoved < lastdate)]
-  try(setnames(assets$moffen,"PC_XY","PC_6"))
-  assets$kabels = assets$kabels[(assets$kabels$DateAdded > firstdate & assets$kabels$DateAdded < lastdate)| 
-                                (assets$kabels$DateLength_ch > firstdate & assets$kabels$DateLength_ch < lastdate)|  
-                                (assets$kabels$DateRemoved > firstdate & assets$kabels$DateRemoved < lastdate)]
-                                
-  try(setnames(assets$kabels,c("PC_XY_van","PC_XY_naar"),c("PC_6_van","PC_6_naar")))
-  try(setnames(assets$kabels,c("Coo_X","Coo_Y"),c("Coo_X_naar","Coo_Y_naar")))
-  
-  # Voeg routenamen toe aan de MS kabels
-#   load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/nettopo_MSHLD_MSRing.Rda"))
-#   setkey(nettopo_MSRing_hld,"ID_Hoofdleiding")
-#   nettopo_MSRing_hld = unique(data.table(nettopo_MSRing_hld))
-#   try(setnames(nettopo_MSRing_hld,"Routenaam","Routenaam_MS"))
-#   try(setnames(nettopo_MSRing_hld,"Nummer","ID_Hoofdleiding"))
-#   assets$kabels<-merge(assets$kabels,nettopo_MSRing_hld[,c("ID_Hoofdleiding","Routenaam_MS"),with=FALSE],all.x=TRUE)
-#   
+  assets$LSmoffen = assets$LSmoffen[(assets$LSmoffen$DateAdded > firstdate & assets$LSmoffen$DateAdded < lastdate)| 
+                                (assets$LSmoffen$DateRemoved > firstdate & assets$LSmoffen$DateRemoved < lastdate)]
+  assets$MSmoffen = assets$MSmoffen[(assets$MSmoffen$DateAdded > firstdate & assets$MSmoffen$DateAdded < lastdate)| 
+                                (assets$MSmoffen$DateRemoved > firstdate & assets$MSmoffen$DateRemoved < lastdate)]
+
+assets$Mkabels = assets$Mkabels[(assets$Mkabels$DateAdded > firstdate & assets$Mkabels$DateAdded < lastdate)| 
+                                (assets$Mkabels$DateLength_ch > firstdate & assets$Mkabels$DateLength_ch < lastdate)|  
+                                (assets$Mkabels$DateRemoved > firstdate & assets$Mkabels$DateRemoved < lastdate)]
+assets$Lkabels = assets$Lkabels[(assets$Lkabels$DateAdded > firstdate & assets$Lkabels$DateAdded < lastdate)| 
+                                (assets$Lkabels$DateLength_ch > firstdate & assets$Lkabels$DateLength_ch < lastdate)|  
+                                (assets$Lkabels$DateRemoved > firstdate & assets$Lkabels$DateRemoved < lastdate)]
+
+   
   # Bereken postcode 4
-  assets$moffen[,PC_4:=substr(assets$moffen$PC_6,1,4)]
-  assets$kabels[,PC_4_van:=substr(assets$kabels$PC_6_van,1,4)]
-  assets$kabels[,PC_4_naar:=substr(assets$kabels$PC_6_naar,1,4)]  
-  
+  assets$LSmoffen[,PC_4:=substr(assets$LSmoffen$PC_6,1,4)]
+  assets$LSkabels[,PC_4_van:=substr(assets$LSkabels$PC_6_van,1,4)]
+  assets$LSkabels[,PC_4_naar:=substr(assets$LSkabels$PC_6_naar,1,4)]  
+  assets$MSmoffen[,PC_4:=substr(assets$MSmoffen$PC_6,1,4)]
+  assets$MSkabels[,PC_4_van:=substr(assets$MSkabels$PC_6_van,1,4)]
+  assets$MSkabels[,PC_4_naar:=substr(assets$MSkabels$PC_6_naar,1,4)]  
+
   # Opsplitsen in MS en LS, zo zit het in de BARlog ook
   try(setnames(assets$kabels,"BRONTABEL","Brontabel"))
 
-  assets$LSkabels = assets$kabels[Brontabel == "ls_kabels"]
-  assets$MSkabels = assets$kabels[Brontabel == "ms_kabels"]
+#   assets$LSkabels = assets$kabels[Brontabel == "ls_kabels"]
+#   assets$MSkabels = assets$kabels[Brontabel == "ms_kabels"]
+
+# temporary FIX - needs new export!
+  assets$LSkabels = assets$kabels[Netvlak == "LS"]
+  assets$MSkabels = assets$kabels[Netvlak == "MS"]
   assets$LSmoffen = assets$moffen[Brontabel == "ls_moffen"]
   assets$MSmoffen = assets$moffen[Brontabel == "ms_moffen"]
   assets$moffen = NULL
   assets$kabels = NULL
 
-toc; cat("Save asset data\n"); tic();
+toc;  setTkProgressBar(pb, 2,label = "Save asset data\n"); ;
   save(assets,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets.Rda"))
   remove("assets")
   
@@ -61,7 +66,7 @@ nettopo = {
 # EAN-Hoofdleiding-XY-PC data ----------------
 nettopo = list();  
 
-toc(); cat("Load EAN data\n"); tic();
+;  setTkProgressBar(pb, 3,label = "Load EAN data\n"); ;
 load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/aansluitingen_stationinclbehuizing.Rda"))
 aansluitingen1 = data.table(mindataset)
 setkey(aansluitingen1,ID_EAN)
@@ -95,9 +100,9 @@ storingen = {
 # Storingsdata uit KLAK ------------------------
 storingen=list()  
 
-toc(); cat("Load KLAK data\n"); tic();
+;  setTkProgressBar(pb, 4,label = "Load KLAK data\n"); ;
 # Laad de data om adressen te koppelen
-load("C:/Datasets/AHAdata/1. Ruwe Datasets/8. CAR/CAR_2013_XY.Rda")
+load(paste0(settings$Ruwe_Datasets,"/8. CAR/CAR_2013_XY.Rda"))
 EAN_to_XY_PC6 = (mindataset[,list(PC_6,Huisnr,Coo_X,Coo_Y,ID_EAN)])
 EAN_to_XY_PC6[,PC_4:=substr(EAN_to_XY_PC6$PC_6,1,4)]
 setkey(EAN_to_XY_PC6,ID_EAN)
@@ -142,10 +147,11 @@ setkey(mindataset,ID_KLAK_Melding)
 storingen$LS=mindataset[storingen$LS]
 storingen$MS=mindataset[storingen$MS]
 
-toc; cat("Save KLAK data\n"); tic();
+toc;  setTkProgressBar(pb, 5,label = "Save KLAK data\n"); ;
 save(storingen,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"))
 
 })}
+setTkProgressBar(pb, 6,label = "Done")
 
 }
 
@@ -165,7 +171,6 @@ fixnumber = function(x) {
   else{
     a=NA
   }
-  #cat(paste0(a,", "))
   return(as.numeric(a))
 }
 
