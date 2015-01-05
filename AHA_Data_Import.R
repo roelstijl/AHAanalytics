@@ -146,7 +146,7 @@ else if(mode=="load") {
 }
 }
 
-cNA = function(sourcefile,dataset)
+cNA = function(dataset)
 {
   par(mfrow=c(1, 1), mar=c(2, 15, 0, 2))
   barplot(t(cbind(sapply(dataset,function(x) sum(is.na(x))),

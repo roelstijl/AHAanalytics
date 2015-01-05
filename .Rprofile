@@ -33,8 +33,8 @@
   # Laptop Roel Stijl Alliander
   else if (Sys.info()["nodename"] =="L-AW89JB") {
     settings[,"Bron_Datasets"] = "E:/2. Datasets/1. Alliander/AHAdata/0. Ongebruikte en brondata"
-    settings[,"Ruwe_Datasets"] = "F:/AHAdata/1. Ruwe Datasets"
-    settings[,"Input_Datasets"] = "F:/AHAdata/2. Input Datasets"
+    settings[,"Ruwe_Datasets"] = "E:/AHAdata/1. Ruwe Datasets"
+    settings[,"Input_Datasets"] = "E:/AHAdata/2. Input Datasets"
     settings[,"Analyse_Datasets"] = "E:/2. Datasets/1. Alliander/AHAdata/3. Analyse Datasets"
     settings[,"Visuals"] = "E:/2. Datasets/1. Alliander/AHAdata/5. Visuals and Tableau workbooks"
     settings[,"Results"] = "E:/2. Datasets/1. Alliander/AHAdata/6. Results"
