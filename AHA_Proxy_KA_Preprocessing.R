@@ -1,4 +1,4 @@
-AHA_Data_KA_Proxy_Preprocessing = function(datasets=c("storingen","assetsBAR","assetsNOR","nettopo","validatieset"),
+AHA_Data_KA_Proxy_Preprocessing = function(datasets=c("assetsBAR","assetsNOR","nettopo","storingen","validatieset"),
                                            firstdate="2014-01-01",lastdate="2015-01-01"){
 # Merges the Delta data into small datasets for analysis
 # Datasets selects only a certain set to process (default = all)
@@ -7,7 +7,7 @@ AHA_Data_KA_Proxy_Preprocessing = function(datasets=c("storingen","assetsBAR","a
 #
 # Settings ----------------------------------------------------------------  
 cat("Starting\n")
-pb = tkProgressBar(title = paste0("AHA_Data_KA_Proxy_Preprocessing_NOR, ",as.character(Sys.time())), label = "Start", min = 0, max = 6, initial = 0, width = 450);
+pb = tkProgressBar(title = paste0("AHA_Data_KA_Proxy_Preprocessing, ",as.character(Sys.time())), label = "Start", min = 0, max = 6, initial = 0, width = 450);
 
 firstdate = as.Date("2014-01-01")
 lastdate  = as.Date("2015-01-01")
@@ -17,50 +17,41 @@ setTkProgressBar(pb, 1,label = "Loading verbindingen");
 for (m in datasets)
   {switch (m,
    assetsBAR = {        
-     # BAR Data ----------------------------------------------------------------
-     setTkProgressBar(pb, 1,label = "Load NOR data\n"); ;
-     # Laad de assets en converteer de datums als deze verkeerd staan 
-     load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_BAR_assets.Rda"))
-     
-     # Laad alleen dat deel van de assets dat binnen de periode valt
-     assets$LSmoffen = assets$LSmoffen[(assets$LSmoffen$DateAdded > firstdate & assets$LSmoffen$DateAdded < lastdate)| 
-                                         (assets$LSmoffen$DateRemoved > firstdate & assets$LSmoffen$DateRemoved < lastdate)]
-     assets$MSmoffen = assets$MSmoffen[(assets$MSmoffen$DateAdded > firstdate & assets$MSmoffen$DateAdded < lastdate)| 
-                                         (assets$MSmoffen$DateRemoved > firstdate & assets$MSmoffen$DateRemoved < lastdate)]
-     
-     assets$Mkabels = assets$Mkabels[(assets$Mkabels$DateAdded > firstdate & assets$Mkabels$DateAdded < lastdate)| 
-                                       (assets$Mkabels$DateLength_ch > firstdate & assets$Mkabels$DateLength_ch < lastdate)|  
-                                       (assets$Mkabels$DateRemoved > firstdate & assets$Mkabels$DateRemoved < lastdate)]
-     assets$Lkabels = assets$Lkabels[(assets$Lkabels$DateAdded > firstdate & assets$Lkabels$DateAdded < lastdate)| 
-                                       (assets$Lkabels$DateLength_ch > firstdate & assets$Lkabels$DateLength_ch < lastdate)|  
-                                       (assets$Lkabels$DateRemoved > firstdate & assets$Lkabels$DateRemoved < lastdate)]
-     
-     
-     # Bereken postcode 4
-     assets$LSmoffen[,PC_4:=substr(assets$LSmoffen$PC_6,1,4)]
-     assets$LSkabels[,PC_4_van:=substr(assets$LSkabels$PC_6_van,1,4)]
-     assets$LSkabels[,PC_4_naar:=substr(assets$LSkabels$PC_6_naar,1,4)]  
-     assets$MSmoffen[,PC_4:=substr(assets$MSmoffen$PC_6,1,4)]
-     assets$MSkabels[,PC_4_van:=substr(assets$MSkabels$PC_6_van,1,4)]
-     assets$MSkabels[,PC_4_naar:=substr(assets$MSkabels$PC_6_naar,1,4)]  
-     
-     # Opsplitsen in MS en LS, zo zit het in de BARlog ook
-     try(setnames(assets$kabels,"BRONTABEL","Brontabel"))
-     
-     #   assets$LSkabels = assets$kabels[Brontabel == "ls_kabels"]
-     #   assets$MSkabels = assets$kabels[Brontabel == "ms_kabels"]
-     
-     # temporary FIX - needs new export!
-     assets$LSkabels = assets$kabels[Netvlak == "LS"]
-     assets$MSkabels = assets$kabels[Netvlak == "MS"]
-     assets$LSmoffen = assets$moffen[Brontabel == "ls_moffen"]
-     assets$MSmoffen = assets$moffen[Brontabel == "ms_moffen"]
-     assets$moffen = NULL
-     assets$kabels = NULL
-     
-     toc;  setTkProgressBar(pb, 2,label = "Save asset data\n"); ;
-     save(assets,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_BAR.Rda"))
-     remove("assets")
+# BAR Data ----------------------------------------------------------------
+setTkProgressBar(pb, 1,label = "Load BAR data\n"); ;
+# Laad de assets en converteer de datums als deze verkeerd staan 
+load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_BAR_assets.Rda"))
+
+# Laad alleen dat deel van de assets dat binnen de periode valt
+assets$LSmoffen = assets$LSmoffen[(assets$LSmoffen$DateAdded > firstdate & assets$LSmoffen$DateAdded < lastdate)| 
+                                   (assets$LSmoffen$DateRemoved > firstdate & assets$LSmoffen$DateRemoved < lastdate)]
+assets$MSmoffen = assets$MSmoffen[(assets$MSmoffen$DateAdded > firstdate & assets$MSmoffen$DateAdded < lastdate)| 
+                                   (assets$MSmoffen$DateRemoved > firstdate & assets$MSmoffen$DateRemoved < lastdate)]
+
+assets$Mkabels = assets$Mkabels[(assets$Mkabels$DateAdded > firstdate & assets$Mkabels$DateAdded < lastdate)| 
+                                 (assets$Mkabels$DateLength_ch > firstdate & assets$Mkabels$DateLength_ch < lastdate)|  
+                                 (assets$Mkabels$DateRemoved > firstdate & assets$Mkabels$DateRemoved < lastdate)]
+assets$Lkabels = assets$Lkabels[(assets$Lkabels$DateAdded > firstdate & assets$Lkabels$DateAdded < lastdate)| 
+                                 (assets$Lkabels$DateLength_ch > firstdate & assets$Lkabels$DateLength_ch < lastdate)|  
+                                 (assets$Lkabels$DateRemoved > firstdate & assets$Lkabels$DateRemoved < lastdate)]
+assets$MSmoffen = assets$MSmoffen[DateAdded>min(DateAdded)]
+assets$LSmoffen = assets$LSmoffen[DateAdded>min(DateAdded)]
+
+assets$MSkabels = assets$MSkabels[DateAdded>min(DateAdded)]
+assets$LSkabels = assets$LSkabels[DateAdded>min(DateAdded)]
+
+# Bereken postcode 4
+assets$LSmoffen[,PC_4:=substr(assets$LSmoffen$PC_6,1,4)]
+assets$LSkabels[,PC_4_van:=substr(assets$LSkabels$PC_6_van,1,4)]
+assets$LSkabels[,PC_4_naar:=substr(assets$LSkabels$PC_6_naar,1,4)]  
+assets$MSmoffen[,PC_4:=substr(assets$MSmoffen$PC_6,1,4)]
+assets$MSkabels[,PC_4_van:=substr(assets$MSkabels$PC_6_van,1,4)]
+assets$MSkabels[,PC_4_naar:=substr(assets$MSkabels$PC_6_naar,1,4)]  
+
+# Opsplitsen in MS en LS, zo zit het in de BARlog ook
+toc;  setTkProgressBar(pb, 2,label = "Save BAR asset data\n"); ;
+save(assets,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_BAR.Rda"))
+remove("assets")
      
    },          
 assetsNOR = {        
@@ -73,10 +64,13 @@ assetsNOR = {
   # Laad alleen dat deel van de assets dat binnen de periode valt
   assets$moffen = assets$moffen[(assets$moffen$DateAdded > firstdate & assets$moffen$DateAdded < lastdate)| 
                                 (assets$moffen$DateRemoved > firstdate & assets$moffen$DateRemoved < lastdate)]
+  assets$moffen = assets$moffen[DateAdded>min(DateAdded)]
+
   try(setnames(assets$moffen,"PC_XY","PC_6"))
   assets$kabels = assets$kabels[(assets$kabels$DateAdded > firstdate & assets$kabels$DateAdded < lastdate)| 
                                 (assets$kabels$DateLength_ch > firstdate & assets$kabels$DateLength_ch < lastdate)|  
                                 (assets$kabels$DateRemoved > firstdate & assets$kabels$DateRemoved < lastdate)]
+  assets$kabels = assets$kabels[DateAdded>min(DateAdded)]
                                 
   try(setnames(assets$kabels,c("PC_XY_van","PC_XY_naar"),c("PC_6_van","PC_6_naar")))
   try(setnames(assets$kabels,c("Coo_X","Coo_Y"),c("Coo_X_naar","Coo_Y_naar")))
@@ -171,15 +165,18 @@ setkey(EAN_to_XY_PC6,ID_EAN)
 load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_LS.Rda"))
 mindataset[,Datum:=as.Date(mindataset$Datum)]
 storingen$LS= mindataset[(mindataset$Datum > firstdate & mindataset$Datum < lastdate)]
+storingen$LS[,PC_6 := gsub(" ","",storingen$LS$PC_6)] 
 
 # Laad MS
 load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_MS.Rda"))
 mindataset[,Datum:=as.Date(mindataset$Datum)]
 storingen$MS= mindataset[(mindataset$Datum > firstdate & mindataset$Datum < lastdate)]
+storingen$MS[,PC_6 := gsub(" ","",storingen$MS$PC_6)] 
 
 # Laad meldingen
 load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_KOPPEL_MELDING_GROEP.Rda"))
 storingen$KLAKMelders = data.table(mindataset);
+storingen$KLAKMelders[,PC_6 := gsub(" ","",storingen$KLAKMelders$PC_6)] 
 storingen$KLAKMelders[,PC_4:=substr(storingen$KLAKMelders$PC_6,1,4)]
 load(paste0(settings$Ruwe_Datasets,"/24. Adressendichtheid/Count Adresses.Rda"))
 setkey(storingen$KLAKMelders,PC_4)

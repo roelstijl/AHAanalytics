@@ -75,10 +75,14 @@ assets$kabels[!is.na(b$ID_Hoofdleiding)&is.na(a$ID_Hoofdleiding),ID_Hoofdleiding
 assets$kabels[is.na(b$ID_Hoofdleiding)&is.na(a$ID_Hoofdleiding),ID_Hoofdleiding:=c[is.na(b$ID_Hoofdleiding)&is.na(a$ID_Hoofdleiding),ID_Hoofdleiding]]
 assets$kabels[assets$kabels$ID_Hoofdleiding=="",ID_Hoofdleiding:=NA]
 
-remove(a,b,c,verbindingen)
+setkey(verbindingen,ID_Hoofdleiding)
+setkey(assets$kabels,ID_Hoofdleiding)
+assets$kabels = unique(verbindingen[,list(ID_Hoofdleiding,MS_Route_NOR_IDTrace)])[assets$kabels]
+assets$kabels[MS_Route_NOR_IDTrace=="null",MS_Route_NOR_IDTrace:=NA]
+
+remove(a,b,c)
 
 # Add the MSRing
-
 load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/nettopo_MSHLD_MSRing.Rda"))
 try(setnames(nettopo_MSRing_hld,c("Routenaam","Nummer","NAN"),c("Routenaam_MS","ID_Hoofdleiding","ID_NAN_HLD")))
 
@@ -120,6 +124,14 @@ assets$moffen[assets$moffen$ID_Hoofdleiding=="",ID_Hoofdleiding:=NA]
 setkey(assets$moffen,ID_Hoofdleiding)
 assets$moffen = nettopo_MSRing_hld[assets$moffen]
 remove(a,b,c)
+
+# MSRing from dataset verbindingen
+setkey(verbindingen,ID_Hoofdleiding)
+setkey(assets$moffen,ID_Hoofdleiding)
+assets$moffen = unique(verbindingen[,list(ID_Hoofdleiding,MS_Route_NOR_IDTrace)])[assets$moffen]
+assets$moffen[MS_Route_NOR_IDTrace=="null",MS_Route_NOR_IDTrace:=NA]
+
+remove(a,b,c,verbindingen)
   
 # Add the spanningsniveau information
 setkey(assets$moffen,Spanningsniveau)
@@ -130,7 +142,8 @@ setTkProgressBar(pb, 9,label = "Saving to file");
 
 save(assets,file=paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_assets.Rda"))
 
-all_ID_NAN = laply(assets,function(x) try(unique(x$ID_NAN)))
+all_ID_NAN = c(unique(assets$kabels$ID_NAN),unique(assets$moffen$ID_NAN))
+
 save(all_ID_NAN,file=paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_all_ID_NAN.Rda"))
 
 setTkProgressBar(pb, 10,label = "Done"); 
@@ -142,7 +155,6 @@ Add_HLD = function(usekey,asset,verbinding,Return = "ID_Hoofdleiding") {
   # Syntax of the 4th element is "col to return 1,col2,col3"
   setkeyv(verbinding,usekey)  
   setkeyv(asset,usekey)
-  try(verbinding[,"Index":=NULL])
   eval(parse(text=paste0("temp= unique(verbinding)[asset,j=list(Index,", Return, ")]")))
   setkey(temp,Index)
   return(temp)
