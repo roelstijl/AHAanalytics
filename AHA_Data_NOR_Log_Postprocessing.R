@@ -18,7 +18,8 @@ verbindingen = unique(setorder(verbindingen, "DateAdded"),by=c("ID_Verbinding","
 setTkProgressBar(pb, 2,label = "Loading verbindingsdelen"); 
 
 load(paste0(settings$Input_Datasets,"/6. NOR/masterdataset_ELCVERBINDINGSDELEN.Rda"))
-assets$kabels = masterdataset; rm("masterdataset");
+assets$kabels = masterdataset; 
+rm("masterdataset");
 
 # Add the correct voltage levels
 setTkProgressBar(pb, 3,label = "Beginning calculations"); 
@@ -50,14 +51,20 @@ setTkProgressBar(pb, 5,label = "Loading verbindingsdelen changes");
 load(paste0(settings$Input_Datasets,"/6. NOR/changes_ELCVERBINDINGSDELEN.Rda"))
 setkey  (changes,ID_unique,Date)
 setkey  (assets$kabels,ID_unique)
-new.value= 2*(1:(nrow(changes)/2)); 
-lengthch.vec = changes$Lengte[new.value-1]-changes$Lengte[new.value]; 
-lengthch = assets$kabels[changes[new.value-1][lengthch.vec!=0,list(ID_unique,Date)][,Length_ch:=lengthch.vec[lengthch.vec!=0]]]
+setorder(changes,ID_unique,Date)
+
+lch = c(0,changes[2:nrow(changes),Lengte] - changes[1:(nrow(changes)-1),Lengte])
+logi = duplicated(changes,by="ID_NAN")
+changes[,Length_ch:=Lengte[2]-Lengte[1],by=list(ID_unique,Date)]
+changes[Length_ch!=0,DateLength_ch:=(Date)]
+changes[!is.na(DateLength_ch),ID_Status:="Length_changed"]
+
+mergeset = unique(changes[ID_Status=="Length_changed",list(ID_Status,DateLength_ch,ID_unique,Length_ch)],fromLast = TRUE)
+setkey(mergeset,ID_unique)
+setkey(assets$kabels,ID_unique)
+assets$kabels = rbind(assets$kabels,assets$kabels[mergeset[!is.na(Length_ch)]],fill=TRUE)
 
 remove("changes");
-setnames(lengthch,"Date","DateLength_ch")
-lengthch$Status_ID = "Length_changed"
-assets$kabels = rbind(assets$kabels,lengthch,fill=TRUE); remove("lengthch");
   
 # Add the HLD and MSRings to kabels ------------------------------
 setTkProgressBar(pb, 6,label = "Add the HLD and MSRings to kabels"); 
