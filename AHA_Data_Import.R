@@ -96,15 +96,15 @@ AHA_Data_Import= function(folder="automatic",dataname,headername,mode="save",ove
     header[pat>0,] = savedheader[pat[pat>0],]
     setnames(mindataset,colnames(mindataset), t(header[1]))
     
-    # Set colclasses to the desired (excel sheet)
-    for(i in header[header[,5]=="numeric",1]) {mindataset[,i] = as.numeric(mindataset[,i])}
-    for(i in header[header[,5]=="date",1])    {mindataset[,i] = dmy(mindataset[,i])} #Timezone note taken into account for perforamnce
-    for(i in header[header[,5]=="dateymd",1]) {mindataset[,i] = ymd(mindataset[,i])} #Timezone note taken into account for perforamnce
-    for(i in header[header[,5]=="datetime",1]){mindataset[,i] = dmy_hms(mindataset[,i])}
-    for(i in header[header[,5]=="datetimeYDM",1]){mindataset[,i] = ymd_hms(mindataset[,i])}
-    for(i in header[header[,5]=="datetimeM",1]){mindataset[,i] = dmy_hm(mindataset[,i])}
-    for(i in header[header[,5]=="integer",1]) {mindataset[,i] = as.integer(mindataset[,i])}
-    
+# Set colclasses to the desired (excel sheet)
+for(i in header[header[,5]=="numeric",1]) {mindataset[,i] = as.numeric(gsub(",",".",mindataset[,i]))}
+for(i in header[header[,5]=="date",1])    {mindataset[,i] = dmy(mindataset[,i])} #Timezone note taken into account for perforamnce
+for(i in header[header[,5]=="dateymd",1]) {mindataset[,i] = ymd(mindataset[,i])} #Timezone note taken into account for perforamnce
+for(i in header[header[,5]=="datetime",1]){mindataset[,i] = dmy_hms(mindataset[,i])}
+for(i in header[header[,5]=="datetimeYDM",1]){mindataset[,i] = ymd_hms(mindataset[,i])}
+for(i in header[header[,5]=="datetimeM",1]){mindataset[,i] = dmy_hm(mindataset[,i])}
+for(i in header[header[,5]=="integer",1]) {mindataset[,i] = as.integer(mindataset[,i])}
+
     
 # Choose what output to generate depending on user selection ---------------------------
 if(mode=="shiny"){

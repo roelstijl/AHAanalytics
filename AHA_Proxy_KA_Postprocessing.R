@@ -1,59 +1,186 @@
-AHA_Proxy_KA_Postprocessing = function(){
-load(file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data.Rda"))
-load(file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"))
+AHA_Proxy_KA_Postprocessing = function() 
+{
+# This function will plot the data files used in project AHA onto google maps
+# Input is a series of PC4 areas or a single PC4 area PC_4 = 6810:6823 for Arnhem
+# Method include proxy 
+# Load the required data files -------------------------------------
+load(paste0(settings$Input_Datasets,"/23. Validatie_data/Validatie koppelingen.Rda"))
+load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_BAR.Rda"))
+assets_BAR=assets
+load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_NOR.Rda"))
+assets_NOR=assets
+load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"))
+load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_6_Spatial.Rda"))
+load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial.Rda"))
 
-akvalidatie=data.table(read.xlsx(paste0(settings$Analyse_Datasets,"/1. Proxy validatie/Proxi_validatie_all.xlsx"),1))
-# akvalidatie=data.table(read.xlsx(paste0(settings$Analyse_Datasets,"/Koppeling KLAK-NRG.xlsx"),1))
-setkey(akvalidatie,ID_NAN,ID_KLAK_Melding)
+l_ply(assets_BAR[1:4],function(x) try(setnames(x,"Status_R","Status_ID")))
+rm(assets)
 
-merge(akvalidatie,assets$moffen,all.x=TRUE,by="ID_NAN")
+# Add the PC4 to PC6 set
+pc6@data$PC_4 = substr(pc6@data$POSTCODE,1,4)
 
-# Check with NOR data -----------------
-NOR = list()
-load(paste0(settings$Ruwe_Datasets,"/6. NOR/ELCVERBINDINGSKNOOPPUNTEN_1407.Rda"))
-NOR$moffen =data.table(mindataset) 
-NOR$moffen$asset = "moffen"
+# BAR
+assets_BAR$kabels = rbind(assets_BAR$LSkabels,assets_BAR$MSkabels,fill=TRUE)[,list(Status_ID,DateLength_ch,ID_NAN,Length_ch,DateRemoved,DateAdded,Coo_X_van,Coo_Y_van,PC_6_van,Coo_X_naar,Coo_Y_naar,PC_6_naar,PC_4_van,PC_4_naar)]
+setkey(assets_BAR$kabels,ID_NAN);   
+assets_BAR$kabels = assets_BAR$kabels[DateAdded>"2014-01-04"]
+assets_BAR$kabels = unique(assets_BAR$kabels)
 
-load(paste0(settings$Ruwe_Datasets,"/6. NOR/ELCVERBINDINGSDELEN_1407.Rda"))
-NOR$kabels =data.table(mindataset)
-NOR$kabels$asset = "kabels"
-setnames(NOR$kabels,c("Coo_X_van","Coo_Y_van","PC_XY_van"),c("Coo_X","Coo_Y","PC_XY"))
-rm(mindataset)
+assets_BAR$moffen = rbind(assets_BAR$LSmoffen,assets_BAR$MSmoffen,fill=TRUE)[,list(Status_ID,ID_NAN,DateRemoved,DateAdded,Coo_X,Coo_Y,PC_4,PC_6)]
+assets_BAR$moffen = assets_BAR$moffen[DateAdded>"2014-01-04"]
+assets_BAR$moffen = unique(assets_BAR$moffen)
 
-kcols = colnames(NOR$kabels) %in% colnames(NOR$moffen)
-mcols = colnames(NOR$moffen) %in% colnames(NOR$kabels)
-NOR$common =rbind(NOR$moffen[,mcols,with=FALSE],
-                  NOR$kabels[,kcols,with=FALSE]) 
-NOR$merged = (merge(akvalidatie,NOR$common ,all.x=TRUE,by="ID_NAN"))
-NOR$merged[,c("lon.asset","lat.asset")] = AHA_RDCtoGPS(NOR$merged[,c("Coo_X","Coo_Y"),with=FALSE]) 
+assets_BAR$all    = rbind(assets_BAR$moffen, assets_BAR$kabels,fill=TRUE)
+setkey(assets_BAR$all,ID_NAN);   
+assets_BAR$all    = unique(assets_BAR$all)
 
-# Check with KLAK data ----------------
-KLAK   = storingen
-LScols = colnames(KLAK$LS) %in% colnames(KLAK$MS)
-MScols = colnames(KLAK$MS) %in% colnames(KLAK$LS)
-KLAK$common = rbind(KLAK$LS[,LScols,with=FALSE],
-                    KLAK$MS[,MScols,with=FALSE])
-merged = (merge(NOR$merged,KLAK$common  ,all.x=TRUE,by="ID_KLAK_Melding"))
-merged$Coo_X.y = as.numeric(sapply(merged$Coo_X.y ,fixnumber))
-merged$Coo_Y.y = as.numeric(sapply(merged$Coo_Y.y ,fixnumber))
-merged[,c("lon.klak","lat.klak")] = AHA_RDCtoGPS(merged[,c("Coo_X.y","Coo_Y.y"),with=FALSE]) 
+# NOR
+colnames(assets_NOR$LSkabels)[4:5] = c("Coo_X_van","Coo_Y_van")
+colnames(assets_NOR$MSkabels)[4:5] = c("Coo_X_van","Coo_Y_van")
 
-# Merge with minimized dataset -------------
-merged$inNOR    = merged$ID_NAN %in% assets$moffen$ID_NAN | merged$ID_NAN %in% assets$kabels$ID_NAN
-merged$inKLAK   = merged$ID_KLAK_Melding %in% storingen$LS$ID_KLAK_Melding | merged$ID_KLAK_Melding %in% storingen$MS$ID_KLAK_Melding
+assets_NOR$kabels = rbind(assets_NOR$LSkabels,assets_NOR$MSkabels,fill=TRUE)[,list(Brontabel,Status_ID,DateLength_ch,ID_NAN,Voltage,Length_ch,DateRemoved,DateAdded,Coo_X_van,Coo_Y_van,PC_6_van,Coo_X_naar,Coo_Y_naar,PC_6_naar,PC_4_van,PC_4_naar)]
+setkey(assets_NOR$kabels,ID_NAN);   
+assets_NOR$kabels = assets_NOR$kabels[DateAdded>"2014-01-04"]
+assets_NOR$kabels = unique(assets_NOR$kabels)
 
-# Save to file -----------------
-write.xlsx(merged,file=paste0(settings$Analyse_Datasets,"/Proxy validatie.xlsx"))
+assets_NOR$moffen = rbind(assets_NOR$LSmoffen,assets_NOR$MSmoffen,fill=TRUE)[,list(Brontabel,Status_ID,ID_NAN,Voltage,DateRemoved,DateAdded,Coo_X,Coo_Y,PC_4,PC_6)]
+assets_NOR$moffen = assets_NOR$moffen[DateAdded>"2014-01-04"]
+
+assets_NOR$all    = rbind(assets_NOR$moffen, assets_NOR$kabels,fill=TRUE)
+setkey(assets_NOR$all,ID_NAN);   
+
+# KLAK
+storingen$all = rbind(storingen$LS,storingen$MS,fill=TRUE)[,list(Datum,Status,ID_KLAK_Melding,Getroffen_klanten_totaal,Duur_onderbreking,Datum_Eerste_Ontwerp,Klacht,Netcomponent,Mof,Veroorzaker,Tijdstip_definitief_einde,Coo_X,Coo_Y,PC_4,PC_6)]
+storingen$all[,Coo_X:=as.numeric(gsub(",",".",Coo_X))];storingen$all[,Coo_Y:=as.numeric(gsub(",",".",Coo_Y))];
+storingen$KLAKMelders[,Coo_X:=as.numeric(gsub(",",".",Coo_X))];storingen$KLAKMelders[,Coo_Y:=as.numeric(gsub(",",".",Coo_Y))];
+setkey(storingen$all,ID_KLAK_Melding)
+
+# Create file with found assets  -------------------------------
+ValidatieSet[,in_NORlog:=(ID_NAN %in% assets_NOR$all$ID_NAN)+0]
+ValidatieSet[,in_BARlog:=(ID_NAN %in% assets_BAR$all$ID_NAN)+0]
+ValidatieSet[,in_KLAK:=(ID_KLAK_Melding %in% storingen$all$ID_KLAK_Melding)+0]
+ValidatieSet[,in_KLAKMelders:=(ID_KLAK_Melding %in% storingen$KLAKMelders$ID_KLAK_Melding)+0]
+ValidatieSet[,in_NORlog_KLAK := (in_NORlog&in_KLAK)+0]
+ValidatieSet[,in_BARlog_KLAK := (in_BARlog&in_KLAK)+0]
+setkey(ValidatieSet,ID_KLAK_Melding)
+ValidatieSet[,KLAK_has_Coordinates := (!is.na(storingen$all[ValidatieSet]$Coo_X))+0]
+setkey(ValidatieSet,ID_NAN)
+ValidatieSet[,NORlog_has_Coordinates := (!is.na(assets_NOR$all[ValidatieSet]$Coo_X)|!is.na(assets_NOR$all[ValidatieSet]$Coo_X_van))+0]
+ValidatieSet[,BARlog_has_Coordinates := (!is.na(assets_BAR$all[ValidatieSet]$Coo_X)|!is.na(assets_BAR$all[ValidatieSet]$Coo_X_van))+0]
+ValidatieSet[,in_NORlog_and_XY:=(in_NORlog_KLAK&KLAK_has_Coordinates&NORlog_has_Coordinates)+0]
+ValidatieSet[,in_BARlog_and_XY:=(in_BARlog_KLAK&BARlog_has_Coordinates&KLAK_has_Coordinates)+0]
+
+molten = melt(ValidatieSet, id.vars = c("Regio","Datum","ID_KLAK_Melding","ID_NAN","Opmerkingen"),,)
+
+write.xlsx(molten,file=paste0(settings$Analyse_Datasets,"/2. Proxy validatie/Validatie_Meta.xlsx"),sheetName="Format Melt")
+write.xlsx(ValidatieSet,file=paste0(settings$Analyse_Datasets,"/2. Proxy validatie/Validatie_Meta.xlsx"),sheetName="Format Wide")
+
+ggplot(molten,aes(variable,fill=paste(value))) + geom_bar(colour="black") + coord_flip()
+
+# Create the maps ----------------------------
+for (ID_KLAK in ValidatieSet$ID_KLAK_Melding[ValidatieSet$inAllSystems]){
+Createmaps(assets,storingen,pc4,pc6,ID_KLAK,ValidatieSet[ID_KLAK_Melding==ID_KLAK,ID_NAN])
+}
 }
 
-fixnumber = function(x) {
-  val= strsplit(x,",")[[1]];  
-  if (suppressWarnings(!is.na(as.numeric(val[1])))){
-    len=length(val); 
-    cor=switch(nchar(val[len]),"1"=10,"2"=100,"3"=1000)
-    if(len==1) {a=val[1]    } else if(len==2) {
-      a=(as.numeric(val[1])+as.numeric(val[2])/cor)
-    } else if(len==3) {  a=(as.numeric(val[1])*1000+as.numeric(val[2])+as.numeric(val[3])/cor)
-    }  }  else{    a=NA  }
-  return(as.numeric(a))
+# Put it on a map -------------------------------------------------------
+Createmaps = function(assets,storingen,pc4,pc6,ID_KLAK_M,ID_NAN_M){
+geosets = list()
+PC_4_M=storingen$all[ID_KLAK_M == storingen$all$ID_KLAK_M,PC_4]
+
+# Kabels
+kabels =assets$kabels[!is.na(Coo_X_van) & (PC_4_van== PC_4_M |PC_4_naar== PC_4_M)]
+if(nrow(kabels)>0){
+geosets$kabels=
+  SpatialLinesDataFrame(
+    SpatialLines(
+      alply(kabels,1,
+      function(set) Lines(list(Line(t(rbind(set[,list(Coo_X_van,Coo_X_naar)],
+      set[,list(Coo_Y_van,Coo_Y_naar)],use.names=FALSE)))),set$ID_NAN)),
+    proj4string=CRS("+init=epsg:28992")), 
+  assets$kabels[!is.na(Coo_X_van) & (PC_4_van== PC_4_M |PC_4_naar== PC_4_M)],match.ID = FALSE)}
+
+# Moffen
+geosets$moffen                 = (assets$moffen[!is.na(assets$moffen$Coo_X)&PC_4 == PC_4_M])
+if(nrow(geosets$moffen )>0){
+  coordinates(geosets$moffen)    = geosets$moffen[,list(Coo_X,Coo_Y)]
+  proj4string(geosets$moffen)    = CRS("+init=epsg:28992")
 }
+
+# Storingen
+geosets$storingen              = (storingen$all[!is.na(storingen$all$Coo_X)&PC_4 == PC_4_M])
+coordinates(geosets$storingen) = geosets$storingen  [,list(Coo_X,Coo_Y)]
+proj4string(geosets$storingen) = CRS("+init=epsg:28992")
+
+# Melders
+try(if(nrow(geosets$KLAKMelders)>0){
+geosets$KLAKMelders              = (storingen$KLAKMelders[!is.na(storingen$KLAKMelders$Coo_X)& ID_KLAK_Melding ==ID_KLAK_M])
+coordinates(geosets$KLAKMelders) = geosets$KLAKMelders  [,list(Coo_X,Coo_Y)]
+proj4string(geosets$KLAKMelders) = CRS("+init=epsg:28992")
+})
+
+map=pGMwrapper(pc6[pc6$PC_4==PC_4_M,],"Postcode 6 gebieden","POSTCODE",heat.colors(nrow(pc6[pc6$PC_4==PC_4_M,])),1,FALSE,options=",fillOpacity=0.2")
+
+map=pGMwrapper(geosets$storingen[geosets$storingen$ID_KLAK_Melding!=ID_KLAK_M,],"Omringende Storingen","ID_KLAK_Melding","Red",3,FALSE,map)
+map=pGMwrapper(geosets$moffen[geosets$moffen$ID_NAN!=ID_NAN_M,],"Omringende Moffen","Status_ID",c("#7ACC29","#FF9933"),3,FALSE,map)
+map=pGMwrapper(geosets$kabels[geosets$kabels$ID_NAN!=ID_NAN_M,],"Omringende Kabels","Status_ID",c("#7ACC29","#FF6699","#FF9933"),3,FALSE,map)
+
+map=pGMwrapper(geosets$kabels[geosets$kabels$ID_NAN==ID_NAN_M,],"Betrokken Kabels","Status_ID","Red",5,FALSE,map)
+map=pGMwrapper(geosets$moffen[geosets$moffen$ID_NAN==ID_NAN_M,],"Betrokken Moffen","Status_ID","Red",5,FALSE,map)
+
+map=pGMwrapper(geosets$storingen[geosets$storingen$ID_KLAK_Melding==ID_KLAK_M,],"Betrokken Storing","ID_KLAK_Melding","Red",3,FALSE,map)
+map=pGMwrapper(geosets$KLAKMelders[geosets$KLAKMelders$ID_KLAK_Melding==ID_KLAK_M,],"Betrokken Melders","ID_KLAK_Melding","Orange",3,TRUE,map,
+               file=paste0(settings$Analyse_Datasets,"/3. Geo data/Google_maps_KLAK_",ID_KLAK_M,".html"))
+
+}
+
+pGMwrapper = function (data,layername,group,colors,width,last=FALSE,previousmap=0,filename="",options=""){
+# Simple wrapper to make plotting more convenient
+  options(warn=-1)
+  txt1 = ifelse(!last,",add=TRUE","")
+  txt2 = ifelse(class(previousmap)=="list",",previousMap=previousmap","")
+  txt3 = ifelse(filename!="",",file = filename","")
+  ROADMAP = "ROADMAP"
+  
+  if(!isempty(data))
+  {eval(parse(text=
+               paste0("map=plotGoogleMaps(data,legend=FALSE,layerName=layername,zcol=group,colPalette = colors,strokeWeight=width,mapTypeId=ROADMAP",
+               txt1,txt2,txt3,options
+              ,")")))
+  return(map)}
+  else if(class(previousmap)=="list"){
+    return(previousmap)
+  }
+  else{
+    cat("Input is empty!\n")
+  }
+  options(warn=0)
+}
+
+# Redundant ----------------------------------
+NORanalytics = function()
+  
+{
+  load("C:/Datasets/AHAdata/2. Input Datasets/6. NOR/masterdataset_ELCVERBINDINGSDELEN.Rda")
+  a = ValidatieSet$ID_NAN %in% masterdataset$ID_NAN
+  barplot(table(a))  
+  
+  setkey(masterdataset,ID_NAN)
+  setkey(ValidatieSet,ID_NAN)
+  ValidatieSet=unique(ValidatieSet)
+  masterdataset = unique(masterdataset)
+  masterdataset[masterdataset$ID_NAN %in% ValidatieSet$ID_NAN]
+  
+  
+  load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_nettopo.Rda"))
+  
+  load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_6_Spatial.Rda"))
+  load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial.Rda"))
+  
+  load("C:/Datasets/AHAdata/2. Input Datasets/2. All Assets/Asset_Data_NOR_assets.Rda")
+  setkey(assets$kabels,ID_NAN)
+  setkey(assets$moffen,ID_NAN)
+  assets$kabels=unique(assets$kabels)
+  assets$kabels=unique(assets$kabels)
+  set=rbind(assets$kabels[ValidatieSet][!is.na(Bronsysteem)],assets$moffen[ValidatieSet][!is.na(Bronsysteem)],fill=TRUE)
+}
+

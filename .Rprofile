@@ -9,7 +9,6 @@
   options(stringsAsFactors = FALSE)
   source("AHA_Visual_RDS_to_GPS.R")
   source("AHA_Data_Import.R")
-  source("AHA_Proxi_KA_Postprocessing.R")
   source("AHA_Data_Batch_Processing.R")
   source("AHA_Data_NOR_Log.R")
   source('AHA_Data_Determine_PC.R')
