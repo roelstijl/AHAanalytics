@@ -118,7 +118,7 @@ b = Add_HLD(c("Coo_X","Coo_Y"), assets$moffen, assets$kabels,"ID_Hoofdleiding")
 setnames(assets$kabels,c("Coo_X","Coo_Y"),c("Coo_X_naar","Coo_Y_naar"))
 setnames(assets$kabels,c("Coo_X_van","Coo_Y_van"),c("Coo_X","Coo_Y"))
 c = Add_HLD(c("Coo_X","Coo_Y"), assets$moffen, assets$kabels,"ID_Hoofdleiding")  
-setnames(assets$kabels,c("Coo_X","Coo_Y"),c("Coo_X_naar","Coo_Y_naar"))
+setnames(assets$kabels,c("Coo_X","Coo_Y"),c("Coo_X_van","Coo_Y_van"))
 
 # Add to original dataset
 assets$moffen[!is.na(a$ID_Hoofdleiding),ID_Hoofdleiding:=a[!is.na(a$ID_Hoofdleiding),ID_Hoofdleiding]]
