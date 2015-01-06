@@ -41,7 +41,7 @@ assets$LSmoffen = assets$LSmoffen[LSm]
 MSk=(assets$MSkabels$DateAdded > firstdate & assets$MSkabels$DateAdded < lastdate)| 
                   (assets$MSkabels$DateLength_ch > firstdate & assets$MSkabels$DateLength_ch < lastdate)|  
                   (assets$MSkabels$DateRemoved > firstdate & assets$MSkabels$DateRemoved < lastdate)
-MSk[is.na(MSk)]=FALSE
+MSk[is.na(MSk)] = FALSE
 assets$MSkabels = assets$MSkabels[MSk]
   
 LSk=(assets$LSkabels$DateAdded > firstdate & assets$LSkabels$DateAdded < lastdate)| 
@@ -49,14 +49,6 @@ LSk=(assets$LSkabels$DateAdded > firstdate & assets$LSkabels$DateAdded < lastdat
   (assets$LSkabels$DateRemoved > firstdate & assets$LSkabels$DateRemoved < lastdate)
 LSk[is.na(LSk)]=FALSE
 assets$LSkabels = assets$LSkabels[LSk]
-
-# Bereken postcode 4
-assets$LSmoffen[,PC_4:=substr(assets$LSmoffen$PC_6,1,4)]
-assets$LSkabels[,PC_4_van:=substr(assets$LSkabels$PC_6_van,1,4)]
-assets$LSkabels[,PC_4_naar:=substr(assets$LSkabels$PC_6_naar,1,4)]  
-assets$MSmoffen[,PC_4:=substr(assets$MSmoffen$PC_6,1,4)]
-assets$MSkabels[,PC_4_van:=substr(assets$MSkabels$PC_6_van,1,4)]
-assets$MSkabels[,PC_4_naar:=substr(assets$MSkabels$PC_6_naar,1,4)]  
 
 # Opsplitsen in MS en LS, zo zit het in de BARlog ook
 setTkProgressBar(pb, 2,label = "Save BAR asset data\n"); ;

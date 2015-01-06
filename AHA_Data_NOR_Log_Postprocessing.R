@@ -18,7 +18,8 @@ verbindingen = unique(setorder(verbindingen, "DateAdded"),by=c("ID_Verbinding","
 setTkProgressBar(pb, 2,label = "Loading verbindingsdelen"); 
 
 load(paste0(settings$Input_Datasets,"/6. NOR/masterdataset_ELCVERBINDINGSDELEN.Rda"))
-assets$kabels = masterdataset; rm("masterdataset");
+assets$kabels = masterdataset; 
+rm("masterdataset");
 
 # Add the correct voltage levels
 setTkProgressBar(pb, 3,label = "Beginning calculations"); 
@@ -50,14 +51,20 @@ setTkProgressBar(pb, 5,label = "Loading verbindingsdelen changes");
 load(paste0(settings$Input_Datasets,"/6. NOR/changes_ELCVERBINDINGSDELEN.Rda"))
 setkey  (changes,ID_unique,Date)
 setkey  (assets$kabels,ID_unique)
-new.value= 2*(1:(nrow(changes)/2)); 
-lengthch.vec = changes$Lengte[new.value-1]-changes$Lengte[new.value]; 
-lengthch = assets$kabels[changes[new.value-1][lengthch.vec!=0,list(ID_unique,Date)][,Length_ch:=lengthch.vec[lengthch.vec!=0]]]
+setorder(changes,ID_unique,Date)
+
+changes[,Length_ch:=Lengte[2]-Lengte[1],by=list(ID_unique,Date)]
+changes[Length_ch!=0,DateLength_ch:=Date]
+changes[!is.na(DateLength_ch),ID_Status:="Length_changed"]
+
+mergeset = unique(changes[ID_Status=="Length_changed",list(DateLength_ch,ID_Status,ID_unique,Length_ch)],fromLast = TRUE)
+setkey(mergeset,ID_unique)
+setkey(assets$kabels,ID_unique)
+mergeset=mergeset[!is.na(Length_ch)]
+mergeset[,DateRemoved:=NA]
+assets$kabels = rbind(assets$kabels,assets$kabels[mergeset],fill=TRUE)
 
 remove("changes");
-setnames(lengthch,"Date","DateLength_ch")
-lengthch$Status_ID = "Length_changed"
-assets$kabels = rbind(assets$kabels,lengthch,fill=TRUE); remove("lengthch");
   
 # Add the HLD and MSRings to kabels ------------------------------
 setTkProgressBar(pb, 6,label = "Add the HLD and MSRings to kabels"); 
@@ -111,7 +118,7 @@ b = Add_HLD(c("Coo_X","Coo_Y"), assets$moffen, assets$kabels,"ID_Hoofdleiding")
 setnames(assets$kabels,c("Coo_X","Coo_Y"),c("Coo_X_naar","Coo_Y_naar"))
 setnames(assets$kabels,c("Coo_X_van","Coo_Y_van"),c("Coo_X","Coo_Y"))
 c = Add_HLD(c("Coo_X","Coo_Y"), assets$moffen, assets$kabels,"ID_Hoofdleiding")  
-setnames(assets$kabels,c("Coo_X","Coo_Y"),c("Coo_X_naar","Coo_Y_naar"))
+setnames(assets$kabels,c("Coo_X","Coo_Y"),c("Coo_X_van","Coo_Y_van"))
 
 # Add to original dataset
 assets$moffen[!is.na(a$ID_Hoofdleiding),ID_Hoofdleiding:=a[!is.na(a$ID_Hoofdleiding),ID_Hoofdleiding]]
