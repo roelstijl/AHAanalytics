@@ -165,4 +165,23 @@ importldr = function(sourcefile,colclass){
   d = fread(c,header=TRUE,colClasses=colclass)
 }
   
-  
+loadObj <- function(file.name){
+  library(foreach)
+  filesize <- file.info(file.name)$size
+  chunksize <- ceiling(filesize / 100)
+  pb <- txtProgressBar(min = 0, max = 100, style=3)
+  infile <- file(file.name, "rb")
+  data <- foreach(it = icount(100), .combine = c) %do% {
+    setTxtProgressBar(pb, it)
+    readBin(infile, "raw", chunksize)
+  }
+  close(infile)
+  close(pb)
+  return(unserialize(data))
+}
+
+saveObj <- function(object, file.name){
+  outfile <- file(file.name, "wb")
+  serialize(object, outfile)
+  close(outfile)
+}

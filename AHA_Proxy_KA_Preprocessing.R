@@ -154,31 +154,44 @@ storingen = {
  storingen$LS[,PC_6 := gsub(" ","",storingen$LS$PC_6)] 
  
  # Laad MS
- load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_MS.Rda"))
- mindataset[,Datum:=as.Date(mindataset$Datum)]
- storingen$MS= mindataset[(mindataset$Datum > firstdate & mindataset$Datum < lastdate)]
- storingen$MS[,PC_6 := gsub(" ","",storingen$MS$PC_6)] 
- 
- # Laad meldingen
- load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_KOPPEL_MELDING_GROEP.Rda"))
- storingen$KLAKMelders = data.table(mindataset);
- storingen$KLAKMelders[,PC_6 := gsub(" ","",storingen$KLAKMelders$PC_6)] 
- storingen$KLAKMelders[,PC_4:=substr(storingen$KLAKMelders$PC_6,1,4)]
- load(paste0(settings$Ruwe_Datasets,"/24. Adressendichtheid/Count Adresses.Rda"))
- setkey(storingen$KLAKMelders,PC_4)
- setkey(mindataset,PC_4)
- storingen$KLAKMelders  = mindataset[storingen$KLAKMelders ]
- 
- load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial.Rda"))
- pc4area = data.table(pc4@data[,c("PC4CODE","SHAPE_AREA")]);
- setnames(pc4area,c("PC_4","Oppervlakte_PC4"))
- setkey(pc4area,PC_4);
- storingen$KLAKMelders  = pc4area[storingen$KLAKMelders ]
- setkey(storingen$KLAKMelders ,PC_6,Huisnr); 
- setkey(EAN_to_XY_PC6,PC_6,Huisnr)
- storingen$KLAKMelders        = unique(EAN_to_XY_PC6)[storingen$KLAKMelders]
- storingen$KLAKMelders[,PC_4:=NULL]; try(setnames(storingen$KLAKMelders,"i.PC_4","PC_4"))
- 
+load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_MS.Rda"))
+mindataset[,Datum:=as.Date(mindataset$Datum)]
+storingen$MS= mindataset[(mindataset$Datum > firstdate & mindataset$Datum < lastdate)]
+storingen$MS[,PC_6 := gsub(" ","",storingen$MS$PC_6)] 
+
+# Laad meldingen
+load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_KOPPEL_MELDING_GROEP.Rda"))
+storingen$KLAKMelders = data.table(mindataset);
+storingen$KLAKMelders[,PC_6 := gsub(" ","",storingen$KLAKMelders$PC_6)] 
+storingen$KLAKMelders[,PC_4:=substr(storingen$KLAKMelders$PC_6,1,4)]
+load(paste0(settings$Ruwe_Datasets,"/24. Adressendichtheid/Count Adresses.Rda"))
+setkey(storingen$KLAKMelders,PC_4)
+setkey(mindataset,PC_4)
+storingen$KLAKMelders  = mindataset[storingen$KLAKMelders ]
+
+load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial.Rda"))
+pc4area = data.table(pc4@data[,c("PC4CODE","SHAPE_AREA")]);
+setnames(pc4area,c("PC_4","Oppervlakte_PC4"))
+setkey(pc4area,PC_4);
+storingen$KLAKMelders  = pc4area[storingen$KLAKMelders ]
+setkey(storingen$KLAKMelders ,PC_6,Huisnr); 
+setkey(EAN_to_XY_PC6,PC_6,Huisnr)
+storingen$KLAKMelders        = unique(EAN_to_XY_PC6)[storingen$KLAKMelders]
+storingen$KLAKMelders[,PC_4:=NULL]; try(setnames(storingen$KLAKMelders,"i.PC_4","PC_4"))
+storingen$KLAKMelders$Melders = "Melder"
+
+# Verwijder de foutieve KALK meldingen, want alleen eerste melders tellen
+setnames(storingen$KLAKMelders,"ID_KLAK_Melding","ID_KLAK_Melding_oud")
+setkey(storingen$KLAKMelders,ID_Groep)
+
+temp = unique(storingen$KLAKMelders[ID_Groep!="" & !is.na(ID_Groep) & ST_Groep_eerste=="Ja",
+                                    list(ID_Groep,ID_KLAK_Melding_oud)])
+setnames(temp,"ID_KLAK_Melding_oud","ID_KLAK_Melding")
+setkey(temp,ID_Groep)
+
+storingen$KLAKMelders=temp[storingen$KLAKMelders]
+storingen$KLAKMelders[!(ID_Groep!="" & !is.na(ID_Groep)),ID_KLAK_Melding:=ID_KLAK_Melding_oud]
+
  # Voeg informatie uit de melders toe
  frequ = data.table(data.frame(table(storingen$KLAKMelders$ID_Groep)))
  try(setnames(frequ,c("ID_Groep","Aantal_Melders")))
