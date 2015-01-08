@@ -45,8 +45,9 @@ function(method,assettypes=c("LSkabels","MSkabels","LSmoffen","MSmoffen"))
   storingen$LS$Datum_Verwerking_Gereed <- as.Date(storingen$LS$Datum_Verwerking_Gereed) #converteren tijdstippen naar datumnotatie
   storingen$MS$Datum_Verwerking_Gereed <- as.Date(storingen$MS$Datum_Verwerking_Gereed) #converteren tijdstippen naar datumnotatie
   if(names(assets$LSkabels)[1]=="ID_Hoofdleiding"){setnames(assets$LSkabels,c("ID_Verbinding","ID_Hoofdleiding"),c("ID_Hoofdleiding","ID_Verbinding"))}
-  names(assets$LSkabels)[3:4]          <- c("Coo_X_van","Coo_Y_van")
-  names(assets$MSkabels)[3:4]          <- c("Coo_X_van","Coo_Y_van")
+  names(assets$LSkabels)[4:5]          <- c("Coo_X_van","Coo_Y_van")
+  names(assets$MSkabels)[4:5]          <- c("Coo_X_van","Coo_Y_van")
+  
   nettopo$EAN_koppel$ID_Hoofdleiding_LS<- as.character(nettopo$EAN_koppel$ID_Hoofdleiding_LS) #zorgen dat hoofdleidingen characters zijn
   #   storingen$LS$Coo_X                   <- as.numeric(gsub(",",".",storingen$LS$Coo_X))
   #   storingen$LS$Coo_Y                   <- as.numeric(gsub(",",".",storingen$LS$Coo_Y))
@@ -86,7 +87,7 @@ function(method,assettypes=c("LSkabels","MSkabels","LSmoffen","MSmoffen"))
     klaktabel    <- storingen[[voltage]]                  # aanmaken tabel met klakmeldingen
     if (!exists("assetsltb")) { assetsltb <- list()}    # aanmaken tabel met gekoppelde assets
     counter    <- 0
-    for(klaknr in klaktabel$ID_KLAK_Melding[1:50]){
+    for(klaknr in klaktabel$ID_KLAK_Melding[1:10]){
       klak          <- klaktabel[ID_KLAK_Melding==klaknr]
       klakmeldingen <- storingen$KLAKMelders[as.list(klak$ID_Groep)]
       assetsltb <- switch(method,
@@ -304,46 +305,46 @@ process.table = function(assetstb,klakl,assettype,config){
            },
            kabels={
              # Poging Roel
-             allperm = data.table(expand.grid(c("Coo_X_van","Coo_Y_van"),c("Coo_X_naar","Coo_Y_naar"),1:nrow(assetstb),1:nrow(assetstb), stringsAsFactors = FALSE))
-             setnames(allperm,c("Xfield","Yfield","asset1","asset2"))
-             allperm = cbind(allperm,rbindlist(llply(1:nrow(allperm),function(m) assetstb[allperm$asset1[m],c(allperm[m,Xfield],allperm[m,Yfield]),with=FALSE]), use.names=FALSE))
-             allperm = cbind(allperm,rbindlist(llply(1:nrow(allperm),function(m) assetstb[allperm$asset2[m],c(allperm[m,Xfield],allperm[m,Yfield]),with=FALSE]), use.names=FALSE))
-             setnames(allperm,c("Xfield","Yfield","asset1","asset2","X1","Y1","X2","Y2"))
-             allperm[,dist:=(X1^2-X2^2)+(Y1^2-Y2^2)]
-             mindist = allperm[,min(dist),by=list(asset2,asset1)]
+#              allperm = data.table(expand.grid(c("Coo_X_van","Coo_Y_van"),c("Coo_X_naar","Coo_Y_naar"),1:nrow(assetstb),1:nrow(assetstb), stringsAsFactors = FALSE))
+#              setnames(allperm,c("Xfield","Yfield","asset1","asset2"))
+#              allperm = cbind(allperm,rbindlist(llply(1:nrow(allperm),function(m) assetstb[allperm$asset1[m],c(allperm[m,Xfield],allperm[m,Yfield]),with=FALSE]), use.names=FALSE))
+#              allperm = cbind(allperm,rbindlist(llply(1:nrow(allperm),function(m) assetstb[allperm$asset2[m],c(allperm[m,Xfield],allperm[m,Yfield]),with=FALSE]), use.names=FALSE))
+#              setnames(allperm,c("Xfield","Yfield","asset1","asset2","X1","Y1","X2","Y2"))
+#              allperm[,dist:=(X1^2-X2^2)+(Y1^2-Y2^2)]
+#              mindist = allperm[,min(dist),by=list(asset2,asset1)]
              
              # Poging Jacco
              tdiff   <- sapply(assetstb$DateAdded,function(x){x-assetstb$DateRemoved})
 
-             xdiffvv <- sapply(assetstb$Coo_X_van, function(x){x-assetstb$Coo_X_van})
-             xdiffvn <- sapply(assetstb$Coo_X_van, function(x){x-assetstb$Coo_X_naar})
-             xdiffnv <- sapply(assetstb$Coo_X_naar,function(x){x-assetstb$Coo_X_van})
-             xdiffnn <- sapply(assetstb$Coo_X_naar,function(x){x-assetstb$Coo_X_naar})
-             
-             ydiffvv <- sapply(assetstb$Coo_Y_van, function(x){x-assetstb$Coo_Y_van})
-             ydiffvn <- sapply(assetstb$Coo_Y_van, function(x){x-assetstb$Coo_Y_naar})
-             ydiffnv <- sapply(assetstb$Coo_Y_naar,function(x){x-assetstb$Coo_Y_van})
-             ydiffnn <- sapply(assetstb$Coo_Y_naar,function(x){x-assetstb$Coo_Y_naar})
-             
-             sdiffar <- array(c(xdiffvv^2+ydiffvv^2,xdiffvn^2+ydiffvn^2,xdiffnv^2+ydiffnv^2,xdiffnn^2+ydiffnn^2),dim=c(max(1,ncol(tdiff)),max(1,nrow(tdiff)),4))
-             sdiff   <- aaply(sdiffar,1:2,min)
-             
-             
-                                       
-             array(c(xdiffvv^2+ydiffvv^2,
-                     xdiffvn^2+ydiffvn^2,
-                     xdiffnv^2+ydiffnv^2,
-                     xdiffnn^2+ydiffnn^2),dim=c(max(1,ncol(tdiff)),max(1,nrow(tdiff)),4))
-             
-             matrixvv      <- matrix((sdiff < config$sdiff$max) & (tdiff >  config$vervdiff$min & tdiff < config$vervdiff$max),ncol=max(nrow(tdiff),1))
-             diag(matrixvv)<- FALSE
-             
-             in.verv <-  ifelse(is.na(assetstb$Length_ch),
-                         ifelse(assetstb$Status_ID == "Active", 0,rowSums(matrixvv)),
-                         ifelse(assetstb$Length_ch < 0, 1, 0)
-                                )
-             
-             assetstb             <- cbind(assetstb, in.verv)
+#              xdiffvv <- sapply(assetstb$Coo_X_van, function(x){x-assetstb$Coo_X_van})
+#              xdiffvn <- sapply(assetstb$Coo_X_van, function(x){x-assetstb$Coo_X_naar})
+#              xdiffnv <- sapply(assetstb$Coo_X_naar,function(x){x-assetstb$Coo_X_van})
+#              xdiffnn <- sapply(assetstb$Coo_X_naar,function(x){x-assetstb$Coo_X_naar})
+#              
+#              ydiffvv <- sapply(assetstb$Coo_Y_van, function(x){x-assetstb$Coo_Y_van})
+#              ydiffvn <- sapply(assetstb$Coo_Y_van, function(x){x-assetstb$Coo_Y_naar})
+#              ydiffnv <- sapply(assetstb$Coo_Y_naar,function(x){x-assetstb$Coo_Y_van})
+#              ydiffnn <- sapply(assetstb$Coo_Y_naar,function(x){x-assetstb$Coo_Y_naar})
+#              
+#              sdiffar <- array(c(xdiffvv^2+ydiffvv^2,xdiffvn^2+ydiffvn^2,xdiffnv^2+ydiffnv^2,xdiffnn^2+ydiffnn^2),dim=c(max(1,ncol(tdiff)),max(1,nrow(tdiff)),4))
+#              sdiff   <- aaply(sdiffar,1:2,min)
+#              
+#              
+#                                        
+#              array(c(xdiffvv^2+ydiffvv^2,
+#                      xdiffvn^2+ydiffvn^2,
+#                      xdiffnv^2+ydiffnv^2,
+#                      xdiffnn^2+ydiffnn^2),dim=c(max(1,ncol(tdiff)),max(1,nrow(tdiff)),4))
+#              
+#              matrixvv      <- matrix((sdiff < config$sdiff$max) & (tdiff >  config$vervdiff$min & tdiff < config$vervdiff$max),ncol=max(nrow(tdiff),1))
+#              diag(matrixvv)<- FALSE
+#              
+#              in.verv <-  ifelse(is.na(assetstb$Length_ch),
+#                          ifelse(assetstb$Status_ID == "Active", 0,rowSums(matrixvv)),
+#                          ifelse(assetstb$Length_ch < 0, 1, 0)
+#                                 )
+#              
+#              assetstb             <- cbind(assetstb, in.verv)
              assetstb$koppelc     <- assetstb$in.timediff & assetstb$in.verv
              
            }
@@ -389,6 +390,11 @@ Proxy_filter = function()
 #            }
 #  )
 
+
+out = function(b) 
+{
+  a[(X > b$Xmin & X < b$Xmax) & (Y > b$Ymin & Y < b$Ymax)]$Index
+}
 
 runall = function(){
 

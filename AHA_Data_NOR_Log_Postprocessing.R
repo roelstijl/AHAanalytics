@@ -53,16 +53,16 @@ setkey  (changes,ID_unique,Date)
 setkey  (assets$kabels,ID_unique)
 setorder(changes,ID_unique,Date)
 
-lch = c(0,changes[2:nrow(changes),Lengte] - changes[1:(nrow(changes)-1),Lengte])
-logi = duplicated(changes,by="ID_NAN")
 changes[,Length_ch:=Lengte[2]-Lengte[1],by=list(ID_unique,Date)]
-changes[Length_ch!=0,DateLength_ch:=(Date)]
+changes[Length_ch!=0,DateLength_ch:=Date]
 changes[!is.na(DateLength_ch),ID_Status:="Length_changed"]
 
-mergeset = unique(changes[ID_Status=="Length_changed",list(ID_Status,DateLength_ch,ID_unique,Length_ch)],fromLast = TRUE)
+mergeset = unique(changes[ID_Status=="Length_changed",list(DateLength_ch,ID_Status,ID_unique,Length_ch)],fromLast = TRUE)
 setkey(mergeset,ID_unique)
 setkey(assets$kabels,ID_unique)
-assets$kabels = rbind(assets$kabels,assets$kabels[mergeset[!is.na(Length_ch)]],fill=TRUE)
+mergeset=mergeset[!is.na(Length_ch)]
+mergeset[,DateRemoved:=NA]
+assets$kabels = rbind(assets$kabels,assets$kabels[mergeset],fill=TRUE)
 
 remove("changes");
   

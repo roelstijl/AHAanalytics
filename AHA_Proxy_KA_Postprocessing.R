@@ -218,6 +218,7 @@ pGMwrapper = function (data,layername,group,colors,width,last=FALSE,previousmap=
 # Analyses the entire Asset Database (very memory intensive!) -----------------
 FullDataAnalytics = function(AssetName = "NOR")
 {
+<<<<<<< HEAD
   ValidatieSet = data.table(read.xlsx(paste0(settings$Analyse_Datasets,"/2. Proxy validatie/Validatie_Meta.xlsx"),sheetName="Format Wide"),key=ID_NAN)
 #   loadObj(paste0("C:/Datasets/AHAdata/2. Input Datasets/2. All Assets/Asset_Data_",AssetName,"_assets.Rda"))
   load(paste0("C:/Datasets/AHAdata/2. Input Datasets/2. All Assets/Asset_Data_",AssetName,"_assets.Rda"))
@@ -269,6 +270,39 @@ IncludeProxy = function(ValidatieSet)
            sheetName=paste0("Proxy_",ProxyName), append=TRUE)
   
   return(ValidatieSet)
+=======
+  load(paste0(settings$Input_Datasets,"/23. Validatie_data/Validatie koppelingen.Rda"))
+  
+  load("C:/Datasets/AHAdata/2. Input Datasets/2. All Assets/Asset_Data_NOR_assets.Rda")
+  setkey(assets$kabels,ID_NAN)
+  setkey(assets$moffen,ID_NAN)
+  setorder(assets$kabels,DateLength_ch,na.last=TRUE)
+  assets$kabels=unique(assets$kabels)
+  assets$moffen=unique(assets$moffen)
+  set_NOR=rbind(assets$kabels[ValidatieSet][!is.na(Bronsysteem)],assets$moffen[ValidatieSet][!is.na(Bronsysteem)],fill=TRUE)
+  save(set_NOR,file=paste0(settings$Analyse_Datasets,"/2. Proxy validatie/All_Asset_NOR_Info_Validatie.Rda"))
+  
+  load(paste0(settings$Input_Datasets,"/23. Validatie_data/Validatie koppelingen.Rda"))
+  load("C:/Datasets/AHAdata/2. Input Datasets/2. All Assets/Asset_Data_BAR_assets.Rda")
+  setkey(assets$MSkabels,ID_NAN)
+  setkey(assets$MSmoffen,ID_NAN)
+  setorder(assets$MSkabels,DateLength_ch,na.last=TRUE)
+  setkey(assets$MSkabels,ID_NAN)
+  assets$MSkabels=unique(assets$MSkabels)
+  assets$MSmoffen=unique(assets$MSmoffen)
+  
+  setkey(assets$LSkabels,ID_NAN)
+  setkey(assets$LSmoffen,ID_NAN)
+  setorder(assets$LSkabels,DateLength_ch,na.last=TRUE)
+  setkey(assets$LSkabels,ID_NAN)
+  assets$LSkabels=unique(assets$LSkabels)
+  assets$LSmoffen=unique(assets$LSmoffen)  
+  setkey(ValidatieSet,ID_NAN)
+
+  set_BAR=rbind(assets$MSkabels[ValidatieSet][!is.na(Brontabel)],assets$MSmoffen[ValidatieSet][!is.na(Brontabel)],
+                assets$LSkabels[ValidatieSet][!is.na(Brontabel)],assets$LSmoffen[ValidatieSet][!is.na(Brontabel)],fill=TRUE)
+  save(set_BAR,file=paste0(settings$Analyse_Datasets,"/2. Proxy validatie/All_Asset_BAR_Info_Validatie.Rda"))
+>>>>>>> 0749556742451421737cf063a8f443dbab540b6a
 }
 
 # for (KLAK in ValidatieSet[ValidatieSet$in_NORlog_and_XY|ValidatieSet$in_BARlog_and_XY,ID_KLAK_Melding]){
