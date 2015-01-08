@@ -148,7 +148,6 @@ save(ValidatieSet,file=paste0(settings$Input_Datasets,"/23. Validatie_data/Valid
 storingen = {
 
 # Storingsdata uit KLAK ------------------------
-<<<<<<< HEAD
  storingen=list()  
  
  setTkProgressBar(pb, 4,label = "Load KLAK data\n"); ;
@@ -165,7 +164,7 @@ storingen = {
  storingen$LS[,PC_6 := gsub(" ","",storingen$LS$PC_6)] 
  
  # Laad MS
-=======
+
 storingen=list()  
 
 setTkProgressBar(pb, 4,label = "Load KLAK data\n"); ;
@@ -182,12 +181,10 @@ storingen$LS= mindataset[(mindataset$Datum > firstdate & mindataset$Datum < last
 storingen$LS[,PC_6 := gsub(" ","",storingen$LS$PC_6)] 
 
 # Laad MS
->>>>>>> 0749556742451421737cf063a8f443dbab540b6a
 load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_MS.Rda"))
 mindataset[,Datum:=as.Date(mindataset$Datum)]
 storingen$MS= mindataset[(mindataset$Datum > firstdate & mindataset$Datum < lastdate)]
 storingen$MS[,PC_6 := gsub(" ","",storingen$MS$PC_6)] 
-<<<<<<< HEAD
 
 # Laad meldingen
 load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_KOPPEL_MELDING_GROEP.Rda"))
@@ -251,8 +248,6 @@ storingen$KLAKMelders[!(ID_Groep!="" & !is.na(ID_Groep)),ID_KLAK_Melding:=ID_KLA
  
 })}
 setTkProgressBar(pb, 6,label = "Done")
-=======
->>>>>>> 0749556742451421737cf063a8f443dbab540b6a
 
 # Laad meldingen
 load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_KOPPEL_MELDING_GROEP.Rda"))
@@ -301,8 +296,7 @@ storingen$MS=mindataset[storingen$MS]
 setTkProgressBar(pb, 5,label = "Save KLAK data\n"); ;
 save(storingen,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"))
              
-           })}
-  setTkProgressBar(pb, 6,label = "Done")
+setTkProgressBar(pb, 6,label = "Done")
 }
 
 fixnumber = function(x) {

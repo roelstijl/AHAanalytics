@@ -1,4 +1,4 @@
-AHA_Proxy_KA_Postprocessing = function(Proxy=F,GoogleMaps=F,FullSet=F)) 
+AHA_Proxy_KA_Postprocessing = function(Proxy=F,GoogleMaps=F,FullSet=F)
 {
 # This function will plot the data files used in project AHA onto google maps
 # Input is a series of PC4 areas or a single PC4 area PC_4 = 6810:6823 for Arnhem
@@ -218,7 +218,6 @@ pGMwrapper = function (data,layername,group,colors,width,last=FALSE,previousmap=
 # Analyses the entire Asset Database (very memory intensive!) -----------------
 FullDataAnalytics = function(AssetName = "NOR")
 {
-<<<<<<< HEAD
   ValidatieSet = data.table(read.xlsx(paste0(settings$Analyse_Datasets,"/2. Proxy validatie/Validatie_Meta.xlsx"),sheetName="Format Wide"),key=ID_NAN)
 #   loadObj(paste0("C:/Datasets/AHAdata/2. Input Datasets/2. All Assets/Asset_Data_",AssetName,"_assets.Rda"))
   load(paste0("C:/Datasets/AHAdata/2. Input Datasets/2. All Assets/Asset_Data_",AssetName,"_assets.Rda"))
@@ -270,7 +269,7 @@ IncludeProxy = function(ValidatieSet)
            sheetName=paste0("Proxy_",ProxyName), append=TRUE)
   
   return(ValidatieSet)
-=======
+
   load(paste0(settings$Input_Datasets,"/23. Validatie_data/Validatie koppelingen.Rda"))
   
   load("C:/Datasets/AHAdata/2. Input Datasets/2. All Assets/Asset_Data_NOR_assets.Rda")
@@ -302,7 +301,6 @@ IncludeProxy = function(ValidatieSet)
   set_BAR=rbind(assets$MSkabels[ValidatieSet][!is.na(Brontabel)],assets$MSmoffen[ValidatieSet][!is.na(Brontabel)],
                 assets$LSkabels[ValidatieSet][!is.na(Brontabel)],assets$LSmoffen[ValidatieSet][!is.na(Brontabel)],fill=TRUE)
   save(set_BAR,file=paste0(settings$Analyse_Datasets,"/2. Proxy validatie/All_Asset_BAR_Info_Validatie.Rda"))
->>>>>>> 0749556742451421737cf063a8f443dbab540b6a
 }
 
 # for (KLAK in ValidatieSet[ValidatieSet$in_NORlog_and_XY|ValidatieSet$in_BARlog_and_XY,ID_KLAK_Melding]){
