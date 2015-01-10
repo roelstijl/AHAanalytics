@@ -18,11 +18,19 @@
   source("AHA_Data_BAR_Log_Postprocessing.R")
 
   # Determine settings based on computer
-  settings = data.frame(1)
-  # Laptop Roel Stijl Bearingpoint
+  settings = list()
+  # Laptop Roel Stijl Bearingpoint Folio 1040
   if (Sys.info()["nodename"] =="NLAMS4043734X") {
     settings[,"Bron_Datasets"] = "I:/2. Datasets/1. Alliander/AHAdata/0. Ongebruikte en brondata"
     #   settings[,"Bron_Datasets"] = "C:/Datasets/AHAdata/0. Ongebruikte en brondata"
+    settings[,"Ruwe_Datasets"] = "C:/Datasets/AHAdata/1. Ruwe Datasets"
+    settings[,"Input_Datasets"] = "C:/Datasets/AHAdata/2. Input Datasets"
+    settings[,"Analyse_Datasets"] = "C:/Datasets/AHAdata/3. Analyse Datasets"
+    settings[,"Visuals"] = "C:/Datasets/AHAdata/5. Visuals and Tableau workbooks"
+    settings[,"Results"] = "C:/Datasets/AHAdata/6. Results"}
+  
+  if (Sys.info()["nodename"] =="NLAMS4043734Y") {
+    settings[,"Bron_Datasets"] = "G:/2. Datasets/1. Alliander/AHAdata/0. Ongebruikte en brondata"
     settings[,"Ruwe_Datasets"] = "C:/Datasets/AHAdata/1. Ruwe Datasets"
     settings[,"Input_Datasets"] = "C:/Datasets/AHAdata/2. Input Datasets"
     settings[,"Analyse_Datasets"] = "C:/Datasets/AHAdata/3. Analyse Datasets"
@@ -89,15 +97,16 @@
 
 for (m in 1:length(packages)){
 # Install if not present
-if(FALSE)  install.packages(packages[m])
+if(TRUE)  install.packages(packages[m])
 
 # Download from ZIP if not present
 if(FALSE)  download.packages(packages[m],paste0(settings$Ruwe_Datasets,"/0. Packages"))
 
 # Install from ZIP if not present
 if(FALSE) install.packages(list.files(paste0(settings$Ruwe_Datasets,"/0. Packages"),full.names =TRUE)[m])
-
+}
 # require packages
+for (m in 1:length(packages)){
 suppressMessages(library(packages[m],character.only=TRUE))
 }
   
