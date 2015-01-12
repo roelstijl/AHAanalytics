@@ -28,7 +28,7 @@ rm(assets)
 setTkProgressBar(pb, 1,label = "Converting objects"); 
 
 # BAR
-assets_BAR$kabels = rbind(assets_BAR$LSkabels,assets_BAR$MSkabels,fill=TRUE)[,list(Status_ID,DateLength_ch,ID_NAN,Length_ch,DateRemoved,DateAdded,Coo_X_van,Coo_Y_van,PC_6_van,Coo_X_naar,Coo_Y_naar,PC_6_naar,PC_4_van,PC_4_naar)]
+assets_BAR$kabels = rbind(assets_BAR$LSkabels,assets_BAR$MSkabels,fill=TRUE)[,list(Status_ID,DateLength_ch,ID_NAN,Length_ch,DateRemoved,DateAdded,Coo_X_van,Coo_Y_van,PC_6_van,Coo_X_naar,Coo_Y_naar,PC_6_naar)]
 setkey(assets_BAR$kabels,ID_NAN);   
 assets_BAR$kabels = assets_BAR$kabels[DateAdded>"2014-01-04"]
 assets_BAR$kabels = unique(assets_BAR$kabels)
@@ -62,15 +62,15 @@ storingen$all[,Storing:="Storing"]
 
 # KLAK melders  
 storingen$KLAKMelders$Melders = "Melder"
-# setnames(storingen$KLAKMelders,"ID_KLAK_Melding","ID_KLAK_Melding_oud")
-# setkey(storingen$KLAKMelders,ID_Groep)
-# 
-# temp = unique(storingen$KLAKMelders[ID_Groep!="" & !is.na(ID_Groep) & ST_Groep_eerste=="Ja",
-#                                     list(ID_Groep,ID_KLAK_Melding_oud)])
-# setnames(temp,"ID_KLAK_Melding_oud","ID_KLAK_Melding")
-# setkey(temp,ID_Groep)
-#   
-# storingen$KLAKMelders=temp[storingen$KLAKMelders]
+setnames(storingen$KLAKMelders,"ID_KLAK_Melding","ID_KLAK_Melding_oud")
+setkey(storingen$KLAKMelders,ID_Groep)
+
+temp = unique(storingen$KLAKMelders[ID_Groep!="" & !is.na(ID_Groep) & ST_Groep_eerste=="Ja",
+                                    list(ID_Groep,ID_KLAK_Melding_oud)])
+setnames(temp,"ID_KLAK_Melding_oud","ID_KLAK_Melding")
+setkey(temp,ID_Groep)
+  
+storingen$KLAKMelders=temp[storingen$KLAKMelders]
 
 setkey(storingen$all,ID_KLAK_Melding)
 setkey(ValidatieSet,ID_KLAK_Melding)
@@ -107,7 +107,8 @@ ValidatieSet[,in_BARlog_and_XY:=(in_BARlog_KLAK&BARlog_has_Coordinates&KLAK_has_
 
 molten = melt(ValidatieSet, id.vars = c("Regio","Datum","ID_KLAK_Melding","ID_NAN","Opmerkingen"),,)
 
-write.xlsx(molten,file=paste0(settings$Analyse_Datasets,"/2. Proxy validatie/Validatie_Meta.xlsx"),sheetName="Format Melt",row.names=FALSE, append=TRUE)
+# Write the results to an excel file
+write.xlsx(molten,file=paste0(settings$Analyse_Datasets,"/2. Proxy validatie/Validatie_Meta.xlsx"),sheetName="Format Melt",row.names=FALSE, append=FALSE)
 write.xlsx(ValidatieSet,file=paste0(settings$Analyse_Datasets,"/2. Proxy validatie/Validatie_Meta.xlsx"),sheetName="Format Wide",row.names=FALSE, append=TRUE)
 
 ggplot(molten,aes(variable,fill=paste(value))) + geom_bar(colour="black") + coord_flip()
@@ -272,6 +273,7 @@ IncludeProxy = function(ValidatieSet)
 
   load(paste0(settings$Input_Datasets,"/23. Validatie_data/Validatie koppelingen.Rda"))
   
+# Some very inefficient calculations to determine which NAN numbers are in each set
   load("C:/Datasets/AHAdata/2. Input Datasets/2. All Assets/Asset_Data_NOR_assets.Rda")
   setkey(assets$kabels,ID_NAN)
   setkey(assets$moffen,ID_NAN)
@@ -302,11 +304,12 @@ IncludeProxy = function(ValidatieSet)
                 assets$LSkabels[ValidatieSet][!is.na(Brontabel)],assets$LSmoffen[ValidatieSet][!is.na(Brontabel)],fill=TRUE)
   save(set_BAR,file=paste0(settings$Analyse_Datasets,"/2. Proxy validatie/All_Asset_BAR_Info_Validatie.Rda"))
 }
-
-# for (KLAK in ValidatieSet[ValidatieSet$in_NORlog_and_XY|ValidatieSet$in_BARlog_and_XY,ID_KLAK_Melding]){
+  
+  # for (KLAK in ValidatieSet[ValidatieSet$in_NORlog_and_XY|ValidatieSet$in_BARlog_and_XY,ID_KLAK_Melding]){
 #   file = list.files(path=paste0(settings$Ruwe_Datasets,"/17. Storingsschetsen"),
-#                     pattern=paste0(KLAK,".html"),full.names = TRUE)
-#   z=file.copy(file[1],
-#             "C:/Datasets/AHAdata/5. Visuals and Tableau workbooks/4. HTML Files")
-# }
-
+  #                     pattern=paste0(KLAK,".html"),full.names = TRUE)
+  #   z=file.copy(file[1],
+  #             "C:/Datasets/AHAdata/5. Visuals and Tableau workbooks/4. HTML Files")
+  # }
+  
+                                                                                                                                    

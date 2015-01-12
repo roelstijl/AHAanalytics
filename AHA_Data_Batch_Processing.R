@@ -27,8 +27,8 @@ processXY("MH_NRG_MS_MOFFEN","position",atype="moffen")
 processXY("MH_NRG_LS_MOFFEN","position",atype="moffen")
 
 # Add the XY coordinates in a spatial file
-processXY("MH_NRG_LS_KABELS","polygons",atype="kabels")
-processXY("MH_NRG_MS_KABELS","polygons",atype="kabels")
+processXY("MH_NRG_LS_KABELS","lines",atype="kabels")
+processXY("MH_NRG_MS_KABELS","lines",atype="kabels")
 processXY("MH_NRG_MS_MOFFEN","points",atype="moffen")
 processXY("MH_NRG_LS_MOFFEN","points",atype="moffen")
 
@@ -72,9 +72,9 @@ processXY = function(file,mode,atype){
   setnames(mindataset,veld,"veld")
   
   mindataset = switch (mode,
-          polygons= SpatialPolygonsDataFrame(AHA_Data_BAR_GEOMETRY(mindataset$veld,mode,atype),data=mindataset[,veld:=NULL]),
-          points  = AHA_Data_BAR_GEOMETRY(mindataset$veld,mode,atype,mindataset),
-          cbind(mindataset,AHA_Data_BAR_GEOMETRY(mindataset$veld,mode,atype)))
+          lines= SpatialLinesDataFrame(AHA_Data_BAR_Geometry(mindataset$veld,mode,atype),data=mindataset[,veld:=NULL]),
+          points  = AHA_Data_BAR_Geometry(mindataset$veld,mode,atype,mindataset),
+          cbind(mindataset,AHA_Data_BAR_Geometry(mindataset$veld,mode,atype)))
   try(mindataset[,veld:=NULL]) 
   
   cat("saving\n")

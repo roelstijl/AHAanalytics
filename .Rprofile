@@ -1,6 +1,6 @@
-.First = function ()
+.First = function (install.p=F,download.p=F,install.p.zip=F)
 {
-  # Load user specific things and sources functions
+  # Load user specific things and sources function  
   # Source all the functions
   
   cat("Loading settings for AHA project (Alliander & Bearingpoint), on failure please reload packages\n
@@ -16,9 +16,11 @@
   source("AHA_Data_NOR_Log_Postprocessing.R")
   source("AHA_Proxy_KA_Preprocessing.R")
   source("AHA_Data_BAR_Log_Postprocessing.R")
+  source("AHA_Proxy_KA_Postprocessing.R")
+  
 
   # Determine settings based on computer
-  settings = list()
+  settings = data.frame(1)
   # Laptop Roel Stijl Bearingpoint Folio 1040
   if (Sys.info()["nodename"] =="NLAMS4043734X") {
     settings[,"Bron_Datasets"] = "I:/2. Datasets/1. Alliander/AHAdata/0. Ongebruikte en brondata"
@@ -97,13 +99,13 @@
 
 for (m in 1:length(packages)){
 # Install if not present
-if(TRUE)  install.packages(packages[m])
+if(install.p)  install.packages(packages[m])
 
 # Download from ZIP if not present
-if(FALSE)  download.packages(packages[m],paste0(settings$Ruwe_Datasets,"/0. Packages"))
+if(download.p)  download.packages(packages[m],paste0(settings$Ruwe_Datasets,"/0. Packages"))
 
 # Install from ZIP if not present
-if(FALSE) install.packages(list.files(paste0(settings$Ruwe_Datasets,"/0. Packages"),full.names =TRUE)[m])
+if(install.p.zip) install.packages(list.files(paste0(settings$Ruwe_Datasets,"/0. Packages"),full.names =TRUE)[m])
 }
 # require packages
 for (m in 1:length(packages)){

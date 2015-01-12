@@ -19,8 +19,8 @@ filesshort=filesshort[!grepl("masterdataset_backup",filesshort)]
 pb = tkProgressBar(title = "AHA_Data_NOR_Log start", label = "Start", min = 0, max = length(filesshort)*3-1, initial = 0, width = 450); pc=0;
 
 # Select which collumns to compare
-comparecols = switch (NORtable,ELCVERBINDINGSKNOOPPUNTEN=c("ID_unique","ID_NAN","Bronsysteem","Spanningsniveau", "Soort",  "Constructie",	"Isolatiemedium",	"Fabrikant"),
-                      ELCVERBINDINGSDELEN=c("ID_unique","Lengte","Bronsysteem","ID_NAN","Status","Geleidermateriaal","Spanningsniveau","Diameter","Netverbinding"),
+comparecols = switch (NORtable,ELCVERBINDINGSKNOOPPUNTEN=c("ID_unique","ID_NAN","Bronsysteem","Spanningsniveau", "Soort",  "Constructie",	"Isolatiemedium",	"Fabrikant","X_Coo","Y_Coo"),
+                      ELCVERBINDINGSDELEN=c("ID_unique","Lengte","Bronsysteem","ID_NAN","Status","Geleidermateriaal","Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar","Spanningsniveau","Diameter","Netverbinding"),
                       ELCVERBINDINGEN=c("ID_unique","Beheerder","Lengte", "Bronsysteem",	"SpanningsNiveau",	"Soort",	"Soortnet"),
                       cat("Please add headers to compute\n\n"))
 # Plot to check for anomolies in file sizes
@@ -31,11 +31,15 @@ if (source == "backup") {
 #   backups = list.files(pattern=paste0("masterdataset_backup",".*\\.Rda"), path=paste0(outputfolder,"/backup"),full.names=TRUE);
 #   print(backups)
 #   filenumber <- readline(prompt="Select a backup file: ")
+  cat("Select backup file to continue from\n")
   bfile = file.choose()  
-  print(filesshort)  
-  firstfile <- readline(prompt= "Continue from what file?: "); 
-  firstfile = as.numeric(firstfile)
-  load(bfile)
+  cat("Select file to start import from\n")
+  ffile = file.choose()  
+  firstfile = which(filesshort==basename(ffile))
+  
+  ifelse (length(firstfile)==1,
+  load(bfile),
+  error("Wrong file selected"))
   
 };
 

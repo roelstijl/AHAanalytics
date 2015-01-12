@@ -74,7 +74,6 @@ MSk=(assets$kabels$DateAdded > firstdate & assets$kabels$DateAdded < lastdate)|
   (assets$kabels$DateRemoved > firstdate & assets$kabels$DateRemoved < lastdate)
 MSk[is.na(MSk)]=FALSE
 assets$kabels = assets$kabels[MSk]
-colnames(assets$kabels)[4:5] = c("Coo_X_van","Coo_Y_van")
 
 # Bereken postcode 4
 
@@ -249,7 +248,7 @@ storingen$KLAKMelders[!(ID_Groep!="" & !is.na(ID_Groep)),ID_KLAK_Melding:=ID_KLA
 })}
 setTkProgressBar(pb, 6,label = "Done")
 
-# Laad meldingen
+# Laad meldingen en voeg PC4 adress dichtheid en oppervlakte toe
 load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_KOPPEL_MELDING_GROEP.Rda"))
 storingen$KLAKMelders = data.table(mindataset);
 storingen$KLAKMelders[,PC_6 := gsub(" ","",storingen$KLAKMelders$PC_6)] 
@@ -257,8 +256,17 @@ storingen$KLAKMelders[,PC_4:=substr(storingen$KLAKMelders$PC_6,1,4)]
 load(paste0(settings$Ruwe_Datasets,"/24. Adressendichtheid/Count Adresses.Rda"))
 setkey(storingen$KLAKMelders,PC_4)
 setkey(mindataset,PC_4)
-storingen$KLAKMelders  = mindataset[storingen$KLAKMelders ]
+storingen$KLAKMelders  = mindataset[storingen$KLAKMelders]
 
+# Voeg te correcte klak ids toe, deze waren namelijk uniek
+setnames(storingen$KLAKMelders,"ID_KLAK_Melding","ID_KLAK_Melding_oud")
+setkey(storingen$KLAKMelders,ID_Groep)
+temp = unique(storingen$KLAKMelders[ID_Groep!="" & !is.na(ID_Groep) & ST_Groep_eerste=="Ja",list(ID_Groep,ID_KLAK_Melding_oud)])
+setnames(temp,"ID_KLAK_Melding_oud","ID_KLAK_Melding")
+setkey(temp,ID_Groep)
+storingen$KLAKMelders=temp[storingen$KLAKMelders]
+
+# Voeg de XY toe
 load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial.Rda"))
 pc4area = data.table(pc4@data[,c("PC4CODE","SHAPE_AREA")]);
 setnames(pc4area,c("PC_4","Oppervlakte_PC4"))

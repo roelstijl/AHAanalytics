@@ -1,4 +1,4 @@
-AHA_Data_BAR_GEOMETRY = function(mdsysori,mode="polygons",atype="kabels",DT = "none"){
+AHA_Data_BAR_Geometry = function(mdsysori,index,mode="lines",atype="kabels",DT = "none"){
 # MDsys is the collumn with the GEO-information ()
 # Converts the following "MDSYS.SDO_GEOMETRY(2001,28992,MDSYS.SDO_POINT_TYPE(185462.693,436911.424,NULL),NULL,NULL)"
 # Modes: 
@@ -41,8 +41,8 @@ nu<<-1
 # Preprocess the geospatial data --------------------------
     
     mdsys= switch(mode,
-                  polygons = llply(mdsys,function(x) 
-                  {Polygons(list(Polygon(rbind(x,x[(nrow(x)-1):1,]))),as.character(nu));
+                  lines = llply(mdsys,function(x) 
+                  {Lines(list(Line(x)),as.character(nu));
                    nu<<-nu+1}),
                   
                   beginend = llply(mdsys,function(x) cbind(x[1,],x[nrow(x),])),
@@ -52,7 +52,7 @@ nu<<-1
 # Convert it to geospatial data --------------------------
     setTkProgressBar (pb, loopy,label = "Converting to geospatial output");
     mdsys = switch(mode,
-                   polygons = SpatialPolygons(mdsys,proj4string=CRS("+init=epsg:28992")),
+                   lines = SpatialLines(mdsys,proj4string=CRS("+init=epsg:28992")),
                    points   = {ifelse(is.character(DT),
                                       {temp = data.table(Index = nu:(nu-1+nrow(mdsys)))},
                                       {temp = DT[nu:(nu-1+nrow(mdsys))]})

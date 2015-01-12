@@ -100,9 +100,9 @@ AHA_Data_Import= function(folder="automatic",dataname,headername,mode="save",ove
 for(i in header[header[,5]=="numeric",1]) {mindataset[,i] = as.numeric(gsub(",",".",mindataset[,i]))}
 for(i in header[header[,5]=="date",1])    {mindataset[,i] = dmy(mindataset[,i])} #Timezone note taken into account for perforamnce
 for(i in header[header[,5]=="dateymd",1]) {mindataset[,i] = ymd(mindataset[,i])} #Timezone note taken into account for perforamnce
-for(i in header[header[,5]=="datetime",1]){mindataset[,i] = dmy_hms(mindataset[,i])}
-for(i in header[header[,5]=="datetimeYDM",1]){mindataset[,i] = ymd_hms(mindataset[,i])}
-for(i in header[header[,5]=="datetimeM",1]){mindataset[,i] = dmy_hm(mindataset[,i])}
+for(i in header[header[,5]=="datetime",1]){mindataset[,i] = as.Date(my_hms(mindataset[,i]))}
+for(i in header[header[,5]=="datetimeYDM",1]){mindataset[,i] = as.Date(ymd_hms(mindataset[,i]))}
+for(i in header[header[,5]=="datetimeM",1]){mindataset[,i] = as.Date(dmy_hm(mindataset[,i]))}
 for(i in header[header[,5]=="integer",1]) {mindataset[,i] = as.integer(mindataset[,i])}
 
     
