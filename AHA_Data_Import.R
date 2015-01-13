@@ -185,3 +185,13 @@ saveObj <- function(object, file.name){
   serialize(object, outfile)
   close(outfile)
 }
+
+pbarwrapper = function(title="PlaceHolder", label = "Starting...", max = noloops)
+  {
+  pb        = tkProgressBar(title = title, label = label, min = 0, max = max, initial = 1, width = 450)
+  return(pb)
+}
+
+setRrogressBar = function(pb){
+setTkProgressBar (pb, loopy,label = "Converting to geospatial output");
+}

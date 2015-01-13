@@ -32,7 +32,7 @@
     settings[,"Results"] = "C:/Datasets/AHAdata/6. Results"}
   
   if (Sys.info()["nodename"] =="NLAMS4043734Y") {
-    settings[,"Bron_Datasets"] = "G:/2. Datasets/1. Alliander/AHAdata/0. Ongebruikte en brondata"
+    settings[,"Bron_Datasets"] = "I:/2. Datasets/1. Alliander/AHAdata/0. Ongebruikte en brondata"
     settings[,"Ruwe_Datasets"] = "C:/Datasets/AHAdata/1. Ruwe Datasets"
     settings[,"Input_Datasets"] = "C:/Datasets/AHAdata/2. Input Datasets"
     settings[,"Analyse_Datasets"] = "C:/Datasets/AHAdata/3. Analyse Datasets"

@@ -215,26 +215,21 @@ temp = unique(storingen$KLAKMelders[ID_Groep!="" & !is.na(ID_Groep) & ST_Groep_e
 setnames(temp,"ID_KLAK_Melding_oud","ID_KLAK_Melding")
 setkey(temp,ID_Groep)
 
-storingen$KLAKMelders=temp[storingen$KLAKMelders]
-storingen$KLAKMelders[!(ID_Groep!="" & !is.na(ID_Groep)),ID_KLAK_Melding:=ID_KLAK_Melding_oud]
+  storingen$KLAKMelders=temp[storingen$KLAKMelders]
+  storingen$KLAKMelders[!(ID_Groep!="" & !is.na(ID_Groep)),ID_KLAK_Melding:=ID_KLAK_Melding_oud]
+  temp= data.table(Aantal_Melders=data.table(table(storingen$KLAKMelders$ID_KLAK_Melding)),
+               ID_KLAK_Melding=unique(storingen$KLAKMelders$ID_KLAK_Melding))
+  setkey(temp,ID_KLAK_Melding)
+  setkey(storingen$KLAKMelders,ID_KLAK_Melding);
+  setnames(temp,"Aantal_Melders.V1","Aantal_Melders")
+  storingen$KLAKMelders = temp[storingen$KLAKMelders]
 
- # Voeg informatie uit de melders toe
- frequ = data.table(data.frame(table(storingen$KLAKMelders$ID_Groep)))
- try(setnames(frequ,c("ID_Groep","Aantal_Melders")))
- setkey(frequ,ID_Groep);  
- setkey(storingen$KLAKMelders,ID_Groep);
- ugroep         = frequ[storingen$KLAKMelders[ST_Groep_eerste=="Ja"]]
- setkey(ugroep,PC_6,Huisnr); 
- setkey(EAN_to_XY_PC6,PC_6,Huisnr)
- ugroep         = unique(EAN_to_XY_PC6)[ugroep]
- ugroep[,PC_4:=substr(ugroep$PC_6,1,4)]
- 
  # Koppel meldingen en storingen
  setkey(storingen$LS,ID_KLAK_Melding); 
  setkey(storingen$MS,ID_KLAK_Melding); 
- setkey(ugroep,ID_KLAK_Melding)
- storingen$LS=ugroep[storingen$LS]
- storingen$MS=ugroep[storingen$MS]
+ setkey(storingen$KLAKMelders,ID_KLAK_Melding)
+ storingen$LS=unique(storingen$KLAKMelders)[storingen$LS]
+ storingen$MS=unique(storingen$KLAKMelders)[storingen$MS]
  
  # Koppel de GIS mutaties
  load(paste0(settings$Ruwe_Datasets,"/21. GIS-mutaties/GISMUTATIE.Rda"))

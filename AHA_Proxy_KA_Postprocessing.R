@@ -171,9 +171,9 @@ Createmaps = function(assets,storingen,pc4,pc6,ID_KLAK_M,ID_NAN_M,asset_source){
     proj4string(geosets$KLAKMelders) = CRS("+init=epsg:28992")
   }
   
-  map=pGMwrapper(pc6[pc6$PC_4==PC_4_M,],"Postcode 6 gebieden","POSTCODE",heat.colors(nrow(pc6[pc6$PC_4==PC_4_M,])),1,FALSE,options=",fillOpacity=0.2")
+#   map=pGMwrapper(pc6[pc6$PC_4==PC_4_M,],"Postcode 6 gebieden","POSTCODE",heat.colors(nrow(pc6[pc6$PC_4==PC_4_M,])),1,FALSE,options=",fillOpacity=0.2")
   
-  map=pGMwrapper(geosets$storingen[geosets$storingen$ID_KLAK_Melding!=ID_KLAK_M,],"Omringende Storingen","Storing","#FF8566",3,FALSE,map)
+  map=pGMwrapper(geosets$storingen[geosets$storingen$ID_KLAK_Melding!=ID_KLAK_M,],"Omringende Storingen","Storing","#FF8566",3,FALSE)
   map=pGMwrapper(geosets$moffen[geosets$moffen$ID_NAN!=ID_NAN_M,],"Omringende Moffen","Status_ID",c("#248F24","#B26B24"),3,FALSE,map)
   map=pGMwrapper(geosets$kabels[geosets$kabels$ID_NAN!=ID_NAN_M,],"Omringende Kabels","Status_ID",c("#248F24","#003399","#B26B24"),3,FALSE,map)
   
@@ -231,6 +231,8 @@ FullDataAnalytics = function(AssetName = "NOR")
   write.xlsx(ValidatieSet[rbindlist(assets)],
              file=paste0(settings$Analyse_Datasets,"/2. Proxy validatie/Validatie_Meta.xlsx"),
              sheetName=paste0("All_Assets_",AssetName), append=TRUE)
+  ValidatieSet[,inAllNOR:=ID_NAN %in% rbindlist(assets)$ID_NAN]
+  return(ValidatieSet)
 }
 
 # Analyse the proxy results ---------------------------------------------
@@ -265,51 +267,6 @@ IncludeProxy = function(ValidatieSet)
   ValidatieSet = valdt[ValidatieSet][,any(ID_NAN %in% i.ID_NAN),by=ID_KLAK_Melding][ValidatieSet]
   setnames(ValidatieSet,"V1",paste0("Proxi_",ProxyName,"_Correct"))
   
-  write.xlsx(valdt[ValidatieSet],
-           file=paste0(settings$Analyse_Datasets,"/2. Proxy validatie/Validatie_Meta.xlsx"),
-           sheetName=paste0("Proxy_",ProxyName), append=TRUE)
-  
   return(ValidatieSet)
-
-  load(paste0(settings$Input_Datasets,"/23. Validatie_data/Validatie koppelingen.Rda"))
-  
-# Some very inefficient calculations to determine which NAN numbers are in each set
-  load("C:/Datasets/AHAdata/2. Input Datasets/2. All Assets/Asset_Data_NOR_assets.Rda")
-  setkey(assets$kabels,ID_NAN)
-  setkey(assets$moffen,ID_NAN)
-  setorder(assets$kabels,DateLength_ch,na.last=TRUE)
-  assets$kabels=unique(assets$kabels)
-  assets$moffen=unique(assets$moffen)
-  set_NOR=rbind(assets$kabels[ValidatieSet][!is.na(Bronsysteem)],assets$moffen[ValidatieSet][!is.na(Bronsysteem)],fill=TRUE)
-  save(set_NOR,file=paste0(settings$Analyse_Datasets,"/2. Proxy validatie/All_Asset_NOR_Info_Validatie.Rda"))
-  
-  load(paste0(settings$Input_Datasets,"/23. Validatie_data/Validatie koppelingen.Rda"))
-  load("C:/Datasets/AHAdata/2. Input Datasets/2. All Assets/Asset_Data_BAR_assets.Rda")
-  setkey(assets$MSkabels,ID_NAN)
-  setkey(assets$MSmoffen,ID_NAN)
-  setorder(assets$MSkabels,DateLength_ch,na.last=TRUE)
-  setkey(assets$MSkabels,ID_NAN)
-  assets$MSkabels=unique(assets$MSkabels)
-  assets$MSmoffen=unique(assets$MSmoffen)
-  
-  setkey(assets$LSkabels,ID_NAN)
-  setkey(assets$LSmoffen,ID_NAN)
-  setorder(assets$LSkabels,DateLength_ch,na.last=TRUE)
-  setkey(assets$LSkabels,ID_NAN)
-  assets$LSkabels=unique(assets$LSkabels)
-  assets$LSmoffen=unique(assets$LSmoffen)  
-  setkey(ValidatieSet,ID_NAN)
-
-  set_BAR=rbind(assets$MSkabels[ValidatieSet][!is.na(Brontabel)],assets$MSmoffen[ValidatieSet][!is.na(Brontabel)],
-                assets$LSkabels[ValidatieSet][!is.na(Brontabel)],assets$LSmoffen[ValidatieSet][!is.na(Brontabel)],fill=TRUE)
-  save(set_BAR,file=paste0(settings$Analyse_Datasets,"/2. Proxy validatie/All_Asset_BAR_Info_Validatie.Rda"))
 }
-  
-  # for (KLAK in ValidatieSet[ValidatieSet$in_NORlog_and_XY|ValidatieSet$in_BARlog_and_XY,ID_KLAK_Melding]){
-#   file = list.files(path=paste0(settings$Ruwe_Datasets,"/17. Storingsschetsen"),
-  #                     pattern=paste0(KLAK,".html"),full.names = TRUE)
-  #   z=file.copy(file[1],
-  #             "C:/Datasets/AHAdata/5. Visuals and Tableau workbooks/4. HTML Files")
-  # }
-  
                                                                                                                                     
