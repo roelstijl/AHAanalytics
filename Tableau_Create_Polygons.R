@@ -40,7 +40,7 @@ spd = {
 # Extracts the coodinates and polygon IDs -----------------------
 Polygons <- slot(ShapeFile,"polygons")
 # coordinates = llply(Polygons,createpoly, .progress = "text")
-coordinates = data.tableldply(Polygons,createpoly, .progress = "text"))
+coordinates = data.tableldply(Polygons,createpoly, .progress = "text")
  
  out = AHA_RDCtoGPS(coordinates[,list(Longitude,Latitude)])
   coordinates[Longitude:= out$V1]

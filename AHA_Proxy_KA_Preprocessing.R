@@ -74,7 +74,6 @@ MSk=(assets$kabels$DateAdded > firstdate & assets$kabels$DateAdded < lastdate)|
   (assets$kabels$DateRemoved > firstdate & assets$kabels$DateRemoved < lastdate)
 MSk[is.na(MSk)]=FALSE
 assets$kabels = assets$kabels[MSk]
-colnames(assets$kabels)[4:5] = c("Coo_X_van","Coo_Y_van")
 
 # Bereken postcode 4
 
@@ -148,6 +147,23 @@ save(ValidatieSet,file=paste0(settings$Input_Datasets,"/23. Validatie_data/Valid
 storingen = {
 
 # Storingsdata uit KLAK ------------------------
+ storingen=list()  
+ 
+ setTkProgressBar(pb, 4,label = "Load KLAK data\n"); ;
+ # Laad de data om adressen te koppelen
+ load(paste0(settings$Ruwe_Datasets,"/8. CAR/CAR_2013_XY.Rda"))
+ EAN_to_XY_PC6 = (mindataset[,list(PC_6,Huisnr,Coo_X,Coo_Y,ID_EAN)])
+ EAN_to_XY_PC6[,PC_4:=substr(EAN_to_XY_PC6$PC_6,1,4)]
+ setkey(EAN_to_XY_PC6,ID_EAN)
+ 
+ # Laad LS
+ load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_LS.Rda"))
+ mindataset[,Datum:=as.Date(mindataset$Datum)]
+ storingen$LS= mindataset[(mindataset$Datum > firstdate & mindataset$Datum < lastdate)]
+ storingen$LS[,PC_6 := gsub(" ","",storingen$LS$PC_6)] 
+ 
+ # Laad MS
+
 storingen=list()  
 
 setTkProgressBar(pb, 4,label = "Load KLAK data\n"); ;
@@ -188,6 +204,73 @@ setkey(storingen$KLAKMelders ,PC_6,Huisnr);
 setkey(EAN_to_XY_PC6,PC_6,Huisnr)
 storingen$KLAKMelders        = unique(EAN_to_XY_PC6)[storingen$KLAKMelders]
 storingen$KLAKMelders[,PC_4:=NULL]; try(setnames(storingen$KLAKMelders,"i.PC_4","PC_4"))
+storingen$KLAKMelders$Melders = "Melder"
+
+# Verwijder de foutieve KALK meldingen, want alleen eerste melders tellen
+setnames(storingen$KLAKMelders,"ID_KLAK_Melding","ID_KLAK_Melding_oud")
+setkey(storingen$KLAKMelders,ID_Groep)
+
+temp = unique(storingen$KLAKMelders[ID_Groep!="" & !is.na(ID_Groep) & ST_Groep_eerste=="Ja",
+                                    list(ID_Groep,ID_KLAK_Melding_oud)])
+setnames(temp,"ID_KLAK_Melding_oud","ID_KLAK_Melding")
+setkey(temp,ID_Groep)
+
+  storingen$KLAKMelders=temp[storingen$KLAKMelders]
+  storingen$KLAKMelders[!(ID_Groep!="" & !is.na(ID_Groep)),ID_KLAK_Melding:=ID_KLAK_Melding_oud]
+  temp= data.table(Aantal_Melders=data.table(table(storingen$KLAKMelders$ID_KLAK_Melding)),
+               ID_KLAK_Melding=unique(storingen$KLAKMelders$ID_KLAK_Melding))
+  setkey(temp,ID_KLAK_Melding)
+  setkey(storingen$KLAKMelders,ID_KLAK_Melding);
+  setnames(temp,"Aantal_Melders.V1","Aantal_Melders")
+  storingen$KLAKMelders = temp[storingen$KLAKMelders]
+
+ # Koppel meldingen en storingen
+ setkey(storingen$LS,ID_KLAK_Melding); 
+ setkey(storingen$MS,ID_KLAK_Melding); 
+ setkey(storingen$KLAKMelders,ID_KLAK_Melding)
+ storingen$LS=unique(storingen$KLAKMelders)[storingen$LS]
+ storingen$MS=unique(storingen$KLAKMelders)[storingen$MS]
+ 
+ # Koppel de GIS mutaties
+ load(paste0(settings$Ruwe_Datasets,"/21. GIS-mutaties/GISMUTATIE.Rda"))
+ setkey(mindataset,ID_KLAK_Melding)
+ storingen$LS=mindataset[storingen$LS]
+ storingen$MS=mindataset[storingen$MS]
+ 
+ setTkProgressBar(pb, 5,label = "Save KLAK data\n"); ;
+ save(storingen,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"))
+ 
+})}
+setTkProgressBar(pb, 6,label = "Done")
+
+# Laad meldingen en voeg PC4 adress dichtheid en oppervlakte toe
+load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_KOPPEL_MELDING_GROEP.Rda"))
+storingen$KLAKMelders = data.table(mindataset);
+storingen$KLAKMelders[,PC_6 := gsub(" ","",storingen$KLAKMelders$PC_6)] 
+storingen$KLAKMelders[,PC_4:=substr(storingen$KLAKMelders$PC_6,1,4)]
+load(paste0(settings$Ruwe_Datasets,"/24. Adressendichtheid/Count Adresses.Rda"))
+setkey(storingen$KLAKMelders,PC_4)
+setkey(mindataset,PC_4)
+storingen$KLAKMelders  = mindataset[storingen$KLAKMelders]
+
+# Voeg te correcte klak ids toe, deze waren namelijk uniek
+setnames(storingen$KLAKMelders,"ID_KLAK_Melding","ID_KLAK_Melding_oud")
+setkey(storingen$KLAKMelders,ID_Groep)
+temp = unique(storingen$KLAKMelders[ID_Groep!="" & !is.na(ID_Groep) & ST_Groep_eerste=="Ja",list(ID_Groep,ID_KLAK_Melding_oud)])
+setnames(temp,"ID_KLAK_Melding_oud","ID_KLAK_Melding")
+setkey(temp,ID_Groep)
+storingen$KLAKMelders=temp[storingen$KLAKMelders]
+
+# Voeg de XY toe
+load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial.Rda"))
+pc4area = data.table(pc4@data[,c("PC4CODE","SHAPE_AREA")]);
+setnames(pc4area,c("PC_4","Oppervlakte_PC4"))
+setkey(pc4area,PC_4);
+storingen$KLAKMelders  = pc4area[storingen$KLAKMelders ]
+setkey(storingen$KLAKMelders ,PC_6,Huisnr); 
+setkey(EAN_to_XY_PC6,PC_6,Huisnr)
+storingen$KLAKMelders        = unique(EAN_to_XY_PC6)[storingen$KLAKMelders]
+storingen$KLAKMelders[,PC_4:=NULL]; try(setnames(storingen$KLAKMelders,"i.PC_4","PC_4"))
 
 # Voeg informatie uit de melders toe
 frequ = data.table(data.frame(table(storingen$KLAKMelders$ID_Groep)))
@@ -216,8 +299,7 @@ storingen$MS=mindataset[storingen$MS]
 setTkProgressBar(pb, 5,label = "Save KLAK data\n"); ;
 save(storingen,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"))
              
-           })}
-  setTkProgressBar(pb, 6,label = "Done")
+setTkProgressBar(pb, 6,label = "Done")
 }
 
 fixnumber = function(x) {

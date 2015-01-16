@@ -100,9 +100,9 @@ AHA_Data_Import= function(folder="automatic",dataname,headername,mode="save",ove
 for(i in header[header[,5]=="numeric",1]) {mindataset[,i] = as.numeric(gsub(",",".",mindataset[,i]))}
 for(i in header[header[,5]=="date",1])    {mindataset[,i] = dmy(mindataset[,i])} #Timezone note taken into account for perforamnce
 for(i in header[header[,5]=="dateymd",1]) {mindataset[,i] = ymd(mindataset[,i])} #Timezone note taken into account for perforamnce
-for(i in header[header[,5]=="datetime",1]){mindataset[,i] = dmy_hms(mindataset[,i])}
-for(i in header[header[,5]=="datetimeYDM",1]){mindataset[,i] = ymd_hms(mindataset[,i])}
-for(i in header[header[,5]=="datetimeM",1]){mindataset[,i] = dmy_hm(mindataset[,i])}
+for(i in header[header[,5]=="datetime",1]){mindataset[,i] = as.Date(my_hms(mindataset[,i]))}
+for(i in header[header[,5]=="datetimeYDM",1]){mindataset[,i] = as.Date(ymd_hms(mindataset[,i]))}
+for(i in header[header[,5]=="datetimeM",1]){mindataset[,i] = as.Date(dmy_hm(mindataset[,i]))}
 for(i in header[header[,5]=="integer",1]) {mindataset[,i] = as.integer(mindataset[,i])}
 
     
@@ -165,4 +165,33 @@ importldr = function(sourcefile,colclass){
   d = fread(c,header=TRUE,colClasses=colclass)
 }
   
-  
+loadObj <- function(file.name){
+  library(foreach)
+  filesize <- file.info(file.name)$size
+  chunksize <- ceiling(filesize / 100)
+  pb <- txtProgressBar(min = 0, max = 100, style=3)
+  infile <- file(file.name, "rb")
+  data <- foreach(it = icount(100), .combine = c) %do% {
+    setTxtProgressBar(pb, it)
+    readBin(infile, "raw", chunksize)
+  }
+  close(infile)
+  close(pb)
+  return(unserialize(data))
+}
+
+saveObj <- function(object, file.name){
+  outfile <- file(file.name, "wb")
+  serialize(object, outfile)
+  close(outfile)
+}
+
+pbarwrapper = function(title="PlaceHolder", label = "Starting...", max = noloops)
+  {
+  pb        = tkProgressBar(title = title, label = label, min = 0, max = max, initial = 1, width = 450)
+  return(pb)
+}
+
+setRrogressBar = function(pb){
+setTkProgressBar (pb, loopy,label = "Converting to geospatial output");
+}
