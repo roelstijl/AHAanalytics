@@ -1,4 +1,4 @@
-
+# Contains all the geographical functions used in the project
 processXY = function(file,mode,atype){
   cat("Loading file\n");tic();
   load(paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,".Rda"));toc();
@@ -15,20 +15,20 @@ processXY = function(file,mode,atype){
                        lines= SpatialLinesDataFrame(AHA_Data_BAR_Geometry(mindataset$veld,mode,atype),data=mindataset[,veld:=NULL]),
                        points  = AHA_Data_BAR_Geometry(mindataset$veld,mode,atype,mindataset),
                        cbind(mindataset,AHA_Data_BAR_Geometry(mindataset$veld,mode,atype)))
-  try(mindataset[,veld:=NULL]) 
+  try(mindataset[,veld:=NULL])
   
   cat("saving\n")
-  if (mode == "polygons" | mode == "points"){
+  if (mode == "lines" | mode == "points"){
     save(mindataset,file=paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_Geospatial.Rda"))}
   else{
     save(mindataset,file=paste0(settings$Ruwe_Datasets,"/1. BARlog/",file,"_XY.Rda"))}
 }
 
-AHA_Data_BAR_Geometry = function(mdsysori,index,mode="lines",atype="kabels",DT = "none"){
+AHA_Data_BAR_Geometry = function(mdsysori,mode="lines",atype="kabels",DT = "none"){
   # MDsys is the collumn with the GEO-information ()
   # Converts the following "MDSYS.SDO_GEOMETRY(2001,28992,MDSYS.SDO_POINT_TYPE(185462.693,436911.424,NULL),NULL,NULL)"
   # Modes: 
-  # polygons (export plotable polygons)
+  # lines (export plotable lines)
   # beginend (export the beginning and end of each polygon)
   # position (export the avg location of the polygon)
   
@@ -37,21 +37,21 @@ AHA_Data_BAR_Geometry = function(mdsysori,index,mode="lines",atype="kabels",DT =
   
   noloops   = 20
   loopblock = ceil(seq(0.000000001,noloops,length.out=length(mdsysori)))
-  pb        = tkProgressBar (title = "Import", label = "Starting...", min = 0, max = noloops, initial = 0, width = 450); pc=0;
+  pb        = pbarwrapper (title = "Import", label = "Starting...", max = noloops); pc=0;
   mdsysout = list()
-  nu<<-1
+  nu<<-0
   
   # Loop over the values in order to prevent memory issues -----------------
   for (loopy in 1:noloops)
   {
     mdsys = mdsysori[loopblock==loopy]
-    setTkProgressBar (pb, loopy, 
+    setpbarwrapper (pb, loopy, 
                       title = paste0("AHA_Data_BAR_GEOMETRY, loop: ", loopy," of ", noloops, " n=", length(mdsys)),
                       label = "Splitting strings"); 
     
     mdsys = mdsys[!is.na(mdsys)]
     mdsys = strsplit(mdsys, "\\(|\\)"); 
-    setTkProgressBar (pb, loopy,label = "Converting to data tables in list");
+    setpbarwrapper (pb, loopy,label = "Converting to data tables in list");
     
     # Extract the coordinated from the character array
     mdsys=switch(atype,
@@ -62,33 +62,41 @@ AHA_Data_BAR_Geometry = function(mdsysori,index,mode="lines",atype="kabels",DT =
                  moffen = laply(mdsys,function(x) t(matrix(as.numeric(strsplit(x[3],",")[[1]][1:2],2))))
     ); 
     
-    setTkProgressBar (pb, loopy,label = "Converting to selected output"); 
-    
-    # Preprocess the geospatial data --------------------------
-    
-    mdsys= switch(mode,
-                  lines = llply(mdsys,function(x) 
-                  {Lines(list(Line(x)),as.character(nu));
-                   nu<<-nu+1}),
-                  
-                  beginend = llply(mdsys,function(x) cbind(x[1,],x[nrow(x),])),
-                  position = mdsys,
-                  points   = mdsys)
-    
-    # Convert it to geospatial data --------------------------
-    setTkProgressBar (pb, loopy,label = "Converting to geospatial output");
-    mdsys = switch(mode,
-                   lines = SpatialLines(mdsys,proj4string=CRS("+init=epsg:28992")),
-                   points   = {ifelse(is.character(DT),
-{temp = data.table(Index = nu:(nu-1+nrow(mdsys)))},
-{temp = DT[nu:(nu-1+nrow(mdsys))]})
-nu<<-nrow(mdsys)+1
-temp = temp[!is.na(mdsys[,1]),]
-coordinates(temp) = mdsys[!is.na(mdsys[,1]),]
-proj4string(temp) = CRS("+init=epsg:28992")
-temp},
-beginend = data.table(t(matrix(unlist(mdsys),4,length(mdsys)))),
-position = data.table(mdsys))
+setpbarwrapper (pb, loopy,label = "Converting to selected output"); 
+
+# Preprocess the geospatial data --------------------------
+
+mdsys= switch(mode,
+              lines = llply(mdsys,function(x) 
+              {nu<<-nu+1;
+                return(Lines(
+                list(
+                  Line(x))
+                ,as.character(nu)));
+               }),
+              
+              beginend = llply(mdsys,function(x) cbind(x[1,],x[nrow(x),])),
+              position = mdsys,
+              points   = mdsys)
+
+# Convert it to geospatial data --------------------------
+setpbarwrapper (pb, loopy,label = "Converting to geospatial output");
+mdsys = switch(mode,
+               lines = SpatialLines(mdsys,proj4string=CRS("+init=epsg:28992")),
+               
+               points   = {ifelse(is.character(DT),
+              {temp = data.table(Index = nu:(nu-1+nrow(mdsys)))},
+              {temp = DT[nu:(nu-1+nrow(mdsys))]})
+              nu<<-nrow(mdsys)+1
+              temp = temp[!is.na(mdsys[,1]),]
+              coordinates(temp) = mdsys[!is.na(mdsys[,1]),]
+              proj4string(temp) = CRS("+init=epsg:28992")
+              temp},
+              
+              beginend = data.table(t(matrix(unlist(mdsys),4,length(mdsys)))),
+              
+              position = data.table(mdsys)
+)
 
 a  =  switch(mode,
              beginend = {setnames(mdsys,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))},
@@ -96,7 +104,7 @@ a  =  switch(mode,
 mdsysout[[loopy]] = mdsys
   }
 
-setTkProgressBar (pb, loopy,label = "Done");
+setpbarwrapper (pb, loopy,label = "Done");
 
 #   map= plotGoogleMaps(finaloutput,legend=FALSE,strokeColor = "Blue",strokeWeight = 100)
 return(do.call(rbind,mdsysout))
@@ -127,8 +135,8 @@ processPC6 = function(file,mode){
 AHA_Data_Determine_PC=function(datatable,x="Coo_X",y="Coo_Y",PC="PC_6",extrainfo=FALSE){
   # Function calculated the postal codes for regions that lack this (i.e BAR and NOR sets)
   #
-  # Prepare Polygons -----------------------
-  pb <<- tkProgressBar (title = paste0("AHA_Data_Determine_PC, ",as.character(Sys.time())), label = "Preparing Polygons for comparison to pc6 regions", min = 0, max = 10000, initial = 0, width = 450);
+  # Prepare lines -----------------------
+  pb <<- pbarwrapper (title = paste0("AHA_Data_Determine_PC, ",as.character(Sys.time())), label = "Preparing lines for comparison to pc6 regions", min = 0, max = 10000, initial = 0, width = 450);
   load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_6_Spatial.Rda"))
   load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial.Rda"))
   pc6$PC_4=substring(pc6$POSTCODE,1,4)
@@ -138,7 +146,7 @@ AHA_Data_Determine_PC=function(datatable,x="Coo_X",y="Coo_Y",PC="PC_6",extrainfo
   proj4string(pc4) <- CRS("+init=epsg:28992")
   
   # First check in what PC 4 region the points are------------------
-  setTkProgressBar (pb, 500,label = "Check what PC4 the points are in"); 
+  setpbarwrapper (pb, 500,label = "Check what PC4 the points are in"); 
   datatable = datatable[(!is.na(datatable[,x,with=FALSE]))[,1],]
   co = data.table(as.character(1:nrow(datatable)))
   datatable[,V1:=co$V1]
@@ -172,19 +180,19 @@ AHA_Data_Determine_PC=function(datatable,x="Coo_X",y="Coo_Y",PC="PC_6",extrainfo
   
   for (pc in postcodes)
   {
-    setTkProgressBar (pb, as.integer(pc),label = paste0("Calculating pc4: ",pc)); 
+    setpbarwrapper (pb, as.integer(pc),label = paste0("Calculating pc4: ",pc)); 
     set(ret,which(co$PC_4==pc),1:8,co[co$PC_4==pc,] %over% pc6[pc6$PC_4 == pc,])
   }
   
   # Stitch it all together
-  setTkProgressBar (pb, 9900,label = paste0("Stitching results together"));
+  setpbarwrapper (pb, 9900,label = paste0("Stitching results together"));
   setkey(ret,V1); setkey(datatable,V1)
   datatable = ret[,list(POSTCODE,V1)][datatable]
   datatable[,V1:=NULL]
   setnames(datatable,"POSTCODE",PC)
   
   # Done -------------------
-  setTkProgressBar (pb,10000, label = "Done"); 
+  setpbarwrapper (pb,10000, label = "Done"); 
   
   return(datatable)
 }

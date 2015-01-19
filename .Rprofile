@@ -7,18 +7,7 @@
       Modify .Rprofile to change these settings\n\n")  
   
   options(stringsAsFactors = FALSE)
-  source("AHA_Visual_RDS_to_GPS.R")
-  source("AHA_Data_Import.R")
-  source("AHA_Data_Batch_Processing.R")
-  source("AHA_Data_NOR_Log.R")
-  #source('AHA_Data_Determine_PC.R')
-  #source("AHA_Data_BAR_Geometry.R")
-  source("AHA_Data_NOR_Log_Postprocessing.R")
-  source("AHA_Proxy_KA_Preprocessing.R")
-  source("AHA_Data_BAR_Log_Postprocessing.R")
-  source("AHA_Proxy_KA_Postprocessing.R")
   
-
   # Determine settings based on computer
   settings = data.frame(1)
   # Laptop Roel Stijl Bearingpoint Folio 1040
@@ -51,10 +40,10 @@
   
   # Desktop Jacco
   else if (Sys.info()["nodename"] =="D-AW15BX") {
-    settings[,"Bron_Datasets"] = "N:/Multivariate Analyse/AHAdata/0. Ongebruikte en brondata"
-    settings[,"Ruwe_Datasets"] = "N:/Multivariate Analyse/AHAdata/1. Ruwe Datasets"
-    settings[,"Input_Datasets"] = "N:/Multivariate Analyse/AHAdata/2. Input Datasets"
-    settings[,"Analyse_Datasets"] = "N:/Multivariate Analyse/AHAdata/3. Analyse Datasets"
+    settings[,"Bron_Datasets"] = "F:/2. Datasets/1. Alliander/AHAdata/0. Ongebruikte en brondata"
+    settings[,"Ruwe_Datasets"] = "F:/2. Datasets/1. Alliander/AHAdata/1. Ruwe Datasets"
+    settings[,"Input_Datasets"] = "F:/2. Datasets/1. Alliander/AHAdata/2. Input Datasets"
+    settings[,"Analyse_Datasets"] = "F:/2. Datasets/1. Alliander/AHAdata/3. Analyse Datasets"
     settings[,"Visuals"] = "F:/2. Datasets/1. Alliander/AHAdata/5. Visuals and Tableau workbooks"
     settings[,"Results"] = "F:/2. Datasets/1. Alliander/AHAdata/6. Results"}
   
@@ -91,26 +80,40 @@
   
   
   settings<<-settings
-
-
-# Install required packages if not installed already
+  
+  # Install required packages if not installed already -------------------------------
   packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash",
                "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2")
-
-for (m in 1:length(packages)){
-# Install if not present
-if(install.p)  install.packages(packages[m])
-
-# Download from ZIP if not present
-if(download.p)  download.packages(packages[m],paste0(settings$Ruwe_Datasets,"/0. Packages"))
-
-# Install from ZIP if not present
-if(install.p.zip) install.packages(list.files(paste0(settings$Ruwe_Datasets,"/0. Packages"),full.names =TRUE)[m])
-}
-# require packages
-for (m in 1:length(packages)){
-suppressMessages(library(packages[m],character.only=TRUE))
-}
   
+  for (m in 1:length(packages)){
+    # Install if not present
+    if(install.p)  install.packages(packages[m])
+    
+    # Download from ZIP if not present
+    if(download.p)  download.packages(packages[m],paste0(settings$Ruwe_Datasets,"/0. Packages"))
+    
+    # Install from ZIP if not present
+    if(install.p.zip) install.packages(list.files(paste0(settings$Ruwe_Datasets,"/0. Packages"),full.names =TRUE)[m])
+  }
+  # require packages
+  for (m in 1:length(packages)){
+    suppressMessages(library(packages[m],character.only=TRUE))
+  }
+  
+  # Source some functions --------------------------------
+  source("AHA_Visual_RDS_to_GPS.R")
+  source("AHA_Data_Import.R")
+  source("AHA_Data_Batch_Processing.R")
+  source("AHA_Data_NOR_Log.R")
+  source('AHA_Data_Geo_Functions.R')
+  source("AHA_Data_NOR_Log_Postprocessing.R")
+  source("AHA_Proxy_KA_Preprocessing.R")
+  source("AHA_Data_BAR_Log_Postprocessing.R")
+  source("AHA_Proxy_KA_Postprocessing.R")
+  source("AHA_Extra_Functions.R")
+  
+  # l_ply(ffiles,source)
+  
+  # Finnish -------------------------------------
   cat("Loaded settings, built by R Stijl (Bearingpoint), J Heres (Alliander)")  
 }
