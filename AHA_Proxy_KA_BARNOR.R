@@ -1,5 +1,5 @@
 AHA_Proxy_KA_BAR_NOR = 
-function(method,nr1,nr2,assettypes=c("LSkabels","MSkabels","LSmoffen","MSmoffen")) 
+function(method,set,nr1=1,nr2=nrow(storingen$LS),assettypes=c("LSkabels","MSkabels","LSmoffen","MSmoffen")) 
 { # This function calculates the asset id - klak id proxy for the asset health analytics project
   # Data should be loaded using the AHA_Proxy_Dataset function (global environment)
   # 
@@ -17,6 +17,7 @@ function(method,nr1,nr2,assettypes=c("LSkabels","MSkabels","LSmoffen","MSmoffen"
   config$sdiff$max    =   2 # Afstand tussen verwijderde en toegevoegde asset
   config$szoek$LS     = 200 # Afstand waarover assets gezocht worden bij XY-proxy
   config$szoek$MS     =2000 # Afstand waarover assets gezocht worden bij XY-proxy
+  config$set          = set
   
   #developer parameters
   develop                        <<-  list()
@@ -31,7 +32,9 @@ function(method,nr1,nr2,assettypes=c("LSkabels","MSkabels","LSmoffen","MSmoffen"
   # Load data if not available -----------------------------
   if (!exists("assets")) {
     cat("Importing data file \n"); tic()
-    load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_NOR.Rda"),envir = .GlobalEnv)
+    switch(config$set,
+           NOR=load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_NOR.Rda"),envir = .GlobalEnv),
+           BAR=load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_BAR.Rda"),envir = .GlobalEnv))
     load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_nettopo.Rda"),envir = .GlobalEnv)
     load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"),envir = .GlobalEnv)
     toc();
@@ -45,8 +48,9 @@ function(method,nr1,nr2,assettypes=c("LSkabels","MSkabels","LSmoffen","MSmoffen"
   storingen$LS$Datum_Verwerking_Gereed <- as.Date(storingen$LS$Datum_Verwerking_Gereed) #converteren tijdstippen naar datumnotatie
   storingen$MS$Datum_Verwerking_Gereed <- as.Date(storingen$MS$Datum_Verwerking_Gereed) #converteren tijdstippen naar datumnotatie
   if(names(assets$LSkabels)[1]=="ID_Hoofdleiding"){setnames(assets$LSkabels,c("ID_Verbinding","ID_Hoofdleiding"),c("ID_Hoofdleiding","ID_Verbinding"))}
+  if(set=="NOR"){
   names(assets$LSkabels)[4:5]          <- c("Coo_X_van","Coo_Y_van")
-  names(assets$MSkabels)[4:5]          <- c("Coo_X_van","Coo_Y_van")
+  names(assets$MSkabels)[4:5]          <- c("Coo_X_van","Coo_Y_van")}
   
   nettopo$EAN_koppel$ID_Hoofdleiding_LS<- as.character(nettopo$EAN_koppel$ID_Hoofdleiding_LS) #zorgen dat hoofdleidingen characters zijn
   #   storingen$LS$Coo_X                   <- as.numeric(gsub(",",".",storingen$LS$Coo_X))
@@ -55,7 +59,9 @@ function(method,nr1,nr2,assettypes=c("LSkabels","MSkabels","LSmoffen","MSmoffen"
   #   storingen$MS$Coo_Y                   <- as.numeric(gsub(",",".",storingen$MS$Coo_Y))
   
   # Voeg veld toe of kabels vervangen zijn of niet
-  assets$MSkabels$is.verv <- ddply(assets$MSkabels,.(ID_unique),function(x){kabel_vervangen(assets$MSkabels,x,config)})
+#   assets$MSkabels$is.verv <- switch(config$set,
+#          NOR=ddply(assets$MSkabels,.(ID_unique),function(x){kabel_vervangen(assets$MSkabels,x,config)}),
+#          BAR=ddply(assets$MSkabels,.(ID_BAR),function(x){kabel_vervangen(assets$MSkabels,x,config)}))
   
   # Set keys for different methods-----------------------
   switch(method,
@@ -255,9 +261,10 @@ process.table = function(assetstb,klakl,assettype,config){
       #try(print(paste(klakl$ID_KLAK_Melding,length(assetstb),nrow(assetstb),class(assetstb),assettype)))
       #try(print(paste(sum(complete.cases(assetstb$ID_unique)), nrow(assetstb),class(assetstb),assettype)))
     if(length(assetstb)              ==   0){print(head(assetstb))}else{
-    try({ 
-    assetstb  <-    assetstb[!is.na(assetstb$ID_unique)]                                          # Verwijder rijen met enkel NA's
-    if (sum(complete.cases(assetstb$ID_unique)) ==   0   ){assetstb <- assetstb[0,]}else{         # Verwijder sets met enkel NA's
+    try({switch(config$set,
+               NOR={assetstb <- assetstb[!is.na(assetstb$ID_unique)]; countnna <- sum(complete.cases(assetstb$ID_unique))},                                         # Verwijder rijen met enkel NA's
+               BAR={assetstb <- assetstb[!is.na(assetstb$ID_BAR)];    countnna <- sum(complete.cases(assetstb$ID_BAR))})
+    if (countnna == 0 ){assetstb <- assetstb[0,]}else{         # Verwijder sets met enkel NA's
       
     if (sum(assetstb$Status_ID=="Removed"|assetstb$Status_ID=="Lengthch") ==0){assetstb <- assetstb[0,]} #Indien alleen toegevoegde assets -> verwijder alle rijen
     else  {
