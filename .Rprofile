@@ -7,16 +7,6 @@
       Modify .Rprofile to change these settings\n\n")  
   
   options(stringsAsFactors = FALSE)
-  source("AHA_Visual_RDS_to_GPS.R")
-  source("AHA_Data_Import.R")
-  source("AHA_Data_Batch_Processing.R")
-  source("AHA_Data_NOR_Log.R")
-source('AHA_Data_Geo_Functions.R')
-  source("AHA_Data_NOR_Log_Postprocessing.R")
-  source("AHA_Proxy_KA_Preprocessing.R")
-  source("AHA_Data_BAR_Log_Postprocessing.R")
-  source("AHA_Proxy_KA_Postprocessing.R")
-  
 
   # Determine settings based on computer
   settings = data.frame(1)
@@ -91,8 +81,7 @@ source('AHA_Data_Geo_Functions.R')
   
   settings<<-settings
 
-
-# Install required packages if not installed already
+# Install required packages if not installed already -------------------------------
   packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash",
                "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2")
 
@@ -110,6 +99,21 @@ if(install.p.zip) install.packages(list.files(paste0(settings$Ruwe_Datasets,"/0.
 for (m in 1:length(packages)){
 suppressMessages(library(packages[m],character.only=TRUE))
 }
-  
+
+# Source some functions --------------------------------
+source("AHA_Visual_RDS_to_GPS.R")
+source("AHA_Data_Import.R")
+source("AHA_Data_Batch_Processing.R")
+source("AHA_Data_NOR_Log.R")
+source('AHA_Data_Geo_Functions.R')
+source("AHA_Data_NOR_Log_Postprocessing.R")
+source("AHA_Proxy_KA_Preprocessing.R")
+source("AHA_Data_BAR_Log_Postprocessing.R")
+source("AHA_Proxy_KA_Postprocessing.R")
+source("AHA_Extra_Functions.R")
+
+# l_ply(ffiles,source)
+
+# Finnish -------------------------------------
   cat("Loaded settings, built by R Stijl (Bearingpoint), J Heres (Alliander)")  
 }
