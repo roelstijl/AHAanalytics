@@ -1,10 +1,15 @@
-AHA_Proxy_KA_Postprocessing = function(Proxy=F,GoogleMaps=F,FullSet=F)
+AHA_Proxy_KA_Postprocessing = function(Proxy=F,GoogleMaps=F,includePCmaps=F,FullSet=F)
 {
 # This function will plot the data files used in project AHA onto google maps
 # Input is a series of PC4 areas or a single PC4 area PC_4 = 6810:6823 for Arnhem
 # Method include proxy 
 # Settings ---------------------------------------------------------
-pb = tkProgressBar(title = paste0("AHA_Proxy_KA_Postprocessing, ",as.character(Sys.time())),label = "Loading files", min = 0, max = 14, initial = 0, width = 450);
+cfg               = list()
+cfg$Proxy         = Proxy  
+cfg$includePCmaps = includePCmaps
+cfg$FullSet       = FullSet
+cfg$GoogleMaps    = GoogleMaps
+pb = pbarwrapper(title = paste0("AHA_Proxy_KA_Postprocessing, ",as.character(Sys.time())),label = "Loading files", max = 14);
 
 # Load the required data files -------------------------------------
 load(paste0(settings$Input_Datasets,"/23. Validatie_data/Validatie koppelingen.Rda"))
@@ -12,9 +17,11 @@ load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_as
 assets_BAR=assets
 load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_NOR.Rda"))
 assets_NOR=assets
+rm(assets)
+
 load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"))
 
-if (GoogleMaps){
+if (cfg$GoogleMaps){
   load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_6_Spatial.Rda"))
   load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial.Rda"))  
   pc6@data$PC_4 = substr(pc6@data$POSTCODE,1,4)
@@ -22,13 +29,17 @@ if (GoogleMaps){
 }
 
 l_ply(assets_BAR[1:4],function(x) try(setnames(x,"Status_R","Status_ID")))
-rm(assets)
+l_ply(assets_BAR[1:4],function(x) try(setnames(x,"Hoofdleiding","ID_Hoofdleiding")))
+l_ply(assets_BAR[1:4],function(x) try(setnames(x,"ID_LS_Hoofdleiding","ID_Hoofdleiding_2")))
+l_ply(assets_BAR[1:4],function(x) try(setnames(x,"ID_MS_Hoofdleiding","ID_Hoofdleiding_2")))
+l_ply(assets_BAR[1:4],function(x) try(setnames(x,"Bouwejaar","Bouwjaar")))
 
 # Convert some stuff ------------------------------
-setTkProgressBar(pb, 1,label = "Converting objects"); 
+setpbarwrapper(pb, 1,label = "Converting objects"); 
 
 # BAR
-assets_BAR$kabels = rbind(assets_BAR$LSkabels,assets_BAR$MSkabels,fill=TRUE)[,list(Status_ID,DateLength_ch,ID_NAN,Length_ch,DateRemoved,DateAdded,Coo_X_van,Coo_Y_van,PC_6_van,Coo_X_naar,Coo_Y_naar,PC_6_naar)]
+assets_BAR$MSHLDROUTE = NULL
+assets_BAR$kabels = rbind(assets_BAR$LSkabels,assets_BAR$MSkabels,fill=TRUE)[,list(Status_ID,DateLength_ch,ID_NAN,Length_ch,DateRemoved,DateAdded,Coo_X_van,Coo_Y_van,PC_6_van,Coo_X_naar,Coo_Y_naar,PC_6_naar,ID_Hoofdleiding,ID_Hoofdleiding_2)]
 setkey(assets_BAR$kabels,ID_NAN);   
 assets_BAR$kabels = assets_BAR$kabels[DateAdded>"2014-01-04"]
 assets_BAR$kabels = unique(assets_BAR$kabels)
@@ -36,6 +47,10 @@ assets_BAR$kabels = unique(assets_BAR$kabels)
 assets_BAR$moffen = rbind(assets_BAR$LSmoffen,assets_BAR$MSmoffen,fill=TRUE)[,list(Status_ID,ID_NAN,DateRemoved,DateAdded,Coo_X,Coo_Y,PC_4,PC_6)]
 assets_BAR$moffen = assets_BAR$moffen[DateAdded>"2014-01-04"]
 assets_BAR$moffen = unique(assets_BAR$moffen)
+
+assets_BAR$moffen[,PC_4:=substr(assets_BAR$moffen$PC_6,1,4)]
+assets_BAR$kabels[,PC_4_van:=substr(assets_BAR$kabels$PC_6_van,1,4)]
+assets_BAR$kabels[,PC_4_naar:=substr(assets_BAR$kabels$PC_6_naar,1,4)]  
 
 assets_BAR$all    = rbind(assets_BAR$moffen, assets_BAR$kabels,fill=TRUE)
 setkey(assets_BAR$all,ID_NAN);   
@@ -77,20 +92,20 @@ setkey(ValidatieSet,ID_KLAK_Melding)
 ValidatieSet=storingen$all[,list(ID_KLAK_Melding,Aantal_Melders)][ValidatieSet,]
 
 # Create file with found assets  -------------------------------
-setTkProgressBar(pb, 2,label = "Loading full asset datasets");  
-if (FullSet){
-FullDataAnalytics("NOR")  
-FullDataAnalytics("BAR")
+if (cfg$FullSet){
+  setpbarwrapper(pb, 2,label = "Loading full asset datasets");  
+  FullDataAnalytics("NOR")  
+  FullDataAnalytics("BAR")
 }
 
-setTkProgressBar(pb, 2,label = "Calculating Proxy");  
-if(Proxy)
+setpbarwrapper(pb, 2,label = "Calculating cfg$Proxy  ");  
+if(cfg$Proxy  )
 {cat("Select a file for XY proxy\n")
 ValidatieSet = IncludeProxy(ValidatieSet)
 cat("Select a file for PC proxy\n")
 ValidatieSet = IncludeProxy(ValidatieSet)}
 
-setTkProgressBar(pb, 2,label = "Calculating ValidatieSet");  
+setpbarwrapper(pb, 2,label = "Calculating ValidatieSet");  
 ValidatieSet[,in_NORlog:=(ID_NAN %in% assets_NOR$all$ID_NAN)]
 ValidatieSet[,in_BARlog:=(ID_NAN %in% assets_BAR$all$ID_NAN)]
 ValidatieSet[,in_KLAK:=(ID_KLAK_Melding %in% storingen$all$ID_KLAK_Melding)]
@@ -108,32 +123,32 @@ ValidatieSet[,in_BARlog_and_XY:=(in_BARlog_KLAK&BARlog_has_Coordinates&KLAK_has_
 molten = melt(ValidatieSet, id.vars = c("Regio","Datum","ID_KLAK_Melding","ID_NAN","Opmerkingen"),,)
 
 # Write the results to an excel file
-write.xlsx(molten,file=paste0(settings$Analyse_Datasets,"/2. Proxy validatie/Validatie_Meta.xlsx"),sheetName="Format Melt",row.names=FALSE, append=FALSE)
-write.xlsx(ValidatieSet,file=paste0(settings$Analyse_Datasets,"/2. Proxy validatie/Validatie_Meta.xlsx"),sheetName="Format Wide",row.names=FALSE, append=TRUE)
+write.xlsx(molten,file=paste0(settings$Analyse_Datasets,"/2. Proxy   validatie/Validatie_Meta.xlsx"),sheetName="Format Melt",row.names=FALSE, append=FALSE)
+write.xlsx(ValidatieSet,file=paste0(settings$Analyse_Datasets,"/2. Proxy   validatie/Validatie_Meta.xlsx"),sheetName="Format Wide",row.names=FALSE, append=TRUE)
 
 ggplot(molten,aes(variable,fill=paste(value))) + geom_bar(colour="black") + coord_flip()
 
   # Create the maps ----------------------------
-  if (GoogleMaps){
+  if (cfg$GoogleMaps){
     
-    setTkProgressBar(pb,3,label="Starting Google maps"); pc=3;
+    setpbarwrapper(pb,3,label="Starting Google maps"); pc=3;
     pcmax = 10/(sum(ValidatieSet$in_NORlog_and_XY)+sum(ValidatieSet$in_BARlog_and_XY))
     
-    for (ID_KLAK in ValidatieSet$ID_KLAK_Melding[as.logical(ValidatieSet$in_NORlog_and_XY)]){
-      setTkProgressBar(pb, pc,label =paste0("Generating google maps, KLAK: ",ID_KLAK)); pc=pc+pcmax
-      Createmaps(assets_NOR,storingen,pc4,pc6,ID_KLAK,ValidatieSet[ID_KLAK_Melding==ID_KLAK,ID_NAN],"NORlog")
-    }
+#     for (ID_KLAK in ValidatieSet$ID_KLAK_Melding[as.logical(ValidatieSet$in_NORlog_and_XY)]){
+#       setpbarwrapper(pb, pc,label =paste0("Generating google maps, KLAK: ",ID_KLAK)); pc=pc+pcmax
+#       Createmaps(assets_NOR,storingen,pc4,pc6,ID_KLAK,ValidatieSet[ID_KLAK_Melding==ID_KLAK,ID_NAN],"NORlog",cfg)
+#     }
     for (ID_KLAK in ValidatieSet$ID_KLAK_Melding[as.logical(ValidatieSet$in_BARlog_and_XY)]){
-      setTkProgressBar(pb, pc,label = paste0("Generating google maps, KLAK: ",ID_KLAK)); pc=pc+pcmax
-      Createmaps(assets_BAR,storingen,pc4,pc6,ID_KLAK,ValidatieSet[ID_KLAK_Melding==ID_KLAK,ID_NAN],"BARlog")
+      try({setpbarwrapper(pb, pc,label = paste0("Generating google maps, KLAK: ",ID_KLAK)); pc=pc+pcmax})
+      Createmaps(assets_BAR,storingen,pc4,pc6,ID_KLAK,ValidatieSet[ID_KLAK_Melding==ID_KLAK,ID_NAN],"BARlog",cfg)
     }
   }
-  setTkProgressBar(pb, 14,label = "done"); 
+  setpbarwrapper(pb, 14,label = "done"); 
   
 }
 
 # Put it on a map -------------------------------------------------------
-Createmaps = function(assets,storingen,pc4,pc6,ID_KLAK_M,ID_NAN_M,asset_source){
+Createmaps = function(assets,storingen,pc4,pc6,ID_KLAK_M,ID_NAN_M,asset_source,cfg){
   geosets = list()
   PC_4_M=storingen$all[ID_KLAK_M == storingen$all$ID_KLAK_M,PC_4]
   
@@ -171,9 +186,14 @@ Createmaps = function(assets,storingen,pc4,pc6,ID_KLAK_M,ID_NAN_M,asset_source){
     proj4string(geosets$KLAKMelders) = CRS("+init=epsg:28992")
   }
   
-#   map=pGMwrapper(pc6[pc6$PC_4==PC_4_M,],"Postcode 6 gebieden","POSTCODE",heat.colors(nrow(pc6[pc6$PC_4==PC_4_M,])),1,FALSE,options=",fillOpacity=0.2")
+  map = 0 # Prevents issues on empty set
   
-  map=pGMwrapper(geosets$storingen[geosets$storingen$ID_KLAK_Melding!=ID_KLAK_M,],"Omringende Storingen","Storing","#FF8566",3,FALSE)
+  if(cfg$includePCmaps){
+    map=pGMwrapper(pc6[pc6$PC_4==PC_4_M,],"Postcode 6 gebieden","POSTCODE",heat.colors(nrow(pc6[pc6$PC_4==PC_4_M,])),1,FALSE,options=",fillOpacity=0.2",map)
+    cfg.fileadded = "PC"
+  } else {cfg.fileadded = ""}
+  
+  map=pGMwrapper(geosets$storingen[geosets$storingen$ID_KLAK_Melding!=ID_KLAK_M,],"Omringende Storingen","Storing","#FF8566",3,FALSE,map)
   map=pGMwrapper(geosets$moffen[geosets$moffen$ID_NAN!=ID_NAN_M,],"Omringende Moffen","Status_ID",c("#248F24","#B26B24"),3,FALSE,map)
   map=pGMwrapper(geosets$kabels[geosets$kabels$ID_NAN!=ID_NAN_M,],"Omringende Kabels","Status_ID",c("#248F24","#003399","#B26B24"),3,FALSE,map)
   
@@ -182,7 +202,7 @@ Createmaps = function(assets,storingen,pc4,pc6,ID_KLAK_M,ID_NAN_M,asset_source){
   
   map=pGMwrapper(geosets$KLAKMelders[geosets$KLAKMelders$ID_KLAK_Melding==ID_KLAK_M,],"Betrokken Melders","Melders","#E65C00",3,FALSE,map)
   map=pGMwrapper(geosets$storingen[geosets$storingen$ID_KLAK_Melding==ID_KLAK_M,],"Betrokken Storing","Storing","#B80000",3,last=TRUE,previousmap=map,
-                 file=paste0(settings$Analyse_Datasets,"/3. Geo data/Google_maps_KLAK_",ID_KLAK_M,"_",asset_source,".html"))
+                 file=paste0(settings$Analyse_Datasets,"/3. Geo data/Google_maps_KLAK_",ID_KLAK_M,"_",asset_source,cfg.fileadded,".html"))
   
   
 }
@@ -210,7 +230,8 @@ pGMwrapper = function (data,layername,group,colors,width,last=FALSE,previousmap=
   }
   else{
     cat("Input is empty!\n")
-  })
+  }) 
+  
   return(previousmap)
   
   options(warn=0)
@@ -219,7 +240,7 @@ pGMwrapper = function (data,layername,group,colors,width,last=FALSE,previousmap=
 # Analyses the entire Asset Database (very memory intensive!) -----------------
 FullDataAnalytics = function(AssetName = "NOR")
 {
-  ValidatieSet = data.table(read.xlsx(paste0(settings$Analyse_Datasets,"/2. Proxy validatie/Validatie_Meta.xlsx"),sheetName="Format Wide"),key=ID_NAN)
+  ValidatieSet = data.table(read.xlsx(paste0(settings$Analyse_Datasets,"/2. cfg$Proxy   validatie/Validatie_Meta.xlsx"),sheetName="Format Wide"),key=ID_NAN)
 #   loadObj(paste0("C:/Datasets/AHAdata/2. Input Datasets/2. All Assets/Asset_Data_",AssetName,"_assets.Rda"))
   load(paste0("C:/Datasets/AHAdata/2. Input Datasets/2. All Assets/Asset_Data_",AssetName,"_assets.Rda"))
 
@@ -229,7 +250,7 @@ FullDataAnalytics = function(AssetName = "NOR")
   assets = llply(assets,function(x) unique(x)[Brontabel,ID_NAN,DateRemoved,DateAdded,DateLength_ch,Length_ch])
   
   write.xlsx(ValidatieSet[rbindlist(assets)],
-             file=paste0(settings$Analyse_Datasets,"/2. Proxy validatie/Validatie_Meta.xlsx"),
+             file=paste0(settings$Analyse_Datasets,"/2. cfg$Proxy   validatie/Validatie_Meta.xlsx"),
              sheetName=paste0("All_Assets_",AssetName), append=TRUE)
   ValidatieSet[,inAllNOR:=ID_NAN %in% rbindlist(assets)$ID_NAN]
   return(ValidatieSet)
@@ -238,7 +259,7 @@ FullDataAnalytics = function(AssetName = "NOR")
 # Analyse the proxy results ---------------------------------------------
 IncludeProxy = function(ValidatieSet)
 {
-  #   load("C:/Datasets/AHAdata/3. Analyse Datasets/1. KA Proxy/assetslPC2015-01-07 11.12.00.Rda")
+  #   load("C:/Datasets/AHAdata/3. Analyse Datasets/1. KA cfg$Proxy  /assetslPC2015-01-07 11.12.00.Rda")
   file = file.choose()
   load(file); 
   
@@ -265,8 +286,10 @@ IncludeProxy = function(ValidatieSet)
   setkey(valdt,ID_KLAK_Melding)
   
   ValidatieSet = valdt[ValidatieSet][,any(ID_NAN %in% i.ID_NAN),by=ID_KLAK_Melding][ValidatieSet]
-  setnames(ValidatieSet,"V1",paste0("Proxi_",ProxyName,"_Correct"))
+  setnames(ValidatieSet,"V1",paste0("Proxi_",ProxyName,"_Correct",))
   
   return(ValidatieSet)
 }
+
+
                                                                                                                                     

@@ -50,6 +50,16 @@ LSk=(assets$LSkabels$DateAdded > firstdate & assets$LSkabels$DateAdded < lastdat
 LSk[is.na(LSk)]=FALSE
 assets$LSkabels = assets$LSkabels[LSk]
 
+assets$MSmoffen[,PC_4:=substr(assets$MSmoffen$PC_6,1,4)]
+assets$LSmoffen[,PC_4:=substr(assets$LSmoffen$PC_6,1,4)]
+
+assets$LSkabels[,PC_4_van:=substr(assets$LSkabels$PC_6_van,1,4)]
+assets$LSkabels[,PC_4_naar:=substr(assets$LSkabels$PC_6_naar,1,4)]  
+assets$MSkabels[,PC_4_van:=substr(assets$MSkabels$PC_6_van,1,4)]
+assets$MSkabels[,PC_4_naar:=substr(assets$MSkabels$PC_6_naar,1,4)]  
+
+assets$MSHLDROUTE = NULL
+
 # Opsplitsen in MS en LS, zo zit het in de BARlog ook
 setTkProgressBar(pb, 2,label = "Save BAR asset data\n"); ;
 save(assets,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_BAR.Rda"))
