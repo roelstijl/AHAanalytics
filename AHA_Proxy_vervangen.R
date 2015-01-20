@@ -4,15 +4,16 @@ config$vervdiff$min = -45 # Aantal dagen tussen verwijderde en toegevoegde asset
 config$vervdiff$max =  45 # Aantal dagen tussen verwijderde en toegevoegde asset
 config$sdiff$max    =   2 # Afstand tussen verwijderde en toegevoegde asset
 
- #assets$LSkabels$Coo_X_van  <- as.numeric(assets$LSkabels$Coo_X_van)
- #assets$LSkabels$Coo_X_naar <- as.numeric(assets$LSkabels$Coo_X_naar)
- #assets$LSkabels$Coo_Y_van <- as.numeric(assets$LSkabels$Coo_Y_van)
- #assets$LSkabels$Coo_Y_naar <- as.numeric(assets$LSkabels$Coo_Y_naar)
- 
- #assets$MSkabels$Coo_X_van  <- as.numeric(assets$MSkabels$Coo_X_van)
- #assets$MSkabels$Coo_X_naar <- as.numeric(assets$MSkabels$Coo_X_naar)
- #assets$MSkabels$Coo_Y_van <- as.numeric(assets$MSkabels$Coo_Y_van)
- #assets$MSkabels$Coo_Y_naar <- as.numeric(assets$MSkabels$Coo_Y_naar)
+
+#  assets$LSkabels$Coo_X_van  <- as.numeric(assets$LSkabels$Coo_X_van)
+#  assets$LSkabels$Coo_X_naar <- as.numeric(assets$LSkabels$Coo_X_naar)
+#  assets$LSkabels$Coo_Y_van <- as.numeric(assets$LSkabels$Coo_Y_van)
+#  assets$LSkabels$Coo_Y_naar <- as.numeric(assets$LSkabels$Coo_Y_naar)
+#  
+#  assets$MSkabels$Coo_X_van  <- as.numeric(assets$MSkabels$Coo_X_van)
+#  assets$MSkabels$Coo_X_naar <- as.numeric(assets$MSkabels$Coo_X_naar)
+#  assets$MSkabels$Coo_Y_van <- as.numeric(assets$MSkabels$Coo_Y_van)
+#  assets$MSkabels$Coo_Y_naar <- as.numeric(assets$MSkabels$Coo_Y_naar)
 
 
 
@@ -40,7 +41,7 @@ kabel_vervangen = function(kabelset, kabel,config){
 
 #MS
 system.time(
-test <- ddply(assets$MSkabels,.(Index),function(x){kabel_vervangen(assets$MSkabels,x,config)})
+test <- ddply(assets$MSkabels,.(ID_unique),function(x){kabel_vervangen(assets$MSkabels,x,config)})
 )
 
 
@@ -55,8 +56,7 @@ library(foreach)
 pb = txtProgressBar(min = 0, max = 1)
 registerDoParallel(makeCluster(3))
 system.time({
-  test2 <- ddply(assets$LSkabels,.(Index),function(x){kabel_vervangen(assets$LSkabels,x,config)},
-                 .progress=pb,.parallel=T)
+  test2 <- ddply(assets$LSkabels,.(Index),function(x){kabel_vervangen(assets$LSkabels,x,config)})
 })
 
 test2      <-    data.table(test2,key="Index")
@@ -65,3 +65,5 @@ setkey(assets$MSkabels,Index)
 assets$MSkabels <- assets$MSkabels[test2]
 
 
+write.csv(test2, file="C:/Data/AHAdata/vervangen2.csv")
+write.csv(test, file="C:/Data/AHAdata/vervangenMSkabels.csv")
