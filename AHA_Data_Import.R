@@ -14,11 +14,12 @@ AHA_Data_Import= function(folder="automatic",dataname,headername,mode="save",ove
   # - header will just dump the header xlsx
   # Multiple files is supported, initial input dataname is a partial search
   
-#  "date",1])    {mindataset[,i] = dmy(mindataset[,i])} #Timezone note taken into account for perforamnce
-#  "dateymd",1]) {mindataset[,i] = ymd(mindataset[,i])} #Timezone note taken into account for perforamnce
-#   for(i in header[header[,5]=="datetime",1]){mindataset[,i] = as.Date(my_hms(mindataset[,i]))}
-#   for(i in header[header[,5]=="datetimeYDM",1]){mindataset[,i] = as.Date(ymd_hms(mindataset[,i]))}
-#   for(i in header[header[,5]=="datetimeM",1]){mindataset[,i] = as.Date(dmy_hm(mindataset[,i]))}
+  # An attached excel sheet contains all the information for the import, the following date formats are allowed
+  #  "date",        dmy
+  #  "dateymd",     ymd
+  #  "datetime",    my_hms
+  #  "datetimeYDM", ymd_hms
+  #  "datetimeM",   dmy_hm
   
   # Do all the loading and modifying of files -------------------------------
   # Define the location of your data based on the system used
@@ -40,8 +41,8 @@ AHA_Data_Import= function(folder="automatic",dataname,headername,mode="save",ove
   }
   dir.create(paste0(settings$Ruwe_Datasets,"/",setfolder), showWarnings = FALSE)
   
-  cfg=list()
-  cfg$started = Sys.time()
+  cfg           = list()
+  cfg$started   = Sys.time()
   shinyfolder   = "x. Shiny"
   pb = pbarwrapper (title = "Import", label = "Starting...", min = 0, max = length(datafiles)*3, initial = 0, width = 450); pc=0;
   
