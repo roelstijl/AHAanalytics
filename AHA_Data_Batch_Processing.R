@@ -26,17 +26,20 @@ processXY("MH_NRG_LS_KABELS","beginend",atype="kabels")
 processXY("MH_NRG_MS_MOFFEN","position",atype="moffen")
 processXY("MH_NRG_LS_MOFFEN","position",atype="moffen")
 
-# Add the XY coordinates in a spatial file
-processXY("MH_NRG_LS_KABELS","lines",atype="kabels")
-processXY("MH_NRG_MS_KABELS","lines",atype="kabels")
-processXY("MH_NRG_MS_MOFFEN","points",atype="moffen")
-processXY("MH_NRG_LS_MOFFEN","points",atype="moffen")
-
 # Add the PC_6 locations of the assets
 processPC6("MH_NRG_LS_KABELS","van_naar")
 processPC6("MH_NRG_MS_KABELS","van_naar")
 processPC6("MH_NRG_MS_MOFFEN","punt")
 processPC6("MH_NRG_LS_MOFFEN","punt")
+
+# Add the XY coordinates in a spatial file
+processXY("MH_NRG_LS_KABELS","lines",atype="kabels")
+processXY("MH_NRG_MS_KABELS","lines",atype="kabels")
+
+# Create the tableau output for the visuals
+Tableau_Create_Polygons(fileout="MH_NRG_MS_KABELS_Geospatial_Tableau",sources="spd",combine = FALSE)
+Tableau_Create_Polygons(fileout="MH_NRG_LS_KABELS_Geospatial_Tableau",sources="spd",combine = FALSE)
+
 
 # Add the dates etc
 AHA_Data_BAR_Log_Postprocessing()

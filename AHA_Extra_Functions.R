@@ -39,16 +39,19 @@ saveObj <- function(object, file.name){
   close(outfile)
 }
 
-pbarwrapper = function(title="PlaceHolder", label = "Starting...", max = 1)
+pbarwrapper = function(title="PlaceHolder", label = "Starting...", max = 1,min = 0,initial = 0,width = 450)
 {
   gltitle <<- title
   label = paste0(title, ": ",label)
-  pb        = txtProgressBar2(title = title, label = label, min = 0, max = max, initial = 1, style = 3)
+  pb        = txtProgressBar2(title = title, label = label, min = 0, max = max, initial = 0, style = 3)
   
   return(pb)
 }
 
 setpbarwrapper = function(pb,index,label="title",title=""){
+  if (title!=""){
+    gltitle <<-title
+  }
   label = paste0(gltitle, ": ", label)
   setTxtProgressBar2 (pb, index,label = label)
 }
@@ -66,7 +69,8 @@ AHA_DATA_Correct_NRG_Corruption= function(){
   
 }
 
-
+shorten= function(checkboxes,amount) 
+{names(checkboxes) = paste0(substring(checkboxes,1,amount),"...");return(checkboxes)}
 
 txtProgressBar2 <- function (min = 0, max = 1, initial = 0, char = "=", width = NA, 
                              title="", label="", style = 1) 

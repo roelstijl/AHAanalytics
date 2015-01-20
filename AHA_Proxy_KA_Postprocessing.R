@@ -92,20 +92,14 @@ setkey(ValidatieSet,ID_KLAK_Melding)
 ValidatieSet=storingen$all[,list(ID_KLAK_Melding,Aantal_Melders)][ValidatieSet,]
 
 # Create file with found assets  -------------------------------
-if (cfg$FullSet){
-  setpbarwrapper(pb, 2,label = "Loading full asset datasets");  
-  FullDataAnalytics("NOR")  
-  FullDataAnalytics("BAR")
-}
-
-setpbarwrapper(pb, 2,label = "Calculating cfg$Proxy  ");  
+setpbarwrapper(pb, 2,label = "Calculating Proxy  ");  
 if(cfg$Proxy  )
 {cat("Select a file for XY proxy\n")
 ValidatieSet = IncludeProxy(ValidatieSet)
 cat("Select a file for PC proxy\n")
 ValidatieSet = IncludeProxy(ValidatieSet)}
 
-setpbarwrapper(pb, 2,label = "Calculating ValidatieSet");  
+setpbarwrapper(pb, 3,label = "Calculating ValidatieSet");  
 ValidatieSet[,in_NORlog:=(ID_NAN %in% assets_NOR$all$ID_NAN)]
 ValidatieSet[,in_BARlog:=(ID_NAN %in% assets_BAR$all$ID_NAN)]
 ValidatieSet[,in_KLAK:=(ID_KLAK_Melding %in% storingen$all$ID_KLAK_Melding)]
@@ -120,15 +114,21 @@ ValidatieSet[,BARlog_has_Coordinates := (!is.na(assets_BAR$all[ValidatieSet]$Coo
 ValidatieSet[,in_NORlog_and_XY:=(in_NORlog_KLAK&KLAK_has_Coordinates&NORlog_has_Coordinates)]
 ValidatieSet[,in_BARlog_and_XY:=(in_BARlog_KLAK&BARlog_has_Coordinates&KLAK_has_Coordinates)]
 
+if (cfg$FullSet){
+  setpbarwrapper(pb, 4,label = "Loading full asset datasets");  
+  ValidatieSet = FullDataAnalytics("NOR",ValidatieSet,FALSE)  
+  ValidatieSet = FullDataAnalytics("BAR",ValidatieSet,TRUE)
+}
+
 molten = melt(ValidatieSet, id.vars = c("Regio","Datum","ID_KLAK_Melding","ID_NAN","Opmerkingen"),,)
 
 # Write the results to an excel file
-write.xlsx(molten,file=paste0(settings$Analyse_Datasets,"/2. Proxy   validatie/Validatie_Meta.xlsx"),sheetName="Format Melt",row.names=FALSE, append=FALSE)
+write.xlsx(molten,file=paste0(settings$Analyse_Datasets,"/2. Proxy   validatie/Validatie_Meta.xlsx"),sheetName="Format Melt",row.names=FALSE, append=cfg$FullSet)
 write.xlsx(ValidatieSet,file=paste0(settings$Analyse_Datasets,"/2. Proxy   validatie/Validatie_Meta.xlsx"),sheetName="Format Wide",row.names=FALSE, append=TRUE)
 
 ggplot(molten,aes(variable,fill=paste(value))) + geom_bar(colour="black") + coord_flip()
 
-  # Create the maps ----------------------------
+# Create the maps ----------------------------
   if (cfg$GoogleMaps){
     
     setpbarwrapper(pb,3,label="Starting Google maps"); pc=3;
@@ -238,22 +238,36 @@ pGMwrapper = function (data,layername,group,colors,width,last=FALSE,previousmap=
 }
 
 # Analyses the entire Asset Database (very memory intensive!) -----------------
-FullDataAnalytics = function(AssetName = "NOR")
+FullDataAnalytics = function(AssetName = "NOR",ValidatieSet,append)
 {
-  ValidatieSet = data.table(read.xlsx(paste0(settings$Analyse_Datasets,"/2. cfg$Proxy   validatie/Validatie_Meta.xlsx"),sheetName="Format Wide"),key=ID_NAN)
-#   loadObj(paste0("C:/Datasets/AHAdata/2. Input Datasets/2. All Assets/Asset_Data_",AssetName,"_assets.Rda"))
-  load(paste0("C:/Datasets/AHAdata/2. Input Datasets/2. All Assets/Asset_Data_",AssetName,"_assets.Rda"))
+load(paste0("C:/Datasets/AHAdata/2. Input Datasets/2. All Assets/Asset_Data_",AssetName,"_assets.Rda"))
+assets$MSHLDROUTE =NULL
 
+l_ply(assets, function(x) setkey(x,ID_NAN))
+setorder(assets$kabels,DateLength_ch,na.last=TRUE)
 
-  llply(assets, function(x) setkey(x,ID_NAN))
-  setorder(assets$kabels,DateLength_ch,na.last=TRUE)
-  assets = llply(assets,function(x) unique(x)[Brontabel,ID_NAN,DateRemoved,DateAdded,DateLength_ch,Length_ch])
-  
-  write.xlsx(ValidatieSet[rbindlist(assets)],
-             file=paste0(settings$Analyse_Datasets,"/2. cfg$Proxy   validatie/Validatie_Meta.xlsx"),
-             sheetName=paste0("All_Assets_",AssetName), append=TRUE)
-  ValidatieSet[,inAllNOR:=ID_NAN %in% rbindlist(assets)$ID_NAN]
-  return(ValidatieSet)
+assets = rbindlist(llply(assets,function(x) 
+{setkey(x,ID_NAN);
+  if(any(names(x)=="Length_ch"))
+    {x = unique(x[,list(Brontabel,ID_NAN,Status_ID,DateRemoved,DateAdded,DateLength_ch,Length_ch,Coo_X_van,Coo_Y_van,Coo_X_naar,Coo_Y_naar,ID_Hoofdleiding,Routenaam_MS,MS_Route_NOR_IDTrace)])}
+    else
+    {x = unique(x[,list(Brontabel,ID_NAN,Status_ID,DateRemoved,DateAdded,Coo_X,Coo_Y,ID_Hoofdleiding,Routenaam_MS,MS_Route_NOR_IDTrace)])}
+  return(x)
+}),fill=TRUE)
+
+ValidatieSet[,inAllNOR:=ID_NAN %in% assets$ID_NAN]
+
+assets = assets[ValidatieSet]
+
+assets[ID_NAN %in% assets$ID_NAN]
+
+ValidatieSet[,inAllNOR:=ID_NAN %in% assets$ID_NAN]
+
+write.xlsx(assets,
+           file=paste0(settings$Analyse_Datasets,"/2. Proxy   validatie/Validatie_Meta.xlsx"),
+           sheetName=AssetName,row.names=FALSE, append=append)
+
+return(ValidatieSet)
 }
 
 # Analyse the proxy results ---------------------------------------------

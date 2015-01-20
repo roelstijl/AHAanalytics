@@ -14,6 +14,12 @@ AHA_Data_Import= function(folder="automatic",dataname,headername,mode="save",ove
   # - header will just dump the header xlsx
   # Multiple files is supported, initial input dataname is a partial search
   
+#  "date",1])    {mindataset[,i] = dmy(mindataset[,i])} #Timezone note taken into account for perforamnce
+#  "dateymd",1]) {mindataset[,i] = ymd(mindataset[,i])} #Timezone note taken into account for perforamnce
+#   for(i in header[header[,5]=="datetime",1]){mindataset[,i] = as.Date(my_hms(mindataset[,i]))}
+#   for(i in header[header[,5]=="datetimeYDM",1]){mindataset[,i] = as.Date(ymd_hms(mindataset[,i]))}
+#   for(i in header[header[,5]=="datetimeM",1]){mindataset[,i] = as.Date(dmy_hm(mindataset[,i]))}
+  
   # Do all the loading and modifying of files -------------------------------
   # Define the location of your data based on the system used
 
@@ -34,8 +40,10 @@ AHA_Data_Import= function(folder="automatic",dataname,headername,mode="save",ove
   }
   dir.create(paste0(settings$Ruwe_Datasets,"/",setfolder), showWarnings = FALSE)
   
+  cfg=list()
+  cfg$started = Sys.time()
   shinyfolder   = "x. Shiny"
-  pb = tkProgressBar (title = "Import", label = "Starting...", min = 0, max = length(datafiles)*3, initial = 0, width = 450); pc=0;
+  pb = pbarwrapper (title = "Import", label = "Starting...", min = 0, max = length(datafiles)*3, initial = 0, width = 450); pc=0;
   
   # Import data and rename cols
   for (filenumber in 1:length(datafiles))
@@ -44,7 +52,7 @@ AHA_Data_Import= function(folder="automatic",dataname,headername,mode="save",ove
     curdataname = substring(datafiles[filenumber],1,nchar(datafiles[filenumber])-4);
     curdataext  = substring(datafiles[filenumber],nchar(datafiles[filenumber])-2,nchar(datafiles[filenumber]));
     
-    setTkProgressBar (pb, pc, title = paste0("AHA_Data_Import,file: ",datafiles[filenumber]), label = "Starting import"); pc=pc+1
+    setpbarwrapper (pb, pc, title = paste0("AHA_Data_Import, Started:",cfg$started," ,file: ",datafiles[filenumber]), label = "Starting import"); pc=pc+1
     
     # Choose the correct import method
     if(mode!="header"){colclass=rep("character",1)} else {colclass = switch (override,yes=NA,no=NULL)}
@@ -72,8 +80,7 @@ AHA_Data_Import= function(folder="automatic",dataname,headername,mode="save",ove
     
     
     # Convert header into the same format as the xlsx file --------------------------------
-    #     cat("converting header. \n");
-    setTkProgressBar (pb, pc, label = paste0("Converting header")); pc=pc+1
+    setpbarwrapper (pb, pc, label = paste0("Converting header")); pc=pc+1
     
     header       = data.frame(matrix(0,length(colnames(mindataset)),4))
     header[,1]   = data.frame(colnames(mindataset))
@@ -86,7 +93,8 @@ AHA_Data_Import= function(folder="automatic",dataname,headername,mode="save",ove
     # Load the xlsx file or create it if non existing
     if (file.exists(headerfile)) {
       savedheader   = read.xlsx(headerfile,1, as.data.frame=TRUE)
-    }else{ cat("Creating new header file.\n")
+    }else{   setpbarwrapper (pb, pc+2, label = "Creating new header file");
+
            header[,3]   = matrix(1,length(colnames(mindataset)))
            write.xlsx(header,file=headerfile,row.names=FALSE)
            savedheader  = header}
@@ -98,8 +106,8 @@ AHA_Data_Import= function(folder="automatic",dataname,headername,mode="save",ove
     
 # Set colclasses to the desired (excel sheet)
 for(i in header[header[,5]=="numeric",1]) {mindataset[,i] = as.numeric(gsub(",",".",mindataset[,i]))}
-for(i in header[header[,5]=="date",1])    {mindataset[,i] = dmy(mindataset[,i])} #Timezone note taken into account for perforamnce
-for(i in header[header[,5]=="dateymd",1]) {mindataset[,i] = ymd(mindataset[,i])} #Timezone note taken into account for perforamnce
+for(i in header[header[,5]=="date",1])    {mindataset[,i] = as.Date(dmy(mindataset[,i]))} #Timezone note taken into account for perforamnce
+for(i in header[header[,5]=="dateymd",1]) {mindataset[,i] = as.Date(ymd(mindataset[,i]))} #Timezone note taken into account for perforamnce
 for(i in header[header[,5]=="datetime",1]){mindataset[,i] = as.Date(my_hms(mindataset[,i]))}
 for(i in header[header[,5]=="datetimeYDM",1]){mindataset[,i] = as.Date(ymd_hms(mindataset[,i]))}
 for(i in header[header[,5]=="datetimeM",1]){mindataset[,i] = as.Date(dmy_hm(mindataset[,i]))}
@@ -114,20 +122,19 @@ if(mode=="shiny"){
   dataset   <<- mindataset[sample(nrow(mindataset),min(nrow(mindataset),10000)),]
   remove ("mindataset")
   header    <<- header  
-  cat("Starting shiny .\n")  
+  setpbarwrapper (pb, pc, label = paste0("Starting shiny" )); pc=pc+1
   header = runApp(shinyfolder)
-  cat("Closing shiny .\n")
-  file.rename(paste0(shinyfolder ,"/header.xlsx"),paste0(shinyfolder,"/",headerfile));
+  setpbarwrapper (pb, pc, label = paste0("Saving to file")); pc=pc+1
+  file.rename(paste0(shinyfolder ,"/header.xlsx"),paste0(shinyfolder,"/",basename(headerfile)));
   
-  cat("Copy file\n"); 
-  file.copy(paste0(shinyfolder,"/",headerfile),paste0(settings$Ruwe_Datasets, "/", setfolder,"/",headerfile),overwrite=TRUE);      
-  cat("Done\n")} 
+  file.copy(paste0(shinyfolder,"/",basename(headerfile)),paste0(settings$Ruwe_Datasets, "/", setfolder,"/",basename(headerfile)),overwrite=TRUE);      
+} 
 else if(mode=="load") {
   
   # Load to memory
   cat("Done\n");    return(mindataset[,header[header[,3]==1,1]])
 } else if(mode=="save") {
-  setTkProgressBar (pb, pc, label = paste0("Saving to file, rows: ", nrow(mindataset)," cols: ",ncol(mindataset)) ); pc=pc+1
+  setpbarwrapper (pb, pc, label = paste0("Saving to file, rows: ", nrow(mindataset)," cols: ",ncol(mindataset)) ); pc=pc+1
   
   dataclasses= sapply(mindataset, class)
   mindataset = data.table(mindataset[,header[header[,3]==1,1]])
@@ -136,12 +143,11 @@ else if(mode=="load") {
   # Save to file
   savefile = paste0(settings$Ruwe_Datasets, "/", setfolder,"/",curdataname,".Rda")
   save(mindataset,dataclasses,file=savefile)
-  setTkProgressBar (pb, pc, title = paste0("AHA_Data_Import,file: ",datafiles[filenumber]), label = "Done!");
+  setpbarwrapper (pb, pc, title = paste0("AHA_Data_Import,file: ",datafiles[filenumber]), label = "Done!");
   
 }else if(mode=="header"){
-  cat("Saved header file to xlsx\n")
+  setpbarwrapper (pb, pc+2, label = "Saved header file to xlsx");
+  
 }else{
   cat("Wrong mode selected, load, save or shiny\n")
-}  
-}
-}
+} } }
