@@ -1,4 +1,4 @@
-AHA_Data_Import= function(folder="automatic",dataname,headername,mode="save",override="no"){
+AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="save",override="no"){
   
   # Asset health analytics import script, 
   # Load project first

@@ -1,9 +1,9 @@
 # Containts lots of extra functions for the AHA project
 cNA = function(dataset)
 {
-  par(mfrow=c(1, 1), mar=c(2, 15, 0, 2))
+  par(mfrow=c(1, 1), mar=c(2, 10, 0, 2))
   barplot(t(cbind(sapply(dataset,function(x) sum(is.na(x))),
-                  sapply(dataset,function(x) sum(!is.na(x))))), horiz=TRUE,las=1,cex.names=0.5)
+                  sapply(dataset,function(x) sum(!is.na(x))))), horiz=TRUE,las=1,cex.names=0.7)
 }
 
 row.sample <- function(dta, rep = 20) {
@@ -39,23 +39,30 @@ saveObj <- function(object, file.name){
   close(outfile)
 }
 
+# Used for the progressbar
 pbarwrapper = function(title="PlaceHolder", label = "Starting...", max = 1,min = 0,initial = 0,width = 450)
 {
   gltitle <<- title
-  label = paste0(title, ": ",label)
+  label     = paste0(title, ": ",label)
   pb        = txtProgressBar2(title = title, label = label, min = 0, max = max, initial = 0, style = 3)
-  
+  glpc    <<-  0
   return(pb)
 }
 
-setpbarwrapper = function(pb,index,label="title",title=""){
+# Used for the progressbar
+setpbarwrapper = function(pb,index=-1,label="title",title=""){
   if (title!=""){
     gltitle <<-title
   }
-  label = paste0(gltitle, ": ", label)
+  if (index==-1){
+    glpc <<- glpc+1; 
+    index=glpc;
+  }
+  label = paste0(gltitle, ": ", label,"                     ")
   setTxtProgressBar2 (pb, index,label = label)
 }
 
+# Corrects corrupted NRG data ---------------------
 AHA_DATA_Correct_NRG_Corruption= function(){
   require(data.table)
   MS_stations <- fread(paste0(settings$Bron_Datasets,"/11. Nettopologie/MS_Stations.txt"),sep="\t") 
@@ -161,4 +168,18 @@ setTxtProgressBar2 <- function (pb, value, title = NULL, label = NULL)
   }
   pb$up(value)
   invisible(oldval)
+}
+
+# Little tool to make parallel stuff a bit more efficient
+goparallel = function(cores=6,stop=F){
+  if(!stop){
+    cat("Starting parallel cluster\n")
+    settings$cl <<- makeCluster(cores)
+    registerDoParallel(settings$cl)
+    settings$parallel <<-T
+  } else{
+    cat("Stopping parallel cluster\n")
+    stopCluster(cl = settings$cl)
+    settings$parallel <<-F
+  }
 }
