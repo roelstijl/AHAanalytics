@@ -20,10 +20,14 @@ shinyServer(function(input, output,session) {
     if(elements[length(elements)]>length(header[,3])) elements <<- elements - (-length(header[,3])+elements[length(elements)])-1
         
     # Update names when button pressed
-    if(input$Update_Name[1] > update_no){      
+    if(input$Update_Name[1] > update_no_2){      
       names(checkboxes)[elements[1]-1+as.numeric(input$radiobutton[1])] <<- input$text
       header[elements[1]-1+as.numeric(input$radiobutton[1]),1]<<-input$text
-      update_no <<- update_no + 1}
+      update_no_2 <<- update_no_2 + 1}
+    
+    if(input$Update_Class[1] > update_no_1){      
+      header[elements[1]-1+as.numeric(input$radiobutton[1]),5]<<-(input$Select_Class)
+      update_no_1 <<- update_no_1 + 1}
     
     # Update checkbox values
     updateCheckboxGroupInput(session,"Checkbox", label = "", choices  = checkboxes[elements], 

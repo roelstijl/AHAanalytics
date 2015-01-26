@@ -1,7 +1,9 @@
 library(shiny)
 
 # Prepare some variables for the first run
-update_no <<- 0;
+update_no_1 <<- 0;
+update_no_2 <<- 0;
+
 save_to_file <<- 0;
 text_in_box <<- "";
 next_button<<-0;
@@ -25,17 +27,27 @@ shinyUI(fluidPage(
     sidebarPanel
     (
       
-      textInput("text",value = "New name",label=NULL),div(),
-      actionButton("Update_Name", label = "Update name"), actionButton("save_to_file", label = "Save to file"),br(),
+      textInput("text",value = "New name",label=NULL),
+      actionButton("Update_Name", label = "Update name"),       
+      br(),
+      
+      selectInput("Select_Class", label=NULL,choices = 
+                    list("Integer"="Integer","character"="character", "date"="date",
+                         "dateymd" = "dateymd", "datetime" = "datetime", "datetimeYDM" = "datetimeYDM","datetimeM"="datetimeM"),selected = "character"),
+      actionButton("Update_Class", label = "Update class"),
+      br(),
+
+      actionButton("save_to_file", label = "Save to file"),br(),
       actionButton("close", label = "Close"),br(),br(),
+      
+      textOutput("value"),
       actionButton("vorige_x", label = "Last 15"),actionButton("volgende_x", label = "Next 15"),br(),
-    
+      div(),
       fluidRow(
       column(2,radioButtons("radiobutton", label = "",choices=radiobuttons,selected="4")),
           
       column(10,checkboxGroupInput("Checkbox", label = "",
-              choices = checkboxes[elements],selected = as.character(elements[1]-1+which(header[elements,3]==1))),
-             textOutput("value")
+              choices = checkboxes[elements],selected = as.character(elements[1]-1+which(header[elements,3]==1)))
       ))),
     
     # Show a plot of the generated distribution

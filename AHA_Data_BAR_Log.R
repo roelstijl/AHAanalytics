@@ -1,5 +1,6 @@
-AHA_Data_BAR_Log_Postprocessing  = function()
+AHA_Data_BAR_Log  = function()
   {
+# Creates as delta set from the statis BAR set
 # Load and prepare some data --------------------------------------------------
 assets = list(); 
 changes = list();
@@ -36,9 +37,23 @@ assets$MSHLDROUTE    = (mindataset)
 setkey(assets$MSkabels,ID_Hoofdleiding)
 setkey(assets$MSHLDROUTE,ID_Hoofdleiding)
 assets$MSkabels = unique(assets$MSHLDROUTE[,list(Routenaam_MS,ID_Hoofdleiding)])[assets$MSkabels]
-  
+
+# Bereken postcode 4
+assets$LSmoffen[,PC_4:=substr(assets$LSmoffen$PC_6,1,4)]
+assets$LSkabels[,PC_4_van:=substr(assets$LSkabels$PC_6_van,1,4)]
+assets$LSkabels[,PC_4_naar:=substr(assets$LSkabels$PC_6_naar,1,4)]  
+assets$MSmoffen[,PC_4:=substr(assets$MSmoffen$PC_6,1,4)]
+assets$MSkabels[,PC_4_van:=substr(assets$MSkabels$PC_6_van,1,4)]
+assets$MSkabels[,PC_4_naar:=substr(assets$MSkabels$PC_6_naar,1,4)]  
+
+# Brontabel
+assets$LSkabels = assets$LSkabels[,Brontabel := "ls_kabels"]
+assets$MSkabels = assets$MSkabels[,Brontabel := "ms_kabels"]
+assets$LSmoffen = assets$LSmoffen[,Brontabel := "ls_moffen"]
+assets$MSmoffen = assets$MSmoffen[,Brontabel := "ms_moffen"]
+
 # Seperate the data based on the asset and voltage --------------------------------------------------
-  toc(); cat("Saving to file\n"); tic()
+  ; cat("Saving to file\n"); 
   setTkProgressBar(pb, 6,label = "Saving to file")
   save(assets,file=paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_BAR_assets.Rda"))
   all_ID_NAN = laply(assets,function(x) try(unique(x$ID_NAN)))
@@ -51,16 +66,16 @@ assets$MSkabels = unique(assets$MSHLDROUTE[,list(Routenaam_MS,ID_Hoofdleiding)])
 Calc_Dates = function(mindataset,assettype="kabels")
 {# correct date format
     l_ply(list("Datum_Begin","Datum_Eind","Datum_Wijziging"),
-        function(x) {tic();
+        function(x) {;
                      eval(parse(text=paste0("mindataset[,",x,":=",
               switch (lapply(mindataset, class)[x][[1]][1],character ="dmy", Date      ="", POSIXct   = "as.Date")
               ,"(",x,")]")))
-              toc()})
+              })
   
   # Added
 setkey(mindataset,ID_NAN)
 mindataset[,DateAdded:=min(Datum_Begin),by=ID_NAN]
-mindataset[,Status_R:="Active"]
+mindataset[,Status_ID:="Active"]
 
 # Length changed
 if (assettype == "kabels")
@@ -72,12 +87,12 @@ if (assettype == "kabels")
   logi = duplicated(mindataset,by="ID_NAN")
   mindataset[logi,Length_ch:=lch[logi]]
   mindataset[Length_ch!=0,DateLength_ch:=(Datum_Wijziging)]
-  mindataset[!is.na(DateLength_ch),Status_R:="Length_changed"]}
+  mindataset[!is.na(DateLength_ch),Status_ID:="Length_changed"]}
 
 # Removed
 
 mindataset[,DateRemoved:=(max(Datum_Eind)),by=ID_NAN]
 mindataset[DateRemoved>"2090-01-01",DateRemoved:=NA]
-mindataset[!is.na(DateRemoved),Status_R:="Removed"]
+mindataset[!is.na(DateRemoved),Status_ID:="Removed"]
 
 return(mindataset)}

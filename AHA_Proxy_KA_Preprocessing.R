@@ -1,5 +1,5 @@
 AHA_Data_KA_Proxy_Preprocessing = function(datasets=c("assetsBAR","assetsNOR","nettopo","storingen","validatieset"),
-                                           firstdate="2014-01-01",lastdate="2015-01-01"){
+                           firstdate="2014-01-01",lastdate="2015-01-01"){
 # Merges the Delta data into small datasets for analysis
 # Datasets selects only a certain set to process (default = all)
 # firstdate is the startdate of the data subset
@@ -7,222 +7,264 @@ AHA_Data_KA_Proxy_Preprocessing = function(datasets=c("assetsBAR","assetsNOR","n
 #
 # Settings ----------------------------------------------------------------  
 cat("Starting\n")
-pb = tkProgressBar(title = paste0("AHA_Data_KA_Proxy_Preprocessing, ",as.character(Sys.time())), label = "Start", min = 0, max = 6, initial = 0, width = 450);
+pb = pbarwrapper(title = paste0("AHA_Data_KA_Proxy_Preprocessing: ",as.character(Sys.time())), 
+                 label = "Start", min = 0, max = 3*length(datasets)+1, initial = 0, width = 450);
 
-firstdate = as.Date("2014-01-01")
+firstdate = as.Date("2014-02-16")
 lastdate  = as.Date("2015-01-01")
 
 # switch between datasets
-setTkProgressBar(pb, 1,label = "Loading verbindingen");
 for (m in datasets)
-  {switch (m,
-   assetsBAR = {        
+{switch (m,
+assetsBAR = {        
 # BAR Data ----------------------------------------------------------------
-setTkProgressBar(pb, 1,label = "Load BAR data\n"); ;
+setpbarwrapper(pb, label = "Loading BAR data");
 # Laad de assets en converteer de datums als deze verkeerd staan 
 load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_BAR_assets.Rda"))
+assets$LSkabel[,DateAdded:=as.Date(DateAdded)]
+assets$LSkabel[,DateRemoved:=as.Date(DateRemoved)]
+assets$LSkabel[,DateLength_ch:=as.Date(DateLength_ch)]
 
+setpbarwrapper(pb, label = "Calculating BAR data");
 # Laad alleen dat deel van de assets dat binnen de periode valt
-assets$LSmoffen = assets$LSmoffen[(assets$LSmoffen$DateAdded > firstdate & assets$LSmoffen$DateAdded < lastdate)| 
-                                   (assets$LSmoffen$DateRemoved > firstdate & assets$LSmoffen$DateRemoved < lastdate)]
-assets$MSmoffen = assets$MSmoffen[(assets$MSmoffen$DateAdded > firstdate & assets$MSmoffen$DateAdded < lastdate)| 
-                                   (assets$MSmoffen$DateRemoved > firstdate & assets$MSmoffen$DateRemoved < lastdate)]
+# Moffen
+MSm=(assets$MSmoffen$DateAdded > firstdate & assets$MSmoffen$DateAdded < lastdate)| 
+                  (assets$MSmoffen$DateRemoved > firstdate & assets$MSmoffen$DateRemoved < lastdate)
+MSm[is.na(MSm)] = FALSE
+assets$MSmoffen = assets$MSmoffen[MSm]
 
-assets$Mkabels = assets$Mkabels[(assets$Mkabels$DateAdded > firstdate & assets$Mkabels$DateAdded < lastdate)| 
-                                 (assets$Mkabels$DateLength_ch > firstdate & assets$Mkabels$DateLength_ch < lastdate)|  
-                                 (assets$Mkabels$DateRemoved > firstdate & assets$Mkabels$DateRemoved < lastdate)]
-assets$Lkabels = assets$Lkabels[(assets$Lkabels$DateAdded > firstdate & assets$Lkabels$DateAdded < lastdate)| 
-                                 (assets$Lkabels$DateLength_ch > firstdate & assets$Lkabels$DateLength_ch < lastdate)|  
-                                 (assets$Lkabels$DateRemoved > firstdate & assets$Lkabels$DateRemoved < lastdate)]
-assets$MSmoffen = assets$MSmoffen[DateAdded>min(DateAdded)]
-assets$LSmoffen = assets$LSmoffen[DateAdded>min(DateAdded)]
+LSm = (assets$LSmoffen$DateAdded > firstdate & assets$LSmoffen$DateAdded < lastdate)| 
+                  (assets$LSmoffen$DateRemoved > firstdate & assets$LSmoffen$DateRemoved < lastdate)
+LSm[is.na(LSm)] = FALSE
+assets$LSmoffen = assets$LSmoffen[LSm]
+  
+# Kabels
+MSk=(assets$MSkabels$DateAdded > firstdate & assets$MSkabels$DateAdded < lastdate)| 
+                  (assets$MSkabels$DateLength_ch > firstdate & assets$MSkabels$DateLength_ch < lastdate)|  
+                  (assets$MSkabels$DateRemoved > firstdate & assets$MSkabels$DateRemoved < lastdate)
+MSk[is.na(MSk)] = FALSE
+assets$MSkabels = assets$MSkabels[MSk]
+  
+LSk=(assets$LSkabels$DateAdded > firstdate & assets$LSkabels$DateAdded < lastdate)| 
+  (assets$LSkabels$DateLength_ch > firstdate & assets$LSkabels$DateLength_ch < lastdate)|  
+  (assets$LSkabels$DateRemoved > firstdate & assets$LSkabels$DateRemoved < lastdate)
+LSk[is.na(LSk)]=FALSE
+assets$LSkabels = assets$LSkabels[LSk]
 
-assets$MSkabels = assets$MSkabels[DateAdded>min(DateAdded)]
-assets$LSkabels = assets$LSkabels[DateAdded>min(DateAdded)]
-
-# Bereken postcode 4
+assets$MSmoffen[,PC_4:=substr(assets$MSmoffen$PC_6,1,4)]
 assets$LSmoffen[,PC_4:=substr(assets$LSmoffen$PC_6,1,4)]
+
 assets$LSkabels[,PC_4_van:=substr(assets$LSkabels$PC_6_van,1,4)]
 assets$LSkabels[,PC_4_naar:=substr(assets$LSkabels$PC_6_naar,1,4)]  
-assets$MSmoffen[,PC_4:=substr(assets$MSmoffen$PC_6,1,4)]
 assets$MSkabels[,PC_4_van:=substr(assets$MSkabels$PC_6_van,1,4)]
 assets$MSkabels[,PC_4_naar:=substr(assets$MSkabels$PC_6_naar,1,4)]  
 
+assets$MSHLDROUTE = NULL
+
 # Opsplitsen in MS en LS, zo zit het in de BARlog ook
-toc;  setTkProgressBar(pb, 2,label = "Save BAR asset data\n"); ;
+setpbarwrapper(pb, label = "Saving BAR data");
 save(assets,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_BAR.Rda"))
 remove("assets")
-     
-   },          
+
+},          
 assetsNOR = {        
+  
 # NOR Data ----------------------------------------------------------------
-   setTkProgressBar(pb, 1,label = "Load NOR data\n"); ;
-  # Laad de assets en converteer de datums als deze verkeerd staan 
-   load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_assets.Rda"))
-   assets$kabels[,DateLength_ch := as.Date(assets$kabel$DateLength_ch,"1970-01-01")]
+setpbarwrapper(pb, label = "Loading NOR data");
+# Laad de assets en converteer de datums als deze verkeerd staan 
+load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_assets.Rda"))
+assets$kabels[,DateLength_ch := as.Date(assets$kabel$DateLength_ch,"1970-01-01")]
 
-  # Laad alleen dat deel van de assets dat binnen de periode valt
-  assets$moffen = assets$moffen[(assets$moffen$DateAdded > firstdate & assets$moffen$DateAdded < lastdate)| 
-                                (assets$moffen$DateRemoved > firstdate & assets$moffen$DateRemoved < lastdate)]
-  assets$moffen = assets$moffen[DateAdded>min(DateAdded)]
+LSm = (assets$moffen$DateAdded > firstdate & assets$moffen$DateAdded < lastdate)| 
+  (assets$moffen$DateRemoved > firstdate & assets$moffen$DateRemoved < lastdate)
+LSm[is.na(LSm)] = FALSE
+assets$moffen = assets$moffen[LSm]
 
-  try(setnames(assets$moffen,"PC_XY","PC_6"))
-  assets$kabels = assets$kabels[(assets$kabels$DateAdded > firstdate & assets$kabels$DateAdded < lastdate)| 
-                                (assets$kabels$DateLength_ch > firstdate & assets$kabels$DateLength_ch < lastdate)|  
-                                (assets$kabels$DateRemoved > firstdate & assets$kabels$DateRemoved < lastdate)]
-  assets$kabels = assets$kabels[DateAdded>min(DateAdded)]
-                                
-  try(setnames(assets$kabels,c("PC_XY_van","PC_XY_naar"),c("PC_6_van","PC_6_naar")))
-  try(setnames(assets$kabels,c("Coo_X","Coo_Y"),c("Coo_X_naar","Coo_Y_naar")))
-   
-  # Bereken postcode 4
-  assets$moffen[,PC_4:=substr(assets$moffen$PC_6,1,4)]
-  assets$kabels[,PC_4_van:=substr(assets$kabels$PC_6_van,1,4)]
-  assets$kabels[,PC_4_naar:=substr(assets$kabels$PC_6_naar,1,4)]  
-  
-  # Opsplitsen in MS en LS, zo zit het in de BARlog ook
-  try(setnames(assets$kabels,"BRONTABEL","Brontabel"))
+setpbarwrapper(pb, label = "Calculating NOR data");
 
-#   assets$LSkabels = assets$kabels[Brontabel == "ls_kabels"]
-#   assets$MSkabels = assets$kabels[Brontabel == "ms_kabels"]
+# Kabels
+MSk=(assets$kabels$DateAdded > firstdate & assets$kabels$DateAdded < lastdate)| 
+  (assets$kabels$DateLength_ch > firstdate & assets$kabels$DateLength_ch < lastdate)|  
+  (assets$kabels$DateRemoved > firstdate & assets$kabels$DateRemoved < lastdate)
+MSk[is.na(MSk)]=FALSE
+assets$kabels = assets$kabels[MSk]
 
-# temporary FIX - needs new export!
-  assets$LSkabels = assets$kabels[Netvlak == "LS"]
-  assets$MSkabels = assets$kabels[Netvlak == "MS"]
-  assets$LSmoffen = assets$moffen[Brontabel == "ls_moffen"]
-  assets$MSmoffen = assets$moffen[Brontabel == "ms_moffen"]
-  assets$moffen = NULL
-  assets$kabels = NULL
+# Bereken postcode 4
 
-toc;  setTkProgressBar(pb, 2,label = "Save asset data\n"); ;
-  save(assets,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_NOR.Rda"))
-  remove("assets")
-  
+assets$moffen[,PC_4:=substr(assets$moffen$PC_6,1,4)]
+assets$kabels[,PC_4_van:=substr(assets$kabels$PC_6_van,1,4)]
+assets$kabels[,PC_4_naar:=substr(assets$kabels$PC_6_naar,1,4)]  
+
+assets$LSkabels = assets$kabels[Brontabel == "ls_kabels"]
+assets$MSkabels = assets$kabels[Brontabel == "ms_kabels"]
+assets$LSmoffen = assets$moffen[Brontabel == "ls_moffen"]
+assets$MSmoffen = assets$moffen[Brontabel == "ms_moffen"]
+
+assets$moffen = NULL
+assets$kabels = NULL
+
+setpbarwrapper(pb, label = "Saving NOR data");
+save(assets,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_NOR.Rda"))
+remove("assets")
+
 },
 nettopo = {
+  
 # EAN-Hoofdleiding-XY-PC data ----------------
 nettopo = list();  
 
-;  setTkProgressBar(pb, 3,label = "Load EAN data\n"); ;
-load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/aansluitingen_stationinclbehuizing.Rda"))
-aansluitingen1 = data.table(mindataset)
-setkey(aansluitingen1,ID_EAN)
+# Load the data
+setpbarwrapper(pb, label = "Loading Nettopo data");
+load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/aansluitingen_stationinclbehuizing.Rda")); 
+Hoofdleiding_Station = mindataset
+load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/aansluitingengeotrace.Rda")); 
+Hoofdleiding_Station2 = mindataset
+load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/EAN_LS_Aansluitingen_XY.Rda")); 
+EAN_Aansluitingen = mindataset
+load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/MS_Stations.Rda")); 
+MS_Stations = mindataset
+load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/MS_hoofdleidingen.Rda")); 
+MS_Hoofdleidingen = mindataset
+load(paste0(settings$Ruwe_Datasets,"/24. Adressendichtheid/Count Adresses.Rda"))
+adressendichtheid = mindataset
+load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial.Rda"))
+pc4area = data.table(pc4@data[,c("PC4CODE","SHAPE_AREA")]);
+rm("mindataset")
 
-load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/aansluitingengeotrace.Rda"))
-aansluitingen2 = data.table(mindataset)
-setkey(aansluitingen2,ID_EAN)
-tablecount<-data.frame(table(aansluitingen1$ID_EAN))
-try(setnames(tablecount,"Var1","ID_EAN"))
-data3=merge(aansluitingen1[-which(aansluitingen1$ID_EAN==""),], tablecount, by="ID_EAN")
-data3=data3[which(data3$Freq==1)]
-pm = pmatch(colnames(aansluitingen1),colnames(aansluitingen2))
-aansluitingen2 = aansluitingen2[,pm,with=FALSE]
+# Start calculating the nettopology
+setkey(Hoofdleiding_Station,ID_EAN)
+setkey(Hoofdleiding_Station2,ID_EAN)
+setkey(EAN_Aansluitingen,ID_EAN)
 
-load(paste0(settings$Ruwe_Datasets,"/8. CAR/CAR_2013_XY.Rda"))
-mindataset$ID_EAN= as.character(mindataset$ID_EAN)
-EAN_to_XY_PC6 = (mindataset[,c("PC_6","Huisnr","Coo_X","Coo_Y","ID_EAN"),with=FALSE])
-EAN_to_XY_PC6$PC_4=substr(EAN_to_XY_PC6$PC_6,1,4)
-setkey(EAN_to_XY_PC6,ID_EAN)
-nettopo$EAN_koppel<-merge(rbind(aansluitingen2,data3[,1:9,with=FALSE]),EAN_to_XY_PC6,by="ID_EAN",all.x=TRUE)
+setpbarwrapper(pb, label = "Calculating Nettopo data");
+nettopo = unique(Hoofdleiding_Station)[unique(EAN_Aansluitingen),
+                                         list(ID_EAN,ID_Hoofdleiding,ID_Station,ID_Kabel,Naam_Ruimte,ID_NR_Ruimte,
+                                              ID_Stationbehuizing,Coo_X,Coo_Y,Adres)]
 
-load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/nettopo_EAN_MSRING.Rda"))
-nettopo_new = unique(data.table(nettopo_new),by=c("ID_EAN"))
-try(setnames(nettopo_new,"Routenaam","Routenaam_MS"))
-nettopo$EAN_koppel<-merge(nettopo$EAN_koppel,nettopo_new[,c("ID_EAN","Routenaam_MS"),with=FALSE],by="ID_EAN",all.x=TRUE)
+set(nettopo,which(is.na(nettopo$ID_Hoofdleiding)),j=1:ncol(nettopo),
+    unique(Hoofdleiding_Station2)[unique(
+      EAN_Aansluitingen)[is.na(nettopo$ID_Hoofdleiding)],
+      list(ID_EAN,ID_Hoofdleiding,ID_Station,ID_Kabel,Naam_Ruimte,ID_NR_Ruimte,
+           ID_Stationbehuizing,Coo_X,Coo_Y,Adres)])
 
-save(nettopo,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_nettopo.Rda"))
+# Add the MS routes
+setkey(nettopo,ID_Stationbehuizing)
+setkey(MS_Stations,ID_Stationbehuizing)
+
+nettopo = unique(MS_Stations[,list(ID_Stationbehuizing,ID_NR_Ruimte,ID_Voedend_Station,Routenaam)])[nettopo]
+nettopo[,PC_6:=substr(Adres, 1, 6)]
+nettopo[,PC_4:=substr(Adres, 1, 4)]
+nettopo[,Huisnr:=adrsplit(Adres)]
+
+
+# Add adress density figures
+setkey(nettopo,PC_4)
+setkey(adressendichtheid,PC_4)
+setnames(pc4area,c("PC_4","Oppervlakte_PC4"))
+setkey(pc4area,PC_4);
+
+nettopo = adressendichtheid[nettopo]
+nettopo = pc4area[nettopo]
+
+# Save
+setpbarwrapper(pb, label = "Saving Nettopo data");
+save(nettopo,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_nettopo_EAN.Rda"))
 },
 
 validatie = {
+  
 # Validatieset van de storingsregistratoren-----------------------------------
+setpbarwrapper(pb, label = "Loading Validatie data");
+
 load(paste0(settings$Ruwe_Datasets,"/23. Validatie_data/Koppeling KLAK-NRG Dick Grollers..Rda"))
 ValidatieSet = mindataset[,Regio := "Zuid-Oost"]
 
 load(paste0(settings$Ruwe_Datasets,"/23. Validatie_data/Koppeling KLAK-NRG Robert Aikema..Rda"))
 ValidatieSet = rbind(ValidatieSet, mindataset[,Regio := "Amsterdam"])
+setpbarwrapper(pb, label = "Loading Validatie data");
 
 try(setnames(ValidatieSet,"ID_KLAK","ID_KLAK_Melding"))
 ValidatieSet[,ID_Asset:=NULL]; 
 ValidatieSet = ValidatieSet[!is.na(ValidatieSet$ID_KLAK_Melding)]
 ValidatieSet$ID_KLAK_Melding = as.character(ValidatieSet$ID_KLAK_Melding)
+setpbarwrapper(pb, label = "Saving Validatie data");
+
 save(ValidatieSet,file=paste0(settings$Input_Datasets,"/23. Validatie_data/Validatie koppelingen.Rda"))
 
 },
 
 storingen = {
-  
+
 # Storingsdata uit KLAK ------------------------
 storingen=list()  
+setpbarwrapper(pb, label = "Loading KLAK data");
 
-;  setTkProgressBar(pb, 4,label = "Load KLAK data\n"); ;
 # Laad de data om adressen te koppelen
-load(paste0(settings$Ruwe_Datasets,"/8. CAR/CAR_2013_XY.Rda"))
-EAN_to_XY_PC6 = (mindataset[,list(PC_6,Huisnr,Coo_X,Coo_Y,ID_EAN)])
-EAN_to_XY_PC6[,PC_4:=substr(EAN_to_XY_PC6$PC_6,1,4)]
-setkey(EAN_to_XY_PC6,ID_EAN)
-
-# Laad LS
+load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_nettopo_EAN.Rda"))
 load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_LS.Rda"))
 mindataset[,Datum:=as.Date(mindataset$Datum)]
 storingen$LS= mindataset[(mindataset$Datum > firstdate & mindataset$Datum < lastdate)]
-storingen$LS[,PC_6 := gsub(" ","",storingen$LS$PC_6)] 
-
-# Laad MS
 load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_MS.Rda"))
 mindataset[,Datum:=as.Date(mindataset$Datum)]
 storingen$MS= mindataset[(mindataset$Datum > firstdate & mindataset$Datum < lastdate)]
-storingen$MS[,PC_6 := gsub(" ","",storingen$MS$PC_6)] 
-
-# Laad meldingen
 load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_KOPPEL_MELDING_GROEP.Rda"))
 storingen$KLAKMelders = data.table(mindataset);
+
+setpbarwrapper(pb, label = "Process KLAK data");
+
+# Add and correct Postcodes
+storingen$MS[,PC_6 := gsub(" ","",storingen$MS$PC_6)] 
+storingen$LS[,PC_6 := gsub(" ","",storingen$LS$PC_6)] 
 storingen$KLAKMelders[,PC_6 := gsub(" ","",storingen$KLAKMelders$PC_6)] 
 storingen$KLAKMelders[,PC_4:=substr(storingen$KLAKMelders$PC_6,1,4)]
-load(paste0(settings$Ruwe_Datasets,"/24. Adressendichtheid/Count Adresses.Rda"))
-setkey(storingen$KLAKMelders,PC_4)
-setkey(mindataset,PC_4)
-storingen$KLAKMelders  = mindataset[storingen$KLAKMelders ]
 
-load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial.Rda"))
-pc4area = data.table(pc4@data[,c("PC4CODE","SHAPE_AREA")]);
-setnames(pc4area,c("PC_4","Oppervlakte_PC4"))
-setkey(pc4area,PC_4);
-storingen$KLAKMelders  = pc4area[storingen$KLAKMelders ]
+# Add the nettopology
 setkey(storingen$KLAKMelders ,PC_6,Huisnr); 
-setkey(EAN_to_XY_PC6,PC_6,Huisnr)
-storingen$KLAKMelders        = unique(EAN_to_XY_PC6)[storingen$KLAKMelders]
-storingen$KLAKMelders[,PC_4:=NULL]; try(setnames(storingen$KLAKMelders,"i.PC_4","PC_4"))
+setkey(storingen$LS ,PC_6,Huisnr); 
+setkey(storingen$MS ,PC_6,Huisnr); 
+setkey(nettopo,PC_6,Huisnr)
+storingen$KLAKMelders = unique(nettopo)[storingen$KLAKMelders]
+storingen$LS = unique(nettopo)[storingen$LS]
+storingen$MS = unique(nettopo)[storingen$MS]
+storingen$KLAKMelders$Melders = "Melder"
 
-# Voeg informatie uit de melders toe
-frequ = data.table(data.frame(table(storingen$KLAKMelders$ID_Groep)))
-try(setnames(frequ,c("ID_Groep","Aantal_Melders")))
-setkey(frequ,ID_Groep);  
-setkey(storingen$KLAKMelders,ID_Groep);
-ugroep         = frequ[storingen$KLAKMelders[ST_Groep_eerste=="Ja"]]
-setkey(ugroep,PC_6,Huisnr); 
-setkey(EAN_to_XY_PC6,PC_6,Huisnr)
-ugroep         = unique(EAN_to_XY_PC6)[ugroep]
-ugroep[,PC_4:=substr(ugroep$PC_6,1,4)]
+# Verwijder de foutieve KALK meldingen, want alleen eerste melders tellen
+setnames(storingen$KLAKMelders,"ID_KLAK_Melding","ID_KLAK_Melding_oud")
+setkey(storingen$KLAKMelders,ID_Groep)
+temp = unique(storingen$KLAKMelders[ID_Groep!="" & !is.na(ID_Groep) & ST_Groep_eerste=="Ja",
+                                    list(ID_Groep,ID_KLAK_Melding_oud)])
+setnames(temp,"ID_KLAK_Melding_oud","ID_KLAK_Melding")
+setkey(temp,ID_Groep)
+
+# Bepaal het aantal melders
+
+storingen$KLAKMelders=temp[storingen$KLAKMelders]
+storingen$KLAKMelders[!(ID_Groep!="" & !is.na(ID_Groep)),ID_KLAK_Melding:=ID_KLAK_Melding_oud]
+temp= data.table(Aantal_Melders=data.table(table(storingen$KLAKMelders$ID_KLAK_Melding)),ID_KLAK_Melding=unique(storingen$KLAKMelders$ID_KLAK_Melding))
+
+setkey(temp,ID_KLAK_Melding)
+setkey(storingen$KLAKMelders,ID_KLAK_Melding);
+setnames(temp,"Aantal_Melders.V1","Aantal_Melders")
+storingen$KLAKMelders = temp[storingen$KLAKMelders]
 
 # Koppel meldingen en storingen
 setkey(storingen$LS,ID_KLAK_Melding); 
 setkey(storingen$MS,ID_KLAK_Melding); 
-setkey(ugroep,ID_KLAK_Melding)
-storingen$LS=ugroep[storingen$LS]
-storingen$MS=ugroep[storingen$MS]
-  
+setkey(storingen$KLAKMelders,ID_KLAK_Melding)
+storingen$LS=unique(storingen$KLAKMelders)[storingen$LS]
+storingen$MS=unique(storingen$KLAKMelders)[storingen$MS]
+
 # Koppel de GIS mutaties
 load(paste0(settings$Ruwe_Datasets,"/21. GIS-mutaties/GISMUTATIE.Rda"))
 setkey(mindataset,ID_KLAK_Melding)
 storingen$LS=mindataset[storingen$LS]
 storingen$MS=mindataset[storingen$MS]
-
-setTkProgressBar(pb, 5,label = "Save KLAK data\n"); ;
+ 
+setpbarwrapper(pb, label = "Loading Melding data");
 save(storingen,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"))
-
+ 
 })}
-setTkProgressBar(pb, 6,label = "Done")
-
+setpbarwrapper(pb, label = "Done");
 }
 
 fixnumber = function(x) {
@@ -242,6 +284,11 @@ fixnumber = function(x) {
     a=NA
   }
   return(as.numeric(a))
+}
+
+adrsplit = function (Adres){
+  
+  as.integer(laply(strsplit(Adres," "),function(x) ifelse(length(x)>1,x[[2]],NA)))
 }
 
 firstFri = function(initialdate)
