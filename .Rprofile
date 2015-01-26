@@ -66,20 +66,12 @@
   
   # Chris Mutsaerts (oude laptop)
   else if (Sys.info()["nodename"] =="NLAMS4044343A") {
-<<<<<<< HEAD
-    settings[,"Bron_Datasets"] = "E:/2. Datasets/1. Alliander/AHAdata/0. Ongebruikte en brondata"
-    settings[,"Ruwe_Datasets"] = "E:/2. Datasets/1. Alliander/AHAdata/1. Ruwe Datasets"
-    settings[,"Input_Datasets"] = "E:/2. Datasets/1. Alliander/AHAdata/2. Input Datasets"
-    settings[,"Analyse_Datasets"] = "E:/2. Datasets/1. Alliander/AHAdata/3. Analyse Datasets"
-    settings[,"Visuals"] = "E:/2. Datasets/1. Alliander/AHAdata/5. Visuals and Tableau workbooks"
-    settings[,"Results"] = "E:/2. Datasets/1. Alliander/AHAdata/6. Results"
-=======
-    settings$Bron_Datasets = paste0(substr(getwd(),1,nchar(getwd())-13), "/AHAdata/0. Ongebruikte en brondata")
-    settings$Ruwe_Datasets = paste0(substr(getwd(),1,nchar(getwd())-13), "/AHAdata/1. Ruwe Datasets")
-    settings$Input_Datasets = paste0(substr(getwd(),1,nchar(getwd())-13),"/AHAdata/2. Input Datasets")
-    settings$Analyse_Datasets = paste0(substr(getwd(),1,nchar(getwd())-13),"/AHAdata/3. Analyse Datasets")
->>>>>>> 8344fa47db6870d82542efbec9ad062c78a8c5c3
-  }
+    settings$Bron_Datasets = "E:/2. Datasets/1. Alliander/AHAdata/0. Ongebruikte en brondata"
+    settings$Ruwe_Datasets = "E:/2. Datasets/1. Alliander/AHAdata/1. Ruwe Datasets"
+    settings$Input_Datasets = "E:/2. Datasets/1. Alliander/AHAdata/2. Input Datasets"
+    settings$Analyse_Datasets = "E:/2. Datasets/1. Alliander/AHAdata/3. Analyse Datasets"
+    settings$Visuals = "E:/2. Datasets/1. Alliander/AHAdata/5. Visuals and Tableau workbooks"
+    settings$Results = "E:/2. Datasets/1. Alliander/AHAdata/6. Results"  }
   
   # Laptop Pieter Stel en overig
   else{
