@@ -1,5 +1,6 @@
-AHA_Data_BAR_Log_Postprocessing  = function()
+AHA_Data_BAR_Log  = function()
   {
+# Creates as delta set from the statis BAR set
 # Load and prepare some data --------------------------------------------------
 assets = list(); 
 changes = list();

@@ -15,14 +15,13 @@ switch (sources,
 sf = {
   cat("Select a shapefile \n")
   ShapeFile <- readShapeSpatial(file.choose())
-#   Data <- as(ShapeFile, "data.frame")
-  Data <- as(ShapeFile, "data.table")
+  Data      <- as(ShapeFile, "data.table")
   Data$PolygonID <- as.numeric(rownames(Data))
 },
 
 # spatialpolygonsdataframe
 spd = {
- cat("Select a spatialpolygons R file \n")
+ cat("Select a spatiallines R file \n")
  fc = file.choose(); cat(paste0("Loading ",fc,"........\n\n" ))
  load(fc);  ShapeFile = mindataset
  
@@ -38,9 +37,9 @@ spd = {
 )
  
 # Extracts the coodinates and polygon IDs -----------------------
-Polygons <- slot(ShapeFile,"polygons")
+Lines <- slot(ShapeFile,"lines")
 # coordinates = llply(Polygons,createpoly, .progress = "text")
-coordinates = data.tableldply(Polygons,createpoly, .progress = "text")
+coordinates = data.tableldply(Lines,createpoly, .progress = "text")
  
  out = AHA_RDCtoGPS(coordinates[,list(Longitude,Latitude)])
   coordinates[Longitude:= out$V1]
@@ -52,18 +51,17 @@ if (combine) {coordinates <- merge(Data,coordinates)}
 }
 
 # Create the polygons ------------------------------
-createpoly = function (Polygon)
+createpoly = function (Line)
 {  
-  ID <- slot(Polygon, "ID")
-  coords <- data.frame(slot(slot(Polygon,"Polygons")[[1]],"coords"))
+  ID <- slot(Lines, "ID")
+  coords <- data.table(slot(slot(Line,"Lines")[[1]],"coords"))
   coords$PlotOrder <- c(1:nrow(coords))
   
   return(
-    data.frame(
-      
+    data.table(
         Longitude = coords[,1],
         Latitude  = coords[,2],
-        PolygonID = rep(ID,nrow(coords)),
+        LineID = rep(ID,nrow(coords)),
         PlotOrder = c(1:nrow(coords))
   ))
 }
