@@ -1,147 +1,148 @@
 AHA_Proxy_KA_BAR_NOR = 
-function(method,set,nr1=1,nr2=nrow(storingen$LS),assettypes=c("LSkabels","MSkabels","LSmoffen","MSmoffen")) 
-{ # This function calculates the asset id - klak id proxy for the asset health analytics project
-  # Data should be loaded using the AHA_Proxy_Dataset function (global environment)
-  # 
-  # Input:
-  # Method refers to the proxy method used, GEO, PC, HLD or OLD
-  # Asset refers to the asset type, e.g. moffen, kabels or both
-  # Voltage refers to the voltage to use, can be MS, LS or both
-  
+  function(method,set,nr1=1,nr2=nrow(storingen$LS),assettypes=c("LSkabels","MSkabels","LSmoffen","MSmoffen")) 
+  { # This function calculates the asset id - klak id proxy for the asset health analytics project
+    # Data should be loaded using the AHA_Proxy_Dataset function (global environment)
+    # 
+    # Input:
+    # Method refers to the proxy method used, GEO, PC, HLD or OLD
+    # Asset refers to the asset type, e.g. moffen, kabels or both
+    # Voltage refers to the voltage to use, can be MS, LS or both
+    
 # Configuration parameters and settings -------------------------------------------------------------
-  config = list()
-  config$timediff$min = -30 # Aantal dagen tussen storing en verwijdering/toevoeging assets
-  config$timediff$max =  70 # Aantal dagen tussen storing en verwijdering/toevoeging assets
-  config$vervdiff$min = -45 # Aantal dagen tussen verwijderde en toegevoegde asset
-  config$vervdiff$max =  45 # Aantal dagen tussen verwijderde en toegevoegde asset
-  config$sdiff$max    =   2 # Afstand tussen verwijderde en toegevoegde asset
-  config$szoek$LS     = 200 # Afstand waarover assets gezocht worden bij XY-proxy
-  config$szoek$MS     =2000 # Afstand waarover assets gezocht worden bij XY-proxy
-  config$set          = set
-
-  
-  #developer parameters
-  develop                        <<-  list()
-  develop$countremoved$LSkabels  <<-  0
-  develop$countremoved$LSmoffen  <<-  0
-  develop$countremoved$MSkabels  <<-  0
-  develop$countremoved$MSmoffen  <<-  0
-  
-  #progress bar
-  pb  <- txtProgressBar()
-  
+    config = list()
+    config$timediff$min = -30 # Aantal dagen tussen storing en verwijdering/toevoeging assets
+    config$timediff$max =  70 # Aantal dagen tussen storing en verwijdering/toevoeging assets
+    config$vervdiff$min = -45 # Aantal dagen tussen verwijderde en toegevoegde asset
+    config$vervdiff$max =  45 # Aantal dagen tussen verwijderde en toegevoegde asset
+    config$sdiff$max    =   2 # Afstand tussen verwijderde en toegevoegde asset
+    config$szoek$LS     = 200 # Afstand waarover assets gezocht worden bij XY-proxy
+    config$szoek$MS     =2000 # Afstand waarover assets gezocht worden bij XY-proxy
+    config$set          = set
+    
+    
+    #developer parameters
+    develop                        <<-  list()
+    develop$countremoved$LSkabels  <<-  0
+    develop$countremoved$LSmoffen  <<-  0
+    develop$countremoved$MSkabels  <<-  0
+    develop$countremoved$MSmoffen  <<-  0
+    
+    #progress bar
+    pb  <- txtProgressBar()
+    
+    
 
 # Load data if not available -----------------------------
-  if (!exists("assets")) {
-    cat("Importing data file \n"); tic()
+    if (!exists("assets")) {
+      cat("Importing data file \n"); tic()
+      switch(config$set,
+             NOR=load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_NOR.Rda"),envir = .GlobalEnv),
+             BAR=load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_BAR.Rda"),envir = .GlobalEnv))
+      load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_nettopo.Rda"),envir = .GlobalEnv)
+      load(paste0(settings$Input_Datasets,"/1 . AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"),envir = .GlobalEnv)
+      toc();
+    }; 
+    
+    #Laad juiste assetset
     switch(config$set,
-           NOR=load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_NOR.Rda"),envir = .GlobalEnv),
-           BAR=load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_BAR.Rda"),envir = .GlobalEnv))
-    load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_nettopo.Rda"),envir = .GlobalEnv)
-    load(paste0(settings$Input_Datasets,"/1 . AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"),envir = .GlobalEnv)
-    toc();
-  }; 
-  
- #Laad juiste assetset
-switch(config$set,
-       NOR={if(!("file" %in% names(assets$LSmoffen))){load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_NOR.Rda"),envir = .GlobalEnv)}},
-       BAR={if( ("file" %in% names(assets$LSmoffen))){load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_BAR.Rda"),envir = .GlobalEnv)}}
-)
+           NOR={if(!("file" %in% names(assets$LSmoffen))){load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_NOR.Rda"),envir = .GlobalEnv)}},
+           BAR={if( ("file" %in% names(assets$LSmoffen))){load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_BAR.Rda"),envir = .GlobalEnv)}}
+    )
 
-
-("file" %in% names(assets$LSmoffen))
 # Quick Fixes ------------------------------------------------------------------------------------------
-  storingen$LS[,PC_6:=gsub(" ","",storingen$LS$PC_6, fixed=TRUE)]  #verwijderen spaties uit postcodes
-  storingen$MS[,PC_6:=gsub(" ","",storingen$MS$PC_6, fixed=TRUE)]  #verwijderen spaties uit postcodes
-  storingen$LS$Tijdstip_begin_storing  <- as.Date(storingen$LS$Tijdstip_begin_storing) #converteren tijdstippen naar datumnotatie
-  storingen$MS$Tijdstip_begin_storing  <- as.Date(storingen$MS$Tijdstip_begin_storing) #converteren tijdstippen naar datumnotatie
-  storingen$LS$Datum_Verwerking_Gereed <- as.Date(storingen$LS$Datum_Verwerking_Gereed) #converteren tijdstippen naar datumnotatie
-  storingen$MS$Datum_Verwerking_Gereed <- as.Date(storingen$MS$Datum_Verwerking_Gereed) #converteren tijdstippen naar datumnotatie
-  
-  switch(set,
-         NOR={if(names(assets$LSkabels)[1]=="ID_Hoofdleiding"){setnames(assets$LSkabels,c("ID_Verbinding","ID_Hoofdleiding"),c("ID_Hoofdleiding","ID_Verbinding"))}},
-         BAR={l_ply(assets[1:4],function(x) try(setnames(x,"Status_R","Status_ID"),silent=T))
-              l_ply(assets[1:4],function(x) try(setnames(x,"Hoofdleiding","ID_Hoofdleiding"),silent=T))
-              l_ply(assets[1:4],function(x) try(setnames(x,"ID_LS_Hoofdleiding","ID_Hoofdleiding_2"),silent=T))
-              l_ply(assets[1:4],function(x) try(setnames(x,"ID_MS_Hoofdleiding","ID_Hoofdleiding_2"),silent=T))
-              l_ply(assets[1:4],function(x) try(setnames(x,"Bouwejaar","Bouwjaar"),silent=T))
-              assets$MSkabels$PC_4_van  <- substr(assets$MSkabels$PC_6_van,1,4)
-              assets$MSkabels$PC_4_naar <- substr(assets$MSkabels$PC_6_naar,1,4)}
-         )
-
-  nettopo$EAN_koppel$ID_Hoofdleiding_LS <- as.character(nettopo$EAN_koppel$ID_Hoofdleiding_LS) #zorgen dat hoofdleidingen characters zijn
-  
+    storingen$LS[,PC_6:=gsub(" ","",storingen$LS$PC_6, fixed=TRUE)]  #verwijderen spaties uit postcodes
+    storingen$MS[,PC_6:=gsub(" ","",storingen$MS$PC_6, fixed=TRUE)]  #verwijderen spaties uit postcodes
+    storingen$LS$Tijdstip_begin_storing  <- as.Date(storingen$LS$Tijdstip_begin_storing) #converteren tijdstippen naar datumnotatie
+    storingen$MS$Tijdstip_begin_storing  <- as.Date(storingen$MS$Tijdstip_begin_storing) #converteren tijdstippen naar datumnotatie
+    storingen$LS$Datum_Verwerking_Gereed <- as.Date(storingen$LS$Datum_Verwerking_Gereed) #converteren tijdstippen naar datumnotatie
+    storingen$MS$Datum_Verwerking_Gereed <- as.Date(storingen$MS$Datum_Verwerking_Gereed) #converteren tijdstippen naar datumnotatie
+    
+    switch(set,
+           NOR={if(names(assets$LSkabels)[1]=="ID_Hoofdleiding"){setnames(assets$LSkabels,c("ID_Verbinding","ID_Hoofdleiding"),c("ID_Hoofdleiding","ID_Verbinding"))}},
+           BAR={l_ply(assets[1:4],function(x) try(setnames(x,"Status_R","Status_ID"),silent=T))
+                l_ply(assets[1:4],function(x) try(setnames(x,"Hoofdleiding","ID_Hoofdleiding"),silent=T))
+                l_ply(assets[1:4],function(x) try(setnames(x,"ID_LS_Hoofdleiding","ID_Hoofdleiding_2"),silent=T))
+                l_ply(assets[1:4],function(x) try(setnames(x,"ID_MS_Hoofdleiding","ID_Hoofdleiding_2"),silent=T))
+                l_ply(assets[1:4],function(x) try(setnames(x,"Bouwejaar","Bouwjaar"),silent=T))
+                assets$MSkabels$PC_4_van  <- substr(assets$MSkabels$PC_6_van,1,4)
+                assets$MSkabels$PC_4_naar <- substr(assets$MSkabels$PC_6_naar,1,4)}
+    )
+    
+    nettopo$EAN_koppel$ID_Hoofdleiding_LS <- as.character(nettopo$EAN_koppel$ID_Hoofdleiding_LS) #zorgen dat hoofdleidingen characters zijn
+    
 
 # Bepalen of kabels wel of niet vervangen is, aanmaken lijst met weg te schrijven data  ---------------------------
-assets$MSkabels$is.verv <- kabel_verv(assets$MSkabels,config)
-assets$LSkabels$is.verv <- kabel_verv(assets$LSkabels,config)
-
-assetsltb <- list()    # aanmaken tabel met gekoppelde assets
-assetsltb$LSkabels        = as.list(storingen$LS$ID_KLAK_Melding[which(complete.cases(storingen$LS$ID_KLAK_Melding[nr1:nr2]))])
-names(assetsltb$LSkabels) = as.list(storingen$LS$ID_KLAK_Melding[which(complete.cases(storingen$LS$ID_KLAK_Melding[nr1:nr2]))])
-
-assetsltb$MSkabels        = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$MS$ID_KLAK_Melding[nr1:nr2]))])
-names(assetsltb$MSkabels) = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$MS$ID_KLAK_Melding[nr1:nr2]))])
-
-assetsltb$LSmoffen        = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$LS$ID_KLAK_Melding[nr1:nr2]))])
-names(assetsltb$LSmoffen) = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$LS$ID_KLAK_Melding[nr1:nr2]))])
-
-assetsltb$MSmoffen        = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$MS$ID_KLAK_Melding[nr1:nr2]))])
-names(assetsltb$MSmoffen) = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$MS$ID_KLAK_Melding[nr1:nr2]))])
+    assets$MSkabels$is.verv <- kabel_verv(assets$MSkabels,config)
+    assets$LSkabels$is.verv <- kabel_verv(assets$LSkabels,config)
+    
+    assetsltb <- list()    # aanmaken tabel met gekoppelde assets
+    assetsltb$LSkabels        = as.list(storingen$LS$ID_KLAK_Melding[which(complete.cases(storingen$LS$ID_KLAK_Melding[nr1:nr2]))])
+    names(assetsltb$LSkabels) = as.list(storingen$LS$ID_KLAK_Melding[which(complete.cases(storingen$LS$ID_KLAK_Melding[nr1:nr2]))])
+    
+    assetsltb$MSkabels        = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$MS$ID_KLAK_Melding[nr1:nr2]))])
+    names(assetsltb$MSkabels) = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$MS$ID_KLAK_Melding[nr1:nr2]))])
+    
+    assetsltb$LSmoffen        = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$LS$ID_KLAK_Melding[nr1:nr2]))])
+    names(assetsltb$LSmoffen) = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$LS$ID_KLAK_Melding[nr1:nr2]))])
+    
+    assetsltb$MSmoffen        = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$MS$ID_KLAK_Melding[nr1:nr2]))])
+    names(assetsltb$MSmoffen) = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$MS$ID_KLAK_Melding[nr1:nr2]))])
+    
 
 # Set keys for different methods-----------------------
-  switch(method,
-         PC={
-           setkey(assets$LSmoffen,PC_6)
-           setkey(assets$MSmoffen,PC_4)
-           setkey(assets$LSkabels,PC_6_van,PC_6_naar)
-           setkey(assets$MSkabels,PC_4_van,PC_4_naar)
-         },
-         TOPO={
-           setkey(assets$LSmoffen,ID_Hoofdleiding)
-           setkey(assets$MSmoffen,Routenaam_MS)
-           setkey(assets$LSkabels,ID_Hoofdleiding)
-           setkey(assets$MSkabels,Routenaam_MS)
-         },
-         XY={
-           setkey(assets$LSmoffen,Coo_X,Coo_Y)
-           setkey(assets$MSmoffen,Coo_X,Coo_Y)
-           setkey(assets$LSkabels,Coo_X_naar,Coo_Y_naar,Coo_X_van,Coo_Y_van)
-           setkey(assets$MSkabels,Coo_X_naar,Coo_Y_naar,Coo_X_van,Coo_Y_van)
-         })
-  setkey(storingen$KLAKMelders,ID_Groep)
-  
+    switch(method,
+           PC={
+             setkey(assets$LSmoffen,PC_6)
+             setkey(assets$MSmoffen,PC_4)
+             setkey(assets$LSkabels,PC_6_van,PC_6_naar)
+             setkey(assets$MSkabels,PC_4_van,PC_4_naar)
+           },
+           TOPO={
+             setkey(assets$LSmoffen,ID_Hoofdleiding)
+             setkey(assets$MSmoffen,Routenaam_MS)
+             setkey(assets$LSkabels,ID_Hoofdleiding)
+             setkey(assets$MSkabels,Routenaam_MS)
+           },
+           XY={
+             setkey(assets$LSmoffen,Coo_X,Coo_Y)
+             setkey(assets$MSmoffen,Coo_X,Coo_Y)
+             setkey(assets$LSkabels,Coo_X_naar,Coo_Y_naar,Coo_X_van,Coo_Y_van)
+             setkey(assets$MSkabels,Coo_X_naar,Coo_Y_naar,Coo_X_van,Coo_Y_van)
+           })
+    setkey(storingen$KLAKMelders,ID_Groep)
+    
+    
 
 # Aanmaken klakgegevenstabel, for-loop over klakmeldingen, aanroepen proxyfunctie --------------------------
-  for(voltage in c("LS","MS")){ 
-    cat(paste(voltage,nr1))
-    titlepb <- paste("Proxy",method,voltage)
-    klaktabel    <- storingen[[voltage]]                # aanmaken tabel met klakmeldingen
-    if (nr2 > nrow(klaktabel)) { nr2 = nrow(klaktabel)}
-    if (nr1 <= nr2){
-    
-    counter    <- 0
-    for(klaknr in klaktabel$ID_KLAK_Melding[nr1:nr2]){
-      klak          <- klaktabel[ID_KLAK_Melding==klaknr]
-      klakmeldingen <- storingen$KLAKMelders[as.list(klak$ID_Groep)]
-      
-      assetsltb <- switch(method,
-                          PC   = Proxy_PC_6(klak,klakmeldingen,voltage,assets,assetsltb,config),
-                          TOPO = Proxy_TOPO(klak,klakmeldingen,voltage,assets,assetsltb,nettopo,config),
-                          XY   = Proxy_XY  (klak,klakmeldingen,voltage,assets,assetsltb,config)
-      )
-      counter       <- counter + 1; setTxtProgressBar(pb, counter/nrow(klaktabel),title=titlepb)
-      
-    }}
-    develop$storingen[voltage] <<- counter
-  } 
-  #filename=paste0("C:/Data/AHAdata/3. Analyse Datasets","/assetsl_NOR_",method,"_",gsub(":",".",paste0(Sys.time())),".Rda")  # definiëren file van weg te schrijven assets
-  filename=paste0(settings$Analyse_Datasets,"/assetsl_",set,"_",method,gsub(":",".",paste0(Sys.time())),".Rda")  # definiëren file van weg te schrijven assets
-  save(assetsltb,file=filename)
-  print(format(object.size(assetsltb),units="Mb"))
-  rm(assetsltb)
-  close(pb);
-}
+    for(voltage in c("LS","MS")){ 
+      cat(paste(voltage,nr1))
+      titlepb <- paste("Proxy",method,voltage)
+      klaktabel    <- storingen[[voltage]]                # aanmaken tabel met klakmeldingen
+      if (nr2 > nrow(klaktabel)) { nr2 = nrow(klaktabel)}
+      if (nr1 <= nr2){
+        
+        counter    <- 0
+        for(klaknr in klaktabel$ID_KLAK_Melding[nr1:nr2]){
+          klak          <- klaktabel[ID_KLAK_Melding==klaknr]
+          klakmeldingen <- storingen$KLAKMelders[as.list(klak$ID_Groep)]
+          
+          assetsltb <- switch(method,
+                              PC   = Proxy_PC_6(klak,klakmeldingen,voltage,assets,assetsltb,config),
+                              TOPO = Proxy_TOPO(klak,klakmeldingen,voltage,assets,assetsltb,nettopo,config),
+                              XY   = Proxy_XY  (klak,klakmeldingen,voltage,assets,assetsltb,config)
+          )
+          counter       <- counter + 1; setTxtProgressBar(pb, counter/nrow(klaktabel),title=titlepb)
+          
+        }}
+      develop$storingen[voltage] <<- counter
+    } 
+    #filename=paste0("C:/Data/AHAdata/3. Analyse Datasets","/assetsl_NOR_",method,"_",gsub(":",".",paste0(Sys.time())),".Rda")  # definiëren file van weg te schrijven assets
+    filename=paste0(settings$Analyse_Datasets,"/assetsl_",set,"_",method,gsub(":",".",paste0(Sys.time())),".Rda")  # definiëren file van weg te schrijven assets
+    save(assetsltb,file=filename)
+    print(format(object.size(assetsltb),units="Mb"))
+    rm(assetsltb)
+    close(pb);
+  }
 
 # Postcode 6 proxy ---------------------------------    
 Proxy_PC_6 = function(klakl,klakmelders,voltage,assets,assetsl,config)
@@ -190,13 +191,17 @@ Proxy_TOPO = function(klakl,klakmelders,voltage,assets,assetsl,nettopo,config)
            Huisnrs    = c(klakl$Huisnr,klakmelders$Huisnr)
            HLDs       = nettopo$EAN_koppel$ID_Hoofdleiding_LS[which((nettopo$EAN_koppel$Huisnr %in% Huisnrs)  &  (nettopo$EAN_koppel$PC_6  %in% PCs))]
            HLDs       = list(unique(HLDs))
+           HLDs       = lapply(HLDs, function (x) x[!is.na(x)])   # NA's verwijderen
            if(sum(!is.na(HLDs))==0|nrow(data.frame(HLDs))>10){
              assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[0,]
+             assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[0,]
            }else{
              assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[HLDs]                                              # Zoeken op Postcode 6
+             if(nrow(assetsl$LSkabels[[klakl$ID_KLAK_Melding]] )>100){print(paste(klakl$ID_KLAK_Melding, nrow(assetsl$LSkabels[[klakl$ID_KLAK_Melding]] )))}
              assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels",config)  # Aanroepen functie om tijdsverschillen e.d. te berekenen
-           
+             
              assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[HLDs]                                              # Zoeken op Postcode 6
+             if(nrow(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] )>100){print(paste(klakl$ID_KLAK_Melding, nrow(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] )))}
              assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen",config)  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
            }
          },
@@ -204,16 +209,20 @@ Proxy_TOPO = function(klakl,klakmelders,voltage,assets,assetsl,nettopo,config)
            PCs        = c(klakl$PC_6,klakmelders$PC_6)
            Huisnrs    = c(klakl$Huisnr,klakmelders$Huisnr)
            Routes     = nettopo$EAN_koppel$Routenaam_MS[which((nettopo$EAN_koppel$Huisnr %in% Huisnrs)  &  (nettopo$EAN_koppel$PC_6  %in% PCs))]
-           Routes     = list(unique(Routes))
+           Routes     = list(unique(Routes))                        # Dubbelingen verwijderen
+           Routes     = lapply(Routes, function (x) x[!is.na(x)])   # NA's verwijderen
            if(sum(!is.na(Routes))==0|nrow(data.frame(Routes))>10){
              assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = assets$MSkabels[0,]
+             assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = assets$MSmoffen[0,]
            }else{
-           assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = assets$MSkabels[Routes]                                              # Zoeken op Postcode 6
-           assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels",config)  # Aanroepen functie om tijdsverschillen e.d. te berekenen
-           
-           
-           assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = assets$MSmoffen[Routes]                                              # Zoeken op Postcode 6
-           assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen",config)  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
+             assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = assets$MSkabels[Routes]                                              # Zoeken op Postcode 6
+             if(nrow(assetsl$MSkabels[[klakl$ID_KLAK_Melding]] )>100){print(paste(klakl$ID_KLAK_Melding, nrow(assetsl$MSkabels[[klakl$ID_KLAK_Melding]] )))}
+             assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels",config)  # Aanroepen functie om tijdsverschillen e.d. te berekenen
+             
+             
+             assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = assets$MSmoffen[Routes]                                              # Zoeken op Postcode 6
+             if(nrow(assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] )>100){print(paste(klakl$ID_KLAK_Melding, nrow(assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] )))}
+             assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen",config)  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
            }
          }) 
   
@@ -236,19 +245,19 @@ Proxy_XY = function(klakl,klakmelders,voltage,assets,assetsl,config)
            Ymin   = floor(klakl$Coo_Y - config$szoek$LS)
            Ymax   = ceiling(klakl$Coo_Y + config$szoek$LS)
            if(!is.na(Xmin+Xmax+Ymin+Ymax)){
-                 XRange = c(Xmin:Xmax)
-                 YRange = c(Ymin:Ymax)
-                    }
+             XRange = c(Xmin:Xmax)
+             YRange = c(Ymin:Ymax)
+           }
            else {
              XRange = c(0)
              YRange = c(0)
            }
            switch(config$set,
-                 NOR = {assetsl$LSkabels[[klakl$ID_KLAK_Melding]] <- assets$LSkabels[((Coo_X_van %in% XRange) & (Coo_Y_van %in% YRange))|((Coo_X_naar %in% XRange)&(Coo_Y_naar %in% YRange))]                # Zoeken op XY
-                        assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] <- assets$LSmoffen[(Coo_X %in% XRange) & (Coo_Y %in% YRange)]},                                                                             # Zoeken op XY
-                 BAR = {assetsl$LSkabels[[klakl$ID_KLAK_Melding]] <- assets$LSkabels[((Coo_X_van < Xmax & Coo_X_van > Xmin) & (Coo_Y_van < Ymax & Coo_Y_van > Ymin))|((Coo_X_naar < Xmax ) & (Coo_X_naar > Xmin ) &(Coo_Y_naar < Ymax) &(Coo_Y_naar > Ymin))]               
-                        assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] <- assets$LSmoffen[((Coo_X < Xmax & Coo_X > Xmin) & (Coo_Y < Ymax & Coo_Y > Ymin))]               
-                       })
+                  NOR = {assetsl$LSkabels[[klakl$ID_KLAK_Melding]] <- assets$LSkabels[((Coo_X_van %in% XRange) & (Coo_Y_van %in% YRange))|((Coo_X_naar %in% XRange)&(Coo_Y_naar %in% YRange))]                # Zoeken op XY
+                         assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] <- assets$LSmoffen[(Coo_X %in% XRange) & (Coo_Y %in% YRange)]},                                                                             # Zoeken op XY
+                  BAR = {assetsl$LSkabels[[klakl$ID_KLAK_Melding]] <- assets$LSkabels[((Coo_X_van < Xmax & Coo_X_van > Xmin) & (Coo_Y_van < Ymax & Coo_Y_van > Ymin))|((Coo_X_naar < Xmax ) & (Coo_X_naar > Xmin ) &(Coo_Y_naar < Ymax) &(Coo_Y_naar > Ymin))]               
+                         assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] <- assets$LSmoffen[((Coo_X < Xmax & Coo_X > Xmin) & (Coo_Y < Ymax & Coo_Y > Ymin))]               
+                  })
            
            
            # Aanroepen functie om tijdsverschillen e.d. te berekenen
@@ -289,83 +298,83 @@ Proxy_XY = function(klakl,klakmelders,voltage,assets,assetsl,config)
 
 # Uitrekenen tijdsverschillen, wel of niet verwijderd------------------------------------------------  
 process.table = function(assetstb,klakl,assettype,config){
-      #bugfixing regels:
-      #try(print(paste(klakl$ID_KLAK_Melding,length(assetstb),nrow(assetstb),class(assetstb),assettype)))
-      
-    #try(print(paste(sum(complete.cases(assetstb$ID_unique)), nrow(assetstb),class(assetstb),assettype)))
-    if(length(assetstb)              ==   0){print(head(assetstb))}else{
+  #bugfixing regels:
+  #try(print(paste(klakl$ID_KLAK_Melding,length(assetstb),nrow(assetstb),class(assetstb),assettype)))
+  
+  #try(print(paste(sum(complete.cases(assetstb$ID_unique)), nrow(assetstb),class(assetstb),assettype)))
+  if(length(assetstb)              ==   0){print(head(assetstb))}else{
     try({switch(config$set,
-               NOR={assetstb <- assetstb[!is.na(assetstb$ID_unique)]; countnna <- sum(complete.cases(assetstb$ID_unique))},                                         # Verwijder rijen met enkel NA's
-               BAR={assetstb <- assetstb[!is.na(assetstb$ID_BAR)];    countnna <- sum(complete.cases(assetstb$ID_BAR))})
-    if (countnna == 0 ){assetstb <- assetstb[0,]}else{                                                   # Verwijder sets met enkel NA's
-    if (sum(assetstb$Status_ID=="Removed"|assetstb$Status_ID=="Lengthch") ==0){assetstb <- assetstb[0,]} # Indien alleen toegevoegde assets -> verwijder alle rijen
-    else  {
-    # uitrekenen tijdsverschillen met storing
-    if (is.na(klakl$Datum_Verwerking_Gereed)){     #calculate differences between the changes in the NOR/BARlog and the time of start interruption, if time of processing is NA
-      diff = 
-        switch(assettype, 
-               moffen = data.table(
-                 Adiff = assetstb$DateAdded   - klakl$Tijdstip_begin_storing,
-                 Rdiff = assetstb$DateRemoved - klakl$Tijdstip_begin_storing),
-               kabels = data.table(
-                 Adiff = assetstb$DateAdded   - klakl$Tijdstip_begin_storing,
-                 Rdiff = assetstb$DateRemoved - klakl$Tijdstip_begin_storing, # Voor kabels ook lengte
-                 Ldiff = assetstb$DateLength_ch - klakl$Tijdstip_begin_storing) # Voor kabels ook lengte
-        )
-    }else{                                         #calculate differences between the moment between the changes in the NOR/BARlog and the time that the interruption was processed in NRG
-      
-      diff = 
-        switch(assettype, 
-               moffen = data.table(
-                 Adiff = assetstb$DateAdded   -   klakl$Datum_Verwerking_Gereed,
-                 Rdiff = assetstb$DateRemoved -   klakl$Datum_Verwerking_Gereed),
-               kabels = data.table(
-                 Adiff = assetstb$DateAdded   -   klakl$Datum_Verwerking_Gereed,
-                 Rdiff = assetstb$DateRemoved -   klakl$Datum_Verwerking_Gereed, 
-                 Ldiff = assetstb$DateLength_ch - klakl$Datum_Verwerking_Gereed) # Voor kabels ook lengte
-        )
-    }
-    #Dicht genoeg op storing?
-    assetstb             <- cbind(assetstb,diff)
-    switch(assettype, 
-           moffen = {if ("Netspanning_tpv_storing" %in% names(klakl)){develop$countremoved$MSmoffen <<- develop$countremoved$MSmoffen + 1} else {develop$countremoved$LSmoffen <<- develop$countremoved$LSmoffen +1}},
-           kabels = {if ("Netspanning_tpv_storing" %in% names(klakl)){develop$countremoved$MSkabels <<- develop$countremoved$MSkabels + 1} else {develop$countremoved$LSkabels <<- develop$countremoved$LSkabels +1}}
-    )
-    switch(assettype, 
-           moffen = {assetstb$in.timediff <- ((assetstb$Adiff > config$timediff$min) & (assetstb$Adiff < config$timediff$max) | 
-                                              (assetstb$Rdiff > config$timediff$min) & (assetstb$Rdiff < config$timediff$max) )},
-           kabels = {assetstb$in.timediff <- ((assetstb$Adiff > config$timediff$min) & (assetstb$Adiff < config$timediff$max) | 
-                                              (assetstb$Rdiff > config$timediff$min) & (assetstb$Rdiff < config$timediff$max) |
-                                              (assetstb$Ldiff > config$timediff$min) & (assetstb$Ldiff < config$timediff$max))}
-          )
-    switch(assettype, 
-           moffen = {
-             tdiff         <- sapply(assetstb$DateAdded,function(x){x-assetstb$DateRemoved})  # Uitrekenen tijdsverschillen tussen tijd van verwijdering en toevoeging
-             
-             xdiff         <- sapply(assetstb$Coo_X,function(x){x-assetstb$Coo_X})            # Uitrekenen afstandsverschillen in horizontale richting
-             
-             ydiff         <- sapply(assetstb$Coo_Y,function(x){x-assetstb$Coo_Y})            # Uitrekenen afstandsverschillen in verticale richting
-             
-             sdiff         <- xdiff^2+ydiff^2                                                 # Uitrekenen afstandsverschillen totaal
-             
-             matrixvv      <- matrix((sdiff < config$sdiff$max) & (tdiff >  config$vervdiff$min & tdiff < config$vervdiff$max),ncol=max(nrow(tdiff),1))
-             diag(matrixvv)<- FALSE                                                           #Zorg ervoor dat assets niet door zichzelf vervangen kunnen worden
-             
-             is.verv       <- (rowSums(matrixvv,na.rm=T)>0)
-    
-             assetstb             <- cbind(assetstb, is.verv)
-             assetstb$koppelc     <- assetstb$in.timediff & assetstb$is.verv                  #Koppel asset T/F?
-           },
-           kabels={
-
-             assetstb$koppelc     <- assetstb$in.timediff & assetstb$is.verv                  #Koppel asset T/F?
-             
-           }
-    )
-    }}},silent=F)}
-    
-   
-    return(assetstb)
+                NOR={assetstb <- assetstb[!is.na(assetstb$ID_unique)]; countnna <- sum(complete.cases(assetstb$ID_unique))},                                         # Verwijder rijen met enkel NA's
+                BAR={assetstb <- assetstb[!is.na(assetstb$ID_BAR)];    countnna <- sum(complete.cases(assetstb$ID_BAR))})
+         if (countnna == 0 ){assetstb <- assetstb[0,]}else{                                                   # Verwijder sets met enkel NA's
+           if (sum(assetstb$Status_ID=="Removed"|assetstb$Status_ID=="Lengthch") ==0){assetstb <- assetstb[0,]} # Indien alleen toegevoegde assets -> verwijder alle rijen
+           else  {
+             # uitrekenen tijdsverschillen met storing
+             if (is.na(klakl$Datum_Verwerking_Gereed)){     #calculate differences between the changes in the NOR/BARlog and the time of start interruption, if time of processing is NA
+               diff = 
+                 switch(assettype, 
+                        moffen = data.table(
+                          Adiff = assetstb$DateAdded   - klakl$Tijdstip_begin_storing,
+                          Rdiff = assetstb$DateRemoved - klakl$Tijdstip_begin_storing),
+                        kabels = data.table(
+                          Adiff = assetstb$DateAdded   - klakl$Tijdstip_begin_storing,
+                          Rdiff = assetstb$DateRemoved - klakl$Tijdstip_begin_storing, # Voor kabels ook lengte
+                          Ldiff = assetstb$DateLength_ch - klakl$Tijdstip_begin_storing) # Voor kabels ook lengte
+                 )
+             }else{                                         #calculate differences between the moment between the changes in the NOR/BARlog and the time that the interruption was processed in NRG
+               
+               diff = 
+                 switch(assettype, 
+                        moffen = data.table(
+                          Adiff = assetstb$DateAdded   -   klakl$Datum_Verwerking_Gereed,
+                          Rdiff = assetstb$DateRemoved -   klakl$Datum_Verwerking_Gereed),
+                        kabels = data.table(
+                          Adiff = assetstb$DateAdded   -   klakl$Datum_Verwerking_Gereed,
+                          Rdiff = assetstb$DateRemoved -   klakl$Datum_Verwerking_Gereed, 
+                          Ldiff = assetstb$DateLength_ch - klakl$Datum_Verwerking_Gereed) # Voor kabels ook lengte
+                 )
+             }
+             #Dicht genoeg op storing?
+             assetstb             <- cbind(assetstb,diff)
+             switch(assettype, 
+                    moffen = {if ("Netspanning_tpv_storing" %in% names(klakl)){develop$countremoved$MSmoffen <<- develop$countremoved$MSmoffen + 1} else {develop$countremoved$LSmoffen <<- develop$countremoved$LSmoffen +1}},
+                    kabels = {if ("Netspanning_tpv_storing" %in% names(klakl)){develop$countremoved$MSkabels <<- develop$countremoved$MSkabels + 1} else {develop$countremoved$LSkabels <<- develop$countremoved$LSkabels +1}}
+             )
+             switch(assettype, 
+                    moffen = {assetstb$in.timediff <- ((assetstb$Adiff > config$timediff$min) & (assetstb$Adiff < config$timediff$max) | 
+                                                         (assetstb$Rdiff > config$timediff$min) & (assetstb$Rdiff < config$timediff$max) )},
+                    kabels = {assetstb$in.timediff <- ((assetstb$Adiff > config$timediff$min) & (assetstb$Adiff < config$timediff$max) | 
+                                                         (assetstb$Rdiff > config$timediff$min) & (assetstb$Rdiff < config$timediff$max) |
+                                                         (assetstb$Ldiff > config$timediff$min) & (assetstb$Ldiff < config$timediff$max))}
+             )
+             switch(assettype, 
+                    moffen = {
+                      tdiff         <- sapply(assetstb$DateAdded,function(x){x-assetstb$DateRemoved})  # Uitrekenen tijdsverschillen tussen tijd van verwijdering en toevoeging
+                      
+                      xdiff         <- sapply(assetstb$Coo_X,function(x){x-assetstb$Coo_X})            # Uitrekenen afstandsverschillen in horizontale richting
+                      
+                      ydiff         <- sapply(assetstb$Coo_Y,function(x){x-assetstb$Coo_Y})            # Uitrekenen afstandsverschillen in verticale richting
+                      
+                      sdiff         <- xdiff^2+ydiff^2                                                 # Uitrekenen afstandsverschillen totaal
+                      
+                      matrixvv      <- matrix((sdiff < config$sdiff$max) & (tdiff >  config$vervdiff$min & tdiff < config$vervdiff$max),ncol=max(nrow(tdiff),1))
+                      diag(matrixvv)<- FALSE                                                           #Zorg ervoor dat assets niet door zichzelf vervangen kunnen worden
+                      
+                      is.verv       <- (rowSums(matrixvv,na.rm=T)>0)
+                      
+                      assetstb             <- cbind(assetstb, is.verv)
+                      assetstb$koppelc     <- assetstb$in.timediff & assetstb$is.verv                  #Koppel asset T/F?
+                    },
+                    kabels={
+                      
+                      assetstb$koppelc     <- assetstb$in.timediff & assetstb$is.verv                  #Koppel asset T/F?
+                      
+                    }
+             )
+           }}},silent=F)}
+  
+  
+  return(assetstb)
   
   
 }
@@ -374,28 +383,28 @@ process.table = function(assetstb,klakl,assettype,config){
 kabel_verv =  function(kabelset,config){
   switch(config$set,
          NOR={
-  nearestnb        <-  cbind(kabelset[!is.na(Coo_X_van),list(Index)],
-                             Rownr=1:nrow(kabelset[!is.na(Coo_X_van),]),
-                             nn2(kabelset[!is.na(Coo_X_van),list(Coo_X_van,Coo_Y_van)] , query = kabelset[!is.na(Coo_X_van),list(Coo_X_van,Coo_Y_van)],searchtype="radius",radius=config$sdiff$max,k=20)$nn.idx,
-                             nn2(kabelset[!is.na(Coo_X_van),list(Coo_X_naar,Coo_Y_naar)] , query = kabelset[!is.na(Coo_X_van),list(Coo_X_van,Coo_Y_van)],searchtype="radius",radius=config$sdiff$max,k=20)$nn.idx,
-                             nn2(kabelset[!is.na(Coo_X_van),list(Coo_X_van,Coo_Y_van)] , query = kabelset[!is.na(Coo_X_van),list(Coo_X_naar,Coo_Y_naar)],searchtype="radius",radius=config$sdiff$max,k=20)$nn.idx,
-                             nn2(kabelset[!is.na(Coo_X_van),list(Coo_X_naar,Coo_Y_naar)] , query = kabelset[!is.na(Coo_X_van),list(Coo_X_naar,Coo_Y_naar)],searchtype="radius",radius=config$sdiff$max,k=20)$nn.idx)
-  names(nearestnb) <- c("Index","Rownr",sapply(c(1:80),function(x){paste0("V",x)}))
-  setkey(nearestnb, Index)
-  setkey(kabelset,Index)
+           nearestnb        <-  cbind(kabelset[!is.na(Coo_X_van),list(Index)],
+                                      Rownr=1:nrow(kabelset[!is.na(Coo_X_van),]),
+                                      nn2(kabelset[!is.na(Coo_X_van),list(Coo_X_van,Coo_Y_van)] , query = kabelset[!is.na(Coo_X_van),list(Coo_X_van,Coo_Y_van)],searchtype="radius",radius=config$sdiff$max,k=20)$nn.idx,
+                                      nn2(kabelset[!is.na(Coo_X_van),list(Coo_X_naar,Coo_Y_naar)] , query = kabelset[!is.na(Coo_X_van),list(Coo_X_van,Coo_Y_van)],searchtype="radius",radius=config$sdiff$max,k=20)$nn.idx,
+                                      nn2(kabelset[!is.na(Coo_X_van),list(Coo_X_van,Coo_Y_van)] , query = kabelset[!is.na(Coo_X_van),list(Coo_X_naar,Coo_Y_naar)],searchtype="radius",radius=config$sdiff$max,k=20)$nn.idx,
+                                      nn2(kabelset[!is.na(Coo_X_van),list(Coo_X_naar,Coo_Y_naar)] , query = kabelset[!is.na(Coo_X_van),list(Coo_X_naar,Coo_Y_naar)],searchtype="radius",radius=config$sdiff$max,k=20)$nn.idx)
+           names(nearestnb) <-  c("Index","Rownr",sapply(c(1:80),function(x){paste0("V",x)}))
+           setkey(nearestnb, Index)
+           setkey(kabelset,Index)
          },
-  BAR={
-    nearestnb        <-  cbind(kabelset[!is.na(Coo_X_van),list(ID_BAR)],
-                               Rownr=1:nrow(kabelset[!is.na(Coo_X_van),]),
-                               nn2(kabelset[!is.na(Coo_X_van),list(Coo_X_van,Coo_Y_van)] , query = kabelset[!is.na(Coo_X_van),list(Coo_X_van,Coo_Y_van)],searchtype="radius",radius=config$sdiff$max,k=20)$nn.idx,
-                               nn2(kabelset[!is.na(Coo_X_van),list(Coo_X_naar,Coo_Y_naar)] , query = kabelset[!is.na(Coo_X_van),list(Coo_X_van,Coo_Y_van)],searchtype="radius",radius=config$sdiff$max,k=20)$nn.idx,
-                               nn2(kabelset[!is.na(Coo_X_van),list(Coo_X_van,Coo_Y_van)] , query = kabelset[!is.na(Coo_X_van),list(Coo_X_naar,Coo_Y_naar)],searchtype="radius",radius=config$sdiff$max,k=20)$nn.idx,
-                               nn2(kabelset[!is.na(Coo_X_van),list(Coo_X_naar,Coo_Y_naar)] , query = kabelset[!is.na(Coo_X_van),list(Coo_X_naar,Coo_Y_naar)],searchtype="radius",radius=config$sdiff$max,k=20)$nn.idx)
-    names(nearestnb) <- c("ID_BAR","Rownr",sapply(c(1:80),function(x){paste0("V",x)}))
-    setkey(nearestnb, ID_BAR)
-    setkey(kabelset, ID_BAR)
-    
-  })
+         BAR={
+           nearestnb        <-  cbind(kabelset[!is.na(Coo_X_van),list(ID_BAR)],
+                                      Rownr=1:nrow(kabelset[!is.na(Coo_X_van),]),
+                                      nn2(kabelset[!is.na(Coo_X_van),list(Coo_X_van,Coo_Y_van)] , query = kabelset[!is.na(Coo_X_van),list(Coo_X_van,Coo_Y_van)],searchtype="radius",radius=config$sdiff$max,k=20)$nn.idx,
+                                      nn2(kabelset[!is.na(Coo_X_van),list(Coo_X_naar,Coo_Y_naar)] , query = kabelset[!is.na(Coo_X_van),list(Coo_X_van,Coo_Y_van)],searchtype="radius",radius=config$sdiff$max,k=20)$nn.idx,
+                                      nn2(kabelset[!is.na(Coo_X_van),list(Coo_X_van,Coo_Y_van)] , query = kabelset[!is.na(Coo_X_van),list(Coo_X_naar,Coo_Y_naar)],searchtype="radius",radius=config$sdiff$max,k=20)$nn.idx,
+                                      nn2(kabelset[!is.na(Coo_X_van),list(Coo_X_naar,Coo_Y_naar)] , query = kabelset[!is.na(Coo_X_van),list(Coo_X_naar,Coo_Y_naar)],searchtype="radius",radius=config$sdiff$max,k=20)$nn.idx)
+           names(nearestnb) <-  c("ID_BAR","Rownr",sapply(c(1:80),function(x){paste0("V",x)}))
+           setkey(nearestnb, ID_BAR)
+           setkey(kabelset, ID_BAR)
+           
+         })
   nearestnb[nearestnb == 0] <- NA
   tdiff            <- nearestnb
   
@@ -414,20 +423,20 @@ kabel_verv =  function(kabelset,config){
               setDT(vervTF); setkey(vervTF,ID_BAR)
               vervTF <- merge(kabelset,vervTF,all=T)[,list(ID_BAR,Log)]
          })
-    
+  
   switch(config$set,
          NOR={
-              kabelset$ID_Status[is.na(kabelset$ID_Status)] <- 0
-  
-              is.verv  <- ((kabelset$ID_Status ==  "Length_changed") | ((!is.na(kabelset$Coo_X_van)) & (kabelset$Status_ID=="Removed") & vervTF$Log))
-              return(is.verv)  
+           kabelset$ID_Status[is.na(kabelset$ID_Status)] <- 0
+           
+           is.verv  <- ((kabelset$ID_Status ==  "Length_changed") | ((!is.na(kabelset$Coo_X_van)) & (kabelset$Status_ID=="Removed") & vervTF$Log))
+           return(is.verv)  
          },
-  BAR={
-       
-              is.verv  <- ((kabelset$Status_ID ==  "Length_changed") | ((!is.na(kabelset$Coo_X_van)) & (kabelset$Status_ID=="Removed") & vervTF$Log))
-              return(is.verv)
-  })
-    
+         BAR={
+           
+           is.verv  <- ((kabelset$Status_ID ==  "Length_changed") | ((!is.na(kabelset$Coo_X_van)) & (kabelset$Status_ID=="Removed") & vervTF$Log))
+           return(is.verv)
+         })
+  
   
 }
 
@@ -447,11 +456,11 @@ Proxy_filter = function()
 
 #Functie om alle proxymethoden te runnen
 runall = function(){
-
+  
   for(method in c("PC","XY","TOPO"))  {
     for(set in c("NOR","BAR")){
-        print(paste(method,set))
-        AHA_Proxy_KA_BAR_NOR(method,set)
+      print(paste(method,set))
+      AHA_Proxy_KA_BAR_NOR(method,set)
     }
   }
 }
