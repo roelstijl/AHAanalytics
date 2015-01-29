@@ -69,8 +69,7 @@ assets_NOR$all    = rbind(assets_NOR$moffen, assets_NOR$kabels,fill=TRUE)
 setkey(assets_NOR$all,ID_NAN);   
 
 # KLAK
-storingen$all = rbind(storingen$LS,storingen$MS,fill=TRUE)[,list(Datum,Status,ID_KLAK_Melding,Getroffen_klanten_totaal,Duur_onderbreking,Datum_Eerste_Ontwerp,Klacht,Netcomponent,Mof,Veroorzaker,Tijdstip_definitief_einde,Coo_X,Coo_Y,PC_4,PC_6,Aantal_Melders)]
-storingen$all[,Coo_X:=as.numeric(gsub(",",".",Coo_X))];storingen$all[,Coo_Y:=as.numeric(gsub(",",".",Coo_Y))];
+storingen$all = rbind(storingen$LS,storingen$MS,fill=TRUE)[,list(Datum,Status,ID_KLAK_Melding,Getroffen_klanten_totaal,Duur_onderbreking,Datum_Eerste_Ontwerp,Netcomponent,Mof,Veroorzaker,Tijdstip_definitief_einde)]#,Coo_X,Coo_Y,PC_4,PC_6
 storingen$KLAKMelders[,Coo_X:=as.numeric(gsub(",",".",Coo_X))];storingen$KLAKMelders[,Coo_Y:=as.numeric(gsub(",",".",Coo_Y))];
 setkey(storingen$all,ID_KLAK_Melding)
 storingen$all[,Storing:="Storing"]
@@ -87,9 +86,9 @@ setkey(temp,ID_Groep)
   
 storingen$KLAKMelders=temp[storingen$KLAKMelders]
 
-setkey(storingen$all,ID_KLAK_Melding)
+setkey(storingen$KLAKMelders,ID_KLAK_Melding)
 setkey(ValidatieSet,ID_KLAK_Melding)
-ValidatieSet=storingen$all[,list(ID_KLAK_Melding,Aantal_Melders)][ValidatieSet,]
+ValidatieSet=unique(storingen$KLAKMelders[,list(ID_KLAK_Melding,Aantal_Melders)])[ValidatieSet,]
 
 # Create file with found assets  -------------------------------
 setpbarwrapper(pb, 2,label = "Calculating Proxy  ");  
@@ -249,9 +248,9 @@ setorder(assets$kabels,DateLength_ch,na.last=TRUE)
 assets = rbindlist(llply(assets,function(x) 
 {setkey(x,ID_NAN);
   if(any(names(x)=="Length_ch"))
-    {x = unique(x[,list(Brontabel,ID_NAN,Status_ID,DateRemoved,DateAdded,DateLength_ch,Length_ch,Coo_X_van,Coo_Y_van,Coo_X_naar,Coo_Y_naar,ID_Hoofdleiding,Routenaam_MS,MS_Route_NOR_IDTrace)])}
+    {x = unique(x[,list(Brontabel,ID_NAN,Status_ID,DateRemoved,DateAdded,DateLength_ch,Length_ch,Coo_X_van,Coo_Y_van,Coo_X_naar,Coo_Y_naar,ID_Hoofdleiding,Routenaam_MS)])}
     else
-    {x = unique(x[,list(Brontabel,ID_NAN,Status_ID,DateRemoved,DateAdded,Coo_X,Coo_Y,ID_Hoofdleiding,Routenaam_MS,MS_Route_NOR_IDTrace)])}
+    {x = unique(x[,list(Brontabel,ID_NAN,Status_ID,DateRemoved,DateAdded,Coo_X,Coo_Y,ID_Hoofdleiding,Routenaam_MS)])}
   return(x)
 }),fill=TRUE)
 

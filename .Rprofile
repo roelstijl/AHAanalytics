@@ -42,12 +42,21 @@
   
   # Desktop Jacco
   else if (Sys.info()["nodename"] =="D-AW15BX") {
+<<<<<<< HEAD
+    settings[,"Bron_Datasets"] = "C:/Data/AHAdata/0. Ongebruikte en brondata"
+    settings[,"Ruwe_Datasets"] = "C:/Data/AHAdata/1. Ruwe Datasets"
+    settings[,"Input_Datasets"] = "C:/Data/AHAdata/2. Input Datasets"
+    settings[,"Analyse_Datasets"] = "C:/Data/AHAdata/3. Analyse Datasets"
+    settings[,"Visuals"] = "F:/2. Datasets/1. Alliander/AHAdata/5. Visuals and Tableau workbooks"
+    settings[,"Results"] = "F:/2. Datasets/1. Alliander/AHAdata/6. Results"}
+=======
     settings$Bron_Datasets = "F:/2. Datasets/1. Alliander/AHAdata/0. Ongebruikte en brondata"
     settings$Ruwe_Datasets = "F:/2. Datasets/1. Alliander/AHAdata/1. Ruwe Datasets"
     settings$Input_Datasets = "F:/2. Datasets/1. Alliander/AHAdata/2. Input Datasets"
     settings$Analyse_Datasets = "F:/2. Datasets/1. Alliander/AHAdata/3. Analyse Datasets"
     settings$Visuals = "F:/2. Datasets/1. Alliander/AHAdata/5. Visuals and Tableau workbooks"
     settings$Results = "F:/2. Datasets/1. Alliander/AHAdata/6. Results"}
+>>>>>>> 35db1b06c162aa5d2964daad49c01c275136137a
   
   # Laptop Jacco Heres Alliander
   else if (Sys.info()["nodename"] =="L-AW23JB") {
@@ -85,8 +94,13 @@
   settings <<-settings
 
   # Install required packages if not installed already -------------------------------
+<<<<<<< HEAD
+  packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash",
+               "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2","RANN")
+=======
   packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash","parallel","doParallel",
                "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2")
+>>>>>>> 35db1b06c162aa5d2964daad49c01c275136137a
   
   for (m in 1:length(packages)){
     # Install if not present
