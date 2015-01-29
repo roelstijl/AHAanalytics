@@ -248,19 +248,20 @@ AHA_storingen = function(cfg){
   
   # Add the ms hoofdleidingen based on the sections
   MS_Stations[,Naam_Onderstation:=gsub("150/20KV |50KV |SH |SS | 10KV| \\(Normaal\\)|RS |OS ", "",Naam_voedend_station)]
-  MS_Stations[,Sectie_naar:=Lokale_naam]
-  setkey(MS_Stations,Sectie_naar,Naam_Onderstation)
-  setkey(storingen$MS,Sectie_naar,Naam_Onderstation)
-  storingen$MS = unique(MS_Stations[,list(Sectie_naar,Routenaam,Naam_Onderstation)])[storingen$MS]
+  MS_Stations[,Sectie:=Lokale_naam]
   
-  MS_Stations[,Sectie_van:=Lokale_naam]
-  setkey(MS_Stations,Sectie_van,Naam_Onderstation)
-  setkey(storingen$MS,Sectie_van,Naam_Onderstation)
-  storingen$MS = MS_Stations[,list(Sectie_van,Routenaam,Naam_Onderstation)][storingen$MS]
+  storingen$Routenamen = storingen$MS[,list(Naam_Onderstation,ID_KLAK_Melding)]
+  storingen$Routenamen = data.table(Naam_Onderstation=storingen$MS$Naam_Onderstation,
+                                    ID_KLAK_Melding = storingen$MS$ID_KLAK_Melding,
+                                    Sectie=c(storingen$MS$Sectie_naar,storingen$MS$Sectie_van))
   
-
+  setkey(MS_Stations,Sectie)
+  setkey(storingen$Routenamen,Sectie)
   
-  storingen$MS[,Naam_Onderstation]
+  storingen$Routenamen = MS_Stations[,list(Sectie,Routenaam)][storingen$Routenamen,allow.cartesian=TRUE]
+  
+  setkey(storingen$Routenamen,ID_KLAK_Melding,Routenaam)
+  storingen$Routenamen= unique(storingen$Routenamen)
   
   # Correct the KLAK meldingen, want alleen eerste melders tellen
   setnames(storingen$KLAKMelders,"ID_KLAK_Melding","ID_KLAK_Melding_oud")

@@ -48,7 +48,7 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
   
   cfg           = list()
   cfg$started   = Sys.time()
-  shinyfolder   = "x. Shiny"
+  shinyfolder   = "Shiny"
   pb = pbarwrapper (title = "Import", label = "Starting...", min = 0, max = length(datafiles)*3, initial = 0, width = 450); pc=0;
   
   # Import data and rename cols
@@ -81,7 +81,7 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
                                         no=data.frame(fread(sourcefile,header=TRUE,sep=";",colClasses=colclass)),
                                         yes=data.frame(read.csv(sourcefile,header=TRUE,sep=";",colClasses=colclass)))},
                           
-                          lsx= {data.frame(read.xlsx(sourcefile,1))}
+                          xlsx= {data.frame(read.xlsx(sourcefile,1))}
     )
     
     
