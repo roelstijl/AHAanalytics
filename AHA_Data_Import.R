@@ -36,9 +36,14 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
   } 
   else{
     setfolder     = list.files(settings$Bron_Datasets,pattern=folder)[1]; 
-    datafiles     = list.files(paste0(settings$Bron_Datasets,"/",setfolder),pattern=paste0(dataname,".{0,}\\.csv|",dataname,".{0,}\\.ssv|",dataname,".{0,}\\.tsv|",dataname,".{0,}\\.xlsx|",dataname,".{0,}\\.shp"))
+    datafiles     = list.files(paste0(settings$Bron_Datasets,"/",setfolder),pattern=paste0(dataname,".{0,}\\.csv|",dataname,".{0,}\\.ssv|",dataname,".{0,}\\.tsv|",dataname,".{0,}\\.xlsx|",dataname,".{0,}\\.ldr|",dataname,".{0,}\\.shp"))
     headerfile    = paste0(settings$Ruwe_Datasets, "/", setfolder,"/",headername,"_headers.xlsx")
   }
+  
+  if(isempty(datafiles)){warning("File not found! \n")}
+  if(isempty(setfolder)){warning("Source folder not found! \n")}
+  
+  
   dir.create(paste0(settings$Ruwe_Datasets,"/",setfolder), showWarnings = FALSE)
   
   cfg           = list()
@@ -53,7 +58,7 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
     curdataname = substring(datafiles[filenumber],1,nchar(datafiles[filenumber])-4);
     curdataext  = substring(datafiles[filenumber],nchar(datafiles[filenumber])-2,nchar(datafiles[filenumber]));
     
-    setpbarwrapper (pb, pc, title = paste0("AHA_Data_Import, Started:",cfg$started," ,file: ",datafiles[filenumber]), label = "Starting import"); pc=pc+1
+    setpbarwrapper (pb, title = paste0("AHA_Data_Import, Started:",cfg$started," ,file: ",datafiles[filenumber]), label = "Starting import"); 
     
     # Choose the correct import method
     if(mode!="header"){colclass=rep("character",1)} else {colclass = switch (override,yes=NA,no=NULL)}
@@ -81,12 +86,12 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
     
     
     # Convert header into the same format as the xlsx file --------------------------------
-    setpbarwrapper (pb, pc, label = paste0("Converting header")); pc=pc+1
+    setpbarwrapper (pb, label = paste0("Converting header")); 
     
     header       = data.frame(matrix(0,length(colnames(mindataset)),4))
     header[,1]   = data.frame(colnames(mindataset))
     header[,2]   = (colnames(mindataset))
-    header[,3]   = matrix(0,length(colnames(mindataset)))
+    header[,3]   = matrix(0,ncol(mindataset))
     header[,4]   = matrix("comment",length(colnames(mindataset)))
     header[,5]   = sapply(mindataset, class,simplify=TRUE);
     colnames(header) = c(curdataname,"Original name","Meenemen","Notities","Class")
@@ -107,25 +112,30 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
     
 # Set colclasses to the desired (excel sheet)
 for(i in header[header[,5]=="numeric",1]) {mindataset[,i] = as.numeric(gsub(",",".",mindataset[,i]))}
+for(i in header[header[,5]=="integer",1]) {mindataset[,i] = as.integer(mindataset[,i])}
+
+# The different date formats
 for(i in header[header[,5]=="date",1])    {mindataset[,i] = as.Date(dmy(mindataset[,i]))} #Timezone note taken into account for perforamnce
 for(i in header[header[,5]=="dateymd",1]) {mindataset[,i] = as.Date(ymd(mindataset[,i]))} #Timezone note taken into account for perforamnce
 for(i in header[header[,5]=="datetime",1]){mindataset[,i] = as.Date(my_hms(mindataset[,i]))}
 for(i in header[header[,5]=="datetimeYDM",1]){mindataset[,i] = as.Date(ymd_hms(mindataset[,i]))}
 for(i in header[header[,5]=="datetimeM",1]){mindataset[,i] = as.Date(dmy_hm(mindataset[,i]))}
-for(i in header[header[,5]=="integer",1]) {mindataset[,i] = as.integer(mindataset[,i])}
 
-    
+# Correct for missing information if 2 digit year in the 20th century
+l_ply(names(mindataset[sapply(mindataset,class)=="Date"]),
+  function(x) {mindataset[which(mindataset[,x] > "2015-06-01"),x] = mindataset[which(mindataset[,x] > "2015-06-01"),x] - years(100)}
+      )    
 # Choose what output to generate depending on user selection ---------------------------
 if(mode=="shiny"){
   
   # Shiny visualisation
-  shinyfolder  = "x. Shiny"
+  shinyfolder  = "Shiny"
   dataset   <<- mindataset[sample(nrow(mindataset),min(nrow(mindataset),10000)),]
   remove ("mindataset")
   header    <<- header  
-  setpbarwrapper (pb, pc, label = paste0("Starting shiny" )); pc=pc+1
+  setpbarwrapper (pb, label = paste0("Starting shiny" )); 
   header = runApp(shinyfolder)
-  setpbarwrapper (pb, pc, label = paste0("Saving to file")); pc=pc+1
+  setpbarwrapper (pb, label = paste0("Saving to file")); 
   file.rename(paste0(shinyfolder ,"/header.xlsx"),paste0(shinyfolder,"/",basename(headerfile)));
   
   file.copy(paste0(shinyfolder,"/",basename(headerfile)),paste0(settings$Ruwe_Datasets, "/", setfolder,"/",basename(headerfile)),overwrite=TRUE);      
@@ -135,7 +145,7 @@ else if(mode=="load") {
   # Load to memory
   cat("Done\n");    return(mindataset[,header[header[,3]==1,1]])
 } else if(mode=="save") {
-  setpbarwrapper (pb, pc, label = paste0("Saving to file, rows: ", nrow(mindataset)," cols: ",ncol(mindataset)) ); pc=pc+1
+  setpbarwrapper (pb, label = paste0("Saving to file, rows: ", nrow(mindataset)," cols: ",ncol(mindataset)) ); 
   
   dataclasses= sapply(mindataset, class)
   mindataset = data.table(mindataset[,header[header[,3]==1,1]])
@@ -144,7 +154,7 @@ else if(mode=="load") {
   # Save to file
   savefile = paste0(settings$Ruwe_Datasets, "/", setfolder,"/",curdataname,".Rda")
   save(mindataset,dataclasses,file=savefile)
-  setpbarwrapper (pb, pc, title = paste0("AHA_Data_Import,file: ",datafiles[filenumber]), label = "Done!");
+  setpbarwrapper (pb, title = paste0("AHA_Data_Import,file: ",datafiles[filenumber]), label = "Done!");
   
 }else if(mode=="header"){
   setpbarwrapper (pb, pc+2, label = "Saved header file to xlsx");
@@ -152,3 +162,5 @@ else if(mode=="load") {
 }else{
   cat("Wrong mode selected, load, save or shiny\n")
 } } }
+
+  

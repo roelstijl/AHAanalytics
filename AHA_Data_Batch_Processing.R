@@ -53,19 +53,20 @@ Tableau_Create_Polygons(fileout="MH_NRG_LS_KABELS_Geospatial_Tableau",sources="s
 AHA_Data_BAR_Log()
   
 # NOR processing ------------------
-AHA_Data_Import("NOR",paste0("ELCVERBINDINGEN_"),"ELCVERBINDINGEN","save")
-AHA_Data_Import("NOR",paste0("ELCVERBINDINGSDELEN_"),"ELCVERBINDINGSDELEN","save")
-AHA_Data_Import("NOR",paste0("ELCVERBINDINGSKNOOPPUNTEN_"),"ELCVERBINDINGSKNOOPPUNTEN","save")
+NORdate = "1501"
+AHA_Data_Import("NOR",paste0("ELCVERBINDINGEN_",NORdate),"ELCVERBINDINGEN","save")
+AHA_Data_Import("NOR",paste0("ELCVERBINDINGSDELEN_",NORdate),"ELCVERBINDINGSDELEN","save")
+AHA_Data_Import("NOR",paste0("ELCVERBINDINGSKNOOPPUNTEN_",NORdate),"ELCVERBINDINGSKNOOPPUNTEN","save")
 
 # Convert into log
-AHA_Data_NOR_Log("ELCVERBINDINGEN")
-AHA_Data_NOR_Log("ELCVERBINDINGSDELEN")
-AHA_Data_NOR_Log("ELCVERBINDINGSKNOOPPUNTEN")
+AHA_Data_NOR_Log("ELCVERBINDINGEN",backups=F)
+AHA_Data_NOR_Log("ELCVERBINDINGSDELEN",backups=F)
+AHA_Data_NOR_Log("ELCVERBINDINGSKNOOPPUNTEN",backups=F)
 
 # Post processing
 AHA_Data_NOR_Log_Postprocessing()
 
 # Preprocessing for Proxi
-AHA_Data_KA_Proxy_Preprocessing_NOR()
+AHA_Data_KA_Proxy_Preprocessing("assetsBAR","assetsNOR")
 }
 

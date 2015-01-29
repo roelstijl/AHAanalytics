@@ -50,6 +50,34 @@ if (combine) {coordinates <- merge(Data,coordinates)}
  write.csv(coordinates, paste0(FileName,".csv"), row.names = FALSE)
 }
 
+AHA_RDCtoGPS = function(data,veld_x,veld_y,veld_lon="lon",veld_lat="lat"){
+  x=data[,veld_x,with=F]
+  y=data[,veld_y,with=F]
+  
+  data[,lon := 
+  5.387206+((5260.52916 * ((x - 155000) * 10 ^ -5)) + (105.94684 * ((x - 155000) * 10 ^ -5) 
+              * (y - 463000) * 10 ^ -5) + (2.45656 * ((x - 155000) * 10 ^ -5) * (y - 463000) * 10 ^ -5 ^ 2) + 
+              (-0.81885 * ((x - 155000) * 10 ^ -5) ^ 3) + (0.05594 * ((x - 155000) * 10 ^ -5) * 
+              (y - 463000) * 10 ^ -5 ^ 3) + (-0.05607 * ((x - 155000) * 10 ^ -5) ^ 3 * (y - 463000) * 
+              10 ^ -5) + (0.01199 * (y - 463000) * 10 ^ -5) + 
+              (-0.00256 * ((x - 155000) * 10 ^ -5) ^ 3 * (y - 463000) * 10 ^ -5 ^ 2) + (0.00128 * 
+              ((x - 155000) * 10 ^ -5) * (y - 463000) * 10 ^ -5 ^ 4) + (0.00022 * (y - 463000) * 10 ^ -5 ^ 2) + 
+              (-0.00022 * ((x - 155000) * 10 ^ -5) ^ 2) + (0.00026 * ((x - 155000) * 10 ^ -5) ^ 5))/3600]
+
+  data[,lat := 
+  52.15517+((3235.65389 * (y - 463000) * 10 ^ -5) + (-32.58297 * ((x - 155000) * 10 ^ -5) ^ 2) 
+            + (-0.2475 * (y - 463000) * 10 ^ -5 ^ 2) + 
+              (-0.84978 * ((x - 155000) * 10 ^ -5) ^ 2 * (y - 463000) * 10 ^ -5) + (-0.0655 * 
+              (y - 463000) * 10 ^ -5 ^ 3) + (-0.01709 * ((x - 155000) * 10 ^ -5) ^ 2 * (y - 463000) 
+              * 10 ^ -5 ^ 2) + (-0.00738 * ((x - 155000) * 10 ^ -5)) + 
+              (0.0053 * ((x - 155000) * 10 ^ -5) ^ 4) + (-0.00039 * ((x - 155000) * 10 ^ -5) ^ 2 
+              * (y - 463000) * 10 ^ -5 ^ 3) + (0.00033 * ((x - 155000) * 10 ^ -5) ^ 4 * 
+              (y - 463000) * 10 ^ -5) + (-0.00012 * ((x - 155000) * 10 ^ -5) * (y - 463000) * 10 ^ -5))/3600]
+
+  setnames(data,c("lon","lat"),c(veld_lon,veld_lat))
+  return(data)
+}
+
 # Create the polygons ------------------------------
 createpoly = function (Line)
 {  
@@ -64,4 +92,24 @@ createpoly = function (Line)
         LineID = rep(ID,nrow(coords)),
         PlotOrder = c(1:nrow(coords))
   ))
+}
+
+toTableau = function(data,foldername,Coo_lat=F){
+  folder = paste0(settings$Visuals,"/0. Bron Data en tools/",foldername)
+  dir.create(folder,showWarnings = FALSE)
+  
+  switch(class(data),
+         list = {
+           l_ply(names(data),function(fname) {
+             if (Coo_lat) {data[[fname]] = AHA_RDCtoGPS(data[[fname]],"Coo_X","Coo_Y")}
+             write.csv(data[[fname]],file=paste0(folder,"/",fname,".csv"),row.names=F)
+             })
+           },
+         data.table ={
+           
+         },
+         SpatialLines={
+           
+         }
+  )
 }

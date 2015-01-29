@@ -2,8 +2,18 @@
 cNA = function(dataset)
 {
   par(mfrow=c(1, 1), mar=c(2, 10, 0, 2))
+  empty = ""
+  l_ply(names(dataset), function(x) if(is.character(dataset[,x,with=F])) {eval(parse(text=paste0("dataset[",x,"==empty,",x,":=NA]" )))})
+  
   barplot(t(cbind(sapply(dataset,function(x) sum(is.na(x))),
-                  sapply(dataset,function(x) sum(!is.na(x))))), horiz=TRUE,las=1,cex.names=0.7)
+                  sapply(dataset,function(x) sum(!is.na(x))))), horiz=TRUE,las=1,cex.names=0.7,legend = c("NA or empty","Not NA"))
+}
+
+cDUB = function(dataset)
+{
+  par(mfrow=c(1, 1), mar=c(2, 10, 0, 2))
+  barplot(t(cbind(sapply(dataset,function(x) sum(duplicated(x))),
+                  sapply(dataset,function(x) sum(!duplicated(x))))), horiz=TRUE,las=1,cex.names=0.7,legend = c("Duplicated","Not duplicated"))
 }
 
 row.sample <- function(dta, rep = 20) {
@@ -11,11 +21,15 @@ row.sample <- function(dta, rep = 20) {
   dta[sample(1:nrow(dta), rep, replace=FALSE), ] 
 } 
 
+cn = function (x){
+  sort(names(x))
+}
+
 importldr = function(sourcefile,colclass){ 
   a = readLines(sourcefile)
   b = paste(a, collapse = "")
   c = gsub("\\{EOL\\}","\n",b)
-  d = fread(c,header=TRUE,colClasses=colclass)
+  d = fread(c,header=TRUE,colClasses=colclass,sep="|")
 }
 
 loadObj <- function(file.name){
@@ -182,4 +196,49 @@ goparallel = function(cores=6,stop=F){
     stopCluster(cl = settings$cl)
     settings$parallel <<-F
   }
+}
+
+
+fixnumber = function(x) {
+  val= strsplit(x,",")[[1]];
+  
+  if (suppressWarnings(!is.na(as.numeric(val[1])))){
+    len=length(val); 
+    cor=switch(nchar(val[len]),"1"=10,"2"=100,"3"=1000)
+    if(len==1) {a=val[1]
+    } else if(len==2) {
+      a=(as.numeric(val[1])+as.numeric(val[2])/cor)
+    } else if(len==3) {
+      a=(as.numeric(val[1])*1000+as.numeric(val[2])+as.numeric(val[3])/cor)
+    }
+  }
+  else{
+    a=NA
+  }
+  return(as.numeric(a))
+}
+
+invwhich = function(indices, totlength) {
+  is.element(seq_len(totlength), indices)
+}
+
+onlynum = function(ll){
+  as.numeric(sapply(strsplit(ll, "[^0-9]+"),function(x) x[2]))
+}
+
+adrsplit = function (Adres){
+  
+  as.integer(laply(strsplit(Adres," "),function(x) ifelse(length(x)>1,x[[2]],NA)))
+}
+
+
+firstFri = function(initialdate)
+{
+# Determine first sunday following first friday for nor creation date -------------------------------
+
+#   Aproximate date of NOR generation, first friday + 2 days
+date = as.Date(paste0(initialdate,"01"), "%y%m%d")
+dow = sapply(seq(0,6),function(x) wday(date+days(x)))
+firstFriday = date + days(which(dow==5)-1)+2
+return(firstFriday)
 }
