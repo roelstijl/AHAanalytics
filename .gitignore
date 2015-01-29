@@ -1,22 +1,18 @@
 # History files
 .Rhistory
-
 # Example code in package build process
 *-Ex.R
-
 # R data files from past sessions
 .Rdata
 .Rda
 *.Rdata
 *.Rda
-
-
 # RStudio files
 .Rproj.user/
-
 # HTML files
 *.htm
 *.html
 .htm
 .html
 .Rproj.user
+~$outputklak.xlsx
