@@ -38,11 +38,18 @@ function(method,set,nr1=1,nr2=nrow(storingen$LS),assettypes=c("LSkabels","MSkabe
            NOR=load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_NOR.Rda"),envir = .GlobalEnv),
            BAR=load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_BAR.Rda"),envir = .GlobalEnv))
     load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_nettopo.Rda"),envir = .GlobalEnv)
-    load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"),envir = .GlobalEnv)
+    load(paste0(settings$Input_Datasets,"/1 . AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"),envir = .GlobalEnv)
     toc();
   }; 
   
+ #Laad juiste assetset
+switch(config$set,
+       NOR={if(!("file" %in% names(assets$LSmoffen))){load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_NOR.Rda"),envir = .GlobalEnv)}},
+       BAR={if( ("file" %in% names(assets$LSmoffen))){load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_BAR.Rda"),envir = .GlobalEnv)}}
+)
 
+
+("file" %in% names(assets$LSmoffen))
 # Quick Fixes ------------------------------------------------------------------------------------------
   storingen$LS[,PC_6:=gsub(" ","",storingen$LS$PC_6, fixed=TRUE)]  #verwijderen spaties uit postcodes
   storingen$MS[,PC_6:=gsub(" ","",storingen$MS$PC_6, fixed=TRUE)]  #verwijderen spaties uit postcodes
@@ -52,9 +59,7 @@ function(method,set,nr1=1,nr2=nrow(storingen$LS),assettypes=c("LSkabels","MSkabe
   storingen$MS$Datum_Verwerking_Gereed <- as.Date(storingen$MS$Datum_Verwerking_Gereed) #converteren tijdstippen naar datumnotatie
   
   switch(set,
-         NOR={if(names(assets$LSkabels)[1]=="ID_Hoofdleiding"){setnames(assets$LSkabels,c("ID_Verbinding","ID_Hoofdleiding"),c("ID_Hoofdleiding","ID_Verbinding"))}
-              names(assets$LSkabels)[4:5]          <- c("Coo_X_van","Coo_Y_van")
-              names(assets$MSkabels)[4:5]          <- c("Coo_X_van","Coo_Y_van")},
+         NOR={if(names(assets$LSkabels)[1]=="ID_Hoofdleiding"){setnames(assets$LSkabels,c("ID_Verbinding","ID_Hoofdleiding"),c("ID_Hoofdleiding","ID_Verbinding"))}},
          BAR={l_ply(assets[1:4],function(x) try(setnames(x,"Status_R","Status_ID"),silent=T))
               l_ply(assets[1:4],function(x) try(setnames(x,"Hoofdleiding","ID_Hoofdleiding"),silent=T))
               l_ply(assets[1:4],function(x) try(setnames(x,"ID_LS_Hoofdleiding","ID_Hoofdleiding_2"),silent=T))
@@ -66,10 +71,23 @@ function(method,set,nr1=1,nr2=nrow(storingen$LS),assettypes=c("LSkabels","MSkabe
 
   nettopo$EAN_koppel$ID_Hoofdleiding_LS <- as.character(nettopo$EAN_koppel$ID_Hoofdleiding_LS) #zorgen dat hoofdleidingen characters zijn
   
-# Bepalen of kabels wel of niet vervangen is  ---------------------------
+
+# Bepalen of kabels wel of niet vervangen is, aanmaken lijst met weg te schrijven data  ---------------------------
 assets$MSkabels$is.verv <- kabel_verv(assets$MSkabels,config)
 assets$LSkabels$is.verv <- kabel_verv(assets$LSkabels,config)
 
+assetsltb <- list()    # aanmaken tabel met gekoppelde assets
+assetsltb$LSkabels        = as.list(storingen$LS$ID_KLAK_Melding[which(complete.cases(storingen$LS$ID_KLAK_Melding[nr1:nr2]))])
+names(assetsltb$LSkabels) = as.list(storingen$LS$ID_KLAK_Melding[which(complete.cases(storingen$LS$ID_KLAK_Melding[nr1:nr2]))])
+
+assetsltb$MSkabels        = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$MS$ID_KLAK_Melding[nr1:nr2]))])
+names(assetsltb$MSkabels) = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$MS$ID_KLAK_Melding[nr1:nr2]))])
+
+assetsltb$LSmoffen        = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$LS$ID_KLAK_Melding[nr1:nr2]))])
+names(assetsltb$LSmoffen) = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$LS$ID_KLAK_Melding[nr1:nr2]))])
+
+assetsltb$MSmoffen        = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$MS$ID_KLAK_Melding[nr1:nr2]))])
+names(assetsltb$MSmoffen) = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$MS$ID_KLAK_Melding[nr1:nr2]))])
 
 # Set keys for different methods-----------------------
   switch(method,
@@ -101,7 +119,7 @@ assets$LSkabels$is.verv <- kabel_verv(assets$LSkabels,config)
     klaktabel    <- storingen[[voltage]]                # aanmaken tabel met klakmeldingen
     if (nr2 > nrow(klaktabel)) { nr2 = nrow(klaktabel)}
     if (nr1 <= nr2){
-    if (!exists("assetsltb")) { assetsltb <- list()}    # aanmaken tabel met gekoppelde assets
+    
     counter    <- 0
     for(klaknr in klaktabel$ID_KLAK_Melding[nr1:nr2]){
       klak          <- klaktabel[ID_KLAK_Melding==klaknr]
@@ -234,7 +252,7 @@ Proxy_XY = function(klakl,klakmelders,voltage,assets,assetsl,config)
            
            
            # Aanroepen functie om tijdsverschillen e.d. te berekenen
-           assetsl$LSkabels[[klakl$ID_KLAK_Melding]] <- process.table(assetsl$LSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels",config) 
+           assetsl$LSkabels[[as.character(klakl$ID_KLAK_Melding)]] <- process.table(assetsl$LSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels",config) 
            assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] <- process.table(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen",config)                         # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
          },
          MS={
