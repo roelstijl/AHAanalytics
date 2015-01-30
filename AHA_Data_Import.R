@@ -90,12 +90,13 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
                           
                           xlsx= {data.frame(read.xlsx(sourcefile,1))},
                           
-                          shp = {readShapeSpatial(sourcefile)},
+                          shp = {spatialset = readShapeSpatial(sourcefile)
+                                 mindataset = spatialset@data
+                                 spatialset = SpatialPolygons(spatialset@polygons,proj4string=CRS("+init=epsg:28992"))
+                                 mindataset},
                           
-                          dbf = {readShapeSpatial(sourcefile)}
+                          dbf = {read.dbf(sourcefile)}
     )
-    a= readShapeSpatial("C:/Datasets/AHAData/files_te_importeren/13. Risicokaart/t100_vg1_b_v2Polygon.shp")
-    
     
     # Convert header into the same format as the xlsx file --------------------------------
     setpbarwrapper (pb, label = paste0("Converting header")); 
@@ -165,7 +166,13 @@ else if(mode=="load") {
   
   # Save to file
   savefile = paste0(settings$Ruwe_Datasets, "/", setfolder,"/",curdataname,".Rda")
-  save(mindataset,dataclasses,file=savefile)
+  
+  if(curdataext=="shp") {
+    save(spatialset,mindataset,dataclasses,file=savefile)} 
+  else{
+    save(mindataset,dataclasses,file=savefile)
+  }
+  
   setpbarwrapper (pb, title = paste0("AHA_Data_Import,file: ",datafiles[filenumber]), label = "Done!");
   
 }else if(mode=="header"){
