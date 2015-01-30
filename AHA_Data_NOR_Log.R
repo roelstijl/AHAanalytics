@@ -180,7 +180,7 @@ assets$kabels = masterdataset;
 setpbarwrapper(pb, label = "Loading assets moffen"); 
 load(paste0(settings$Input_Datasets,"/6. NOR/masterdataset_ELCVERBINDINGSKNOOPPUNTEN.Rda"))
 masterdataset[,ID_Object := (1:nrow(masterdataset))]
-setorder(masterdataset, -DateAdded, na.last=TRUE)
+setorder(masterdataset,-DateAdded, na.last=TRUE)
 setkey(masterdataset,ID_Object)
 assets$moffen = masterdataset;
 
@@ -188,10 +188,8 @@ assets$moffen = masterdataset;
 setpbarwrapper(pb,label = "Loading verbindingsdelen changes"); 
 load(paste0(settings$Input_Datasets,"/6. NOR/changes_ELCVERBINDINGSDELEN.Rda"))
 changes[,ID_Object := (1:nrow(changes))]
-setorder(changes, ID_unique,Datum, na.last=TRUE)
-setkey(changes(ID_Object))
-
-setorder(achanges$kabels,ID_unique,-Date, na.last=TRUE)
+setorder(changes,-Date,ID_unique, na.last=TRUE)
+setkey(changes,ID_unique)
 
 achanges$kabels = changes
 
@@ -203,14 +201,19 @@ rm("changes")
 rm("masterdataset")
 
 # Add the required fields -------------------------------------------------
-setpbarwrapper(pb,label = "Assind some more information to the assets"); 
-
-# Couple the newest NOR values for assets to the past ones basd on XY
-
+setpbarwrapper(pb,label = "Assing some more information to the assets"); 
 
 # Recalculate the lengths and remove the NAs
 achanges$kabels[,Lengte_2 := sqrt((Coo_X_van-Coo_X_naar)^2+(Coo_Y_van-Coo_Y_naar)^2)]
+a=unique(achanges$kabels)
 
+# Couple the newest NOR values for assets to the past ones based on XY
+achanges$kabels[]
+
+lch = c(0,achanges$kabels [2:nrow(achanges$kabels ),Lengte_2] - achanges$kabels [1:(nrow(achanges$kabels )-1),Lengte_2])
+
+logi = duplicated(assets$kabels ,by="ID_NAN")
+assets$kabels [logi,Length_ch:=lch[logi]]
 
 setkey(assets$kabels ,ID_NAN,Datum_Wijziging)
 setorder(assets$kabels ,ID_NAN,Datum_Wijziging)

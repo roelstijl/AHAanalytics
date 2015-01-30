@@ -12,6 +12,25 @@
   settings = list()
   settings$parallel = F
   
+  # Install required packages if not installed already -------------------------------
+  packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash","parallel","doParallel","maptools",
+               "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2")
+  
+  for (m in 1:length(packages)){
+    # Install if not present
+    if(install.p)  install.packages(packages[m])
+    
+    # Download from ZIP if not present
+    if(download.p)  download.packages(packages[m],paste0(settings$Ruwe_Datasets,"/0. Packages"))
+    
+    # Install from ZIP if not present
+    if(install.p.zip) install.packages(list.files(paste0(settings$Ruwe_Datasets,"/0. Packages"),full.names =TRUE)[m])
+  }
+  # require packages
+  for (m in 1:length(packages)){
+    suppressMessages(library(packages[m],character.only=TRUE))
+  }
+  
   # Laptop Roel Stijl Bearingpoint Folio 1040
   if (Sys.info()["nodename"] =="NLAMS4043734X") {
     settings$Bron_Datasets = "I:/2. Datasets/1. Alliander/AHAdata/0. Ongebruikte en brondata"
@@ -22,7 +41,7 @@
     settings$Results = "C:/Datasets/AHAdata/6. Results"}
   
   # Laptop Roel Stijl Bearingpoint Zbook
-  if (Sys.info()["nodename"] =="NLAMS4043734Y") {
+  else if (Sys.info()["nodename"] =="NLAMS4043734Y") {
     settings$Bron_Datasets = "F:/2. Datasets/1. Alliander/AHAdata/0. Ongebruikte en brondata"
     settings$Ruwe_Datasets = "C:/Datasets/AHAdata/1. Ruwe Datasets"
     settings$Input_Datasets = "C:/Datasets/AHAdata/2. Input Datasets"
@@ -82,28 +101,7 @@
     warning("Computer hostname unknown please check\n")}
   
   # Save settings to global variable space for access later
-
-  # Install required packages if not installed already -------------------------------
-  packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash",
-               "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2","RANN")
-
-  packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash","parallel","doParallel",
-               "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2")
-  
-  for (m in 1:length(packages)){
-    # Install if not present
-    if(install.p)  install.packages(packages[m])
-    
-    # Download from ZIP if not present
-    if(download.p)  download.packages(packages[m],paste0(settings$Ruwe_Datasets,"/0. Packages"))
-    
-    # Install from ZIP if not present
-    if(install.p.zip) install.packages(list.files(paste0(settings$Ruwe_Datasets,"/0. Packages"),full.names =TRUE)[m])
-  }
-  # require packages
-  for (m in 1:length(packages)){
-    suppressMessages(library(packages[m],character.only=TRUE))
-  }
+  settings <<- settings
   
   # Source some functions --------------------------------
   source("AHA_Visual_RDS_to_GPS.R")
