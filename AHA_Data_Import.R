@@ -36,7 +36,14 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
   } 
   else{
     setfolder     = list.files(settings$Bron_Datasets,pattern=folder)[1]; 
-    datafiles     = list.files(paste0(settings$Bron_Datasets,"/",setfolder),pattern=paste0(dataname,".{0,}\\.csv|",dataname,".{0,}\\.ssv|",dataname,".{0,}\\.tsv|",dataname,".{0,}\\.xlsx|",dataname,".{0,}\\.ldr|",dataname,".{0,}\\.shp"))
+    datafiles     = list.files(paste0(settings$Bron_Datasets,"/",setfolder),
+                               pattern=paste0(dataname,".{0,}\\.csv|",
+                                              dataname,".{0,}\\.ssv|",
+                                              dataname,".{0,}\\.tsv|",
+                                              dataname,".{0,}\\.xlsx|",
+                                              dataname,".{0,}\\.ldr|",
+                                              dataname,".{0,}\\.dbf|",
+                                              dataname,".{0,}\\.shp"))
     headerfile    = paste0(settings$Ruwe_Datasets, "/", setfolder,"/",headername,"_headers.xlsx")
   }
   
@@ -64,12 +71,12 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
     if(mode!="header"){colclass=rep("character",1)} else {colclass = switch (override,yes=NA,no=NULL)}
     mindataset  = switch (curdataext,
                           csv = {if(folder =="NOR" & !any(pmatch(paste0("ELCVERBINDINGEN_140",1:8), curdataname,dup = TRUE,nomatch=0)>0) & any(pmatch("ELCVERBINDINGEN",curdataname,dup = TRUE,nomatch=0)>0))
-                          {mindataset = data.frame(read.csv(sourcefile,row.names=NULL,colClasses=colclass));
-                           names(mindataset)[1:(length(names(mindataset))-1)]= names(mindataset)[2:length(names(mindataset))]; 
-                           names(mindataset)[(length(names(mindataset)))]="DUPLICATE";
-                           mindataset}
-                          else 
-                          {data.frame(fread(sourcefile,sep=",",header=TRUE,colClasses=colclass))}},
+                                {mindataset = data.frame(read.csv(sourcefile,row.names=NULL,colClasses=colclass));
+                                 names(mindataset)[1:(length(names(mindataset))-1)]= names(mindataset)[2:length(names(mindataset))]; 
+                                 names(mindataset)[(length(names(mindataset)))]="DUPLICATE";
+                                 mindataset}
+                                else 
+                                {data.frame(fread(sourcefile,sep=",",header=TRUE,colClasses=colclass))}},
                           
                           tsv = {switch(override,
                                         no=data.frame(fread(sourcefile,header=TRUE,sep="\t",colClasses=colclass)),
@@ -81,9 +88,15 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
                                         no=data.frame(fread(sourcefile,header=TRUE,sep=";",colClasses=colclass)),
                                         yes=data.frame(read.csv(sourcefile,header=TRUE,sep=";",colClasses=colclass)))},
                           
-                          xlsx= {data.frame(read.xlsx(sourcefile,1))}
+                          xlsx= {data.frame(read.xlsx(sourcefile,1))},
+                          
+                          shp = {spatialset = readShapeSpatial(sourcefile)
+                                 mindataset = spatialset@data
+                                 spatialset = SpatialPolygons(spatialset@polygons,proj4string=CRS("+init=epsg:28992"))
+                                 mindataset},
+                          
+                          dbf = {read.dbf(sourcefile)}
     )
-    
     
     # Convert header into the same format as the xlsx file --------------------------------
     setpbarwrapper (pb, label = paste0("Converting header")); 
@@ -153,7 +166,13 @@ else if(mode=="load") {
   
   # Save to file
   savefile = paste0(settings$Ruwe_Datasets, "/", setfolder,"/",curdataname,".Rda")
-  save(mindataset,dataclasses,file=savefile)
+  
+  if(curdataext=="shp") {
+    save(spatialset,mindataset,dataclasses,file=savefile)} 
+  else{
+    save(mindataset,dataclasses,file=savefile)
+  }
+  
   setpbarwrapper (pb, title = paste0("AHA_Data_Import,file: ",datafiles[filenumber]), label = "Done!");
   
 }else if(mode=="header"){
