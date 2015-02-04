@@ -14,6 +14,12 @@ cfg$pb  = pbarwrapper(title = paste0("AHA_Data_KA_Proxy_Preprocessing: ",as.char
 cfg$firstdate = as.Date("2014-02-16")
 cfg$lastdate  = as.Date("2015-01-01")
 
+# Set what dates unexplainable bumps in the data occured
+BadDates = list()
+BadDates$kabels = as.Date(c("2010-3-7",'2011-05-02', "2011-04-06","2012-05-05"))
+BadDates$moffen = as.Date(c("2010-3-7",'2011-05-02', "2011-04-06","2012-05-05"))
+BadDates$verbindingen = as.Date(c("2011-08-01","2011-04-06","2012-05-05"))
+
 # Choose the correct functions 
 switch (datasets,
   assetsBAR = AHA_assetsBAR(cfg),

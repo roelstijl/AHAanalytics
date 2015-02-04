@@ -1,16 +1,12 @@
 .First = function (install.p=F,download.p=F,install.p.zip=F)
 {
   # Load user specific things and sources function  
-  # Source all the functions
-  
   cat("Loading settings for AHA project (Alliander & Bearingpoint), on failure please reload packages\n
       Modify .Rprofile to change these settings\n\n")  
-  
   options(stringsAsFactors = FALSE)
   
-  # Determine settings based on computer
-  settings = list()
-  settings$parallel = F
+  # Save settings to global variable space for access later
+  settings <<- load_settings()
   
   # Install required packages if not installed already -------------------------------
   packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash","parallel","doParallel","maptools",
@@ -31,6 +27,22 @@
     suppressMessages(library(packages[m],character.only=TRUE))
   }
   
+  # Source some functions --------------------------------
+  sourcefiles = c("AHA_Visual_RDS_to_GPS.R","AHA_Data_Import.R","AHA_Data_Batch_Processing.R","AHA_Data_NOR_Log.R", 'AHA_Data_Geo_Functions.R', "AHA_Proxy_KA_Preprocessing.R",
+  "AHA_Data_BAR_Log.R","AHA_Proxy_KA_Postprocessing.R","AHA_Extra_Functions.R")
+  l_ply(sourcefiles,function(x) try(source(x)))
+  
+  # l_ply(ffiles,source)
+  
+  # Finnish -------------------------------------
+  cat("Loaded settings, built by R Stijl (Bearingpoint), J Heres (Alliander)")  
+}
+
+load_settings = function(){
+  # Determine settings based on computer
+  settings = list()
+  settings$parallel = F
+  
   # Laptop Roel Stijl Bearingpoint Folio 1040
   if (Sys.info()["nodename"] =="NLAMS4043734X") {
     settings$Bron_Datasets = "I:/2. Datasets/1. Alliander/AHAdata/0. Ongebruikte en brondata"
@@ -42,12 +54,12 @@
   
   # Laptop Roel Stijl Bearingpoint Zbook
   else if (Sys.info()["nodename"] =="NLAMS4043734Y") {
-    settings$Bron_Datasets = "F:/2. Datasets/1. Alliander/AHAdata/0. Ongebruikte en brondata"
-    settings$Ruwe_Datasets = "C:/Datasets/AHAdata/1. Ruwe Datasets"
-    settings$Input_Datasets = "C:/Datasets/AHAdata/2. Input Datasets"
-    settings$Analyse_Datasets = "C:/Datasets/AHAdata/3. Analyse Datasets"
-    settings$Visuals = "C:/Datasets/AHAdata/5. Visuals and Tableau workbooks"
-    settings$Results = "C:/Datasets/AHAdata/6. Results"}
+    settings$Bron_Datasets = "F:/1. Alliander/3. Asset Health Analytics/0. Ongebruikte en brondata"
+    settings$Ruwe_Datasets = "F:/1. Alliander/3. Asset Health Analytics/1. Ruwe Datasets"
+    settings$Input_Datasets = "F:/1. Alliander/3. Asset Health Analytics/2. Input Datasets"
+    settings$Analyse_Datasets = "F:/1. Alliander/3. Asset Health Analytics/3. Analyse Datasets"
+    settings$Visuals = "F:/1. Alliander/3. Asset Health Analytics/5. Visuals and Tableau workbooks"
+    settings$Results = "F:/1. Alliander/3. Asset Health Analytics/6. Results"}
   
   # Laptop Roel Stijl Alliander
   else if (Sys.info()["nodename"] =="L-AW89JB") {
@@ -100,22 +112,5 @@
     settings$Analyse_Datasets = "N:/Multivariate Analyse/AHAdata/3. Analyse Datasets"
     warning("Computer hostname unknown please check\n")}
   
-  # Save settings to global variable space for access later
-  settings <<- settings
-  
-  # Source some functions --------------------------------
-  source("AHA_Visual_RDS_to_GPS.R")
-  source("AHA_Data_Import.R")
-  source("AHA_Data_Batch_Processing.R")
-  source("AHA_Data_NOR_Log.R")
-  source('AHA_Data_Geo_Functions.R')
-  source("AHA_Proxy_KA_Preprocessing.R")
-  source("AHA_Data_BAR_Log.R")
-  source("AHA_Proxy_KA_Postprocessing.R")
-  source("AHA_Extra_Functions.R")
-  
-  # l_ply(ffiles,source)
-  
-  # Finnish -------------------------------------
-  cat("Loaded settings, built by R Stijl (Bearingpoint), J Heres (Alliander)")  
+  return(settings)
 }

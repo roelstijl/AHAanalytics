@@ -17,6 +17,9 @@ load(paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_LS_KABELS_XY_PC6.Rda"))
 try(setnames(mindataset,c("Datum_begin","Datum_eind"),c("Datum_Begin","Datum_Eind")))
 assets$LSkabels = Calc_Dates(mindataset)
 
+try(setnames(assets$LSkabels,"LS_HLD_ID","ID_Verbinding"))
+try(setnames(assets$MSkabels,"MS_HLD_ID","ID_Verbinding"))
+
 # Moffen------------------------------ 
 setTkProgressBar(pb, 3,label = "Processing MS moffen data")
 load(paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_LS_MOFFEN_XY_PC6.Rda"))
@@ -65,14 +68,14 @@ assets$MSmoffen = assets$MSmoffen[,Brontabel := "ms_moffen"]
 # Function used to calculate the Assets added removed and length changed-------------------------
 Calc_Dates = function(mindataset,assettype="kabels")
 {# correct date format
-    l_ply(list("Datum_Begin","Datum_Eind","Datum_Wijziging"),
-        function(x) {;
-                     eval(parse(text=paste0("mindataset[,",x,":=",
-              switch (lapply(mindataset, class)[x][[1]][1],character ="dmy", Date      ="", POSIXct   = "as.Date")
-              ,"(",x,")]")))
-              })
+#     l_ply(list("Datum_Begin","Datum_Eind","Datum_Wijziging"),
+#         function(x) {;
+#                      eval(parse(text=paste0("mindataset[,",x,":=",
+#               switch (lapply(mindataset, class)[x][[1]][1],character ="dmy", Date      ="", POSIXct   = "as.Date")
+#               ,"(",x,")]")))
+#               })
   
-  # Added
+# Added
 setkey(mindataset,ID_NAN)
 mindataset[,DateAdded:=min(Datum_Begin),by=ID_NAN]
 mindataset[,Status_ID:="Active"]
@@ -80,8 +83,8 @@ mindataset[,Status_ID:="Active"]
 # Length changed
 if (assettype == "kabels")
 {
-  setkey(mindataset,ID_NAN,Datum_Wijziging)
   setorder(mindataset,ID_NAN,Datum_Wijziging)
+  setkey(mindataset,ID_NAN,Datum_Wijziging)
   mindataset[,Lengte:= sqrt(abs(Coo_X_van-Coo_X_naar)^2+abs(Coo_Y_van-Coo_Y_naar)^2)]
   lch = c(0,mindataset[2:nrow(mindataset),Lengte] - mindataset[1:(nrow(mindataset)-1),Lengte])
   logi = duplicated(mindataset,by="ID_NAN")
@@ -89,8 +92,19 @@ if (assettype == "kabels")
   mindataset[Length_ch!=0,DateLength_ch:=(Datum_Wijziging)]
   mindataset[!is.na(DateLength_ch),Status_ID:="Length_changed"]}
 
-# Removed
+# Status changed
+if (assettype == "kabels")
+{
+  setorder(mindataset,ID_NAN,Datum_Wijziging,na.last=T)
+  setkey(mindataset,ID_NAN,Datum_Wijziging)
+  sch = c("",paste0(mindataset[1:(nrow(mindataset)-1),Status],"->",mindataset[2:(nrow(mindataset)),Status]))
+  logi = duplicated(mindataset,by="ID_NAN") & c(F,mindataset[1:(nrow(mindataset)-1),Status] != mindataset[2:(nrow(mindataset)),Lengte])
+  mindataset[logi,Status_ch:=sch[logi]]
+  mindataset[logi,DateStatus_ch:=(Datum_Wijziging)]
+  mindataset[!is.na(DateStatus_ch),Status_ID:="Status_changed"]
+}
 
+# Removed
 mindataset[,DateRemoved:=(max(Datum_Eind)),by=ID_NAN]
 mindataset[DateRemoved>"2090-01-01",DateRemoved:=NA]
 mindataset[!is.na(DateRemoved),Status_ID:="Removed"]

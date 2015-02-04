@@ -32,7 +32,7 @@ AHA_Data_Import("BARlog","MH_NRG_MS_MOFFEN","MH_NRG_MS_MOFFEN","save")
 # Add the XY coordinates in the same way NOR has them
 processXY("MH_NRG_MS_KABELS","beginend",veld="Ligging")
 processXY("MH_NRG_LS_KABELS","beginend",veld="Ligging")
-processXY("MH_NRG_MS_MOFFEN","position",veld="Locatie")
+processXY("MH_NRG_MS_MOFFEN","position",veld="Lokatie")
 processXY("MH_NRG_LS_MOFFEN","position",veld="Lokatie")
 
 # Add the PC_6 locations of the assets
