@@ -42,12 +42,12 @@
   
   # Desktop Jacco
   else if (Sys.info()["nodename"] =="D-AW15BX") {
-    settings$Bron_Datasets = "F:/2. Datasets/1. Alliander/AHAdata/0. Ongebruikte en brondata"
-    settings$Ruwe_Datasets = "F:/2. Datasets/1. Alliander/AHAdata/1. Ruwe Datasets"
-    settings$Input_Datasets = "F:/2. Datasets/1. Alliander/AHAdata/2. Input Datasets"
-    settings$Analyse_Datasets = "F:/2. Datasets/1. Alliander/AHAdata/3. Analyse Datasets"
-    settings$Visuals = "F:/2. Datasets/1. Alliander/AHAdata/5. Visuals and Tableau workbooks"
-    settings$Results = "F:/2. Datasets/1. Alliander/AHAdata/6. Results"}
+    settings$Bron_Datasets = "C:/Data/AHAdata/0. Ongebruikte en brondata"
+    settings$Ruwe_Datasets = "C:/Data/AHAdata/1. Ruwe Datasets"
+    settings$Input_Datasets = "C:/Data/AHAdata/2. Input Datasets"
+    settings$Analyse_Datasets = "C:/Data/AHAdata/3. Analyse Datasets"
+    settings$Visuals = "C:/Data/AHAdata/5. Visuals and Tableau workbooks"
+    settings$Results = "C:/Data/AHAdata/6. Results"}
   
   # Laptop Jacco Heres Alliander
   else if (Sys.info()["nodename"] =="L-AW23JB") {
@@ -117,7 +117,7 @@
   source("AHA_Extra_Functions.R")
   
   # l_ply(ffiles,source)
-  
+  settings <<- settings
   # Finnish -------------------------------------
   cat("Loaded settings, built by R Stijl (Bearingpoint), J Heres (Alliander)")  
 }
