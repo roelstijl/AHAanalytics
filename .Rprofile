@@ -8,7 +8,7 @@
   # Save settings to global variable space for access later
   settings <<- load_settings()
   
-  # Install required packages if not installed already -------------------------------
+  # Install required packages if not .Firinstalled already -------------------------------
   packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash","parallel","doParallel","maptools",
                "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2","foreign")
   
@@ -69,6 +69,16 @@ load_settings = function(){
     settings$Analyse_Datasets = "E:/2. Datasets/1. Alliander/AHAdata/3. Analyse Datasets"
     settings$Visuals = "E:/2. Datasets/1. Alliander/AHAdata/5. Visuals and Tableau workbooks"
     settings$Results = "E:/2. Datasets/1. Alliander/AHAdata/6. Results"
+    .libPaths ("C:/Data/R")}
+  
+  # Laptop Michiel Musterd BearingPoint Folio 1040
+  else if (Sys.info()["nodename"] =="NLAMS4044583A") {
+    settings$Bron_Datasets = "-"
+    settings$Ruwe_Datasets = "C:/Users/michiel.musterd/Documents/Alliander project/1. Alliander/2. Asset health analytics/1. Ruwe Datasets"
+    settings$Input_Datasets = "C:/Users/michiel.musterd/Documents/Alliander project/1. Alliander/2. Asset health analytics/2. Input Datasets"
+    settings$Analyse_Datasets = "-"
+    settings$Visuals = "-"
+    settings$Results = "-"
     .libPaths ("C:/Data/R")}
   
   # Desktop Jacco
