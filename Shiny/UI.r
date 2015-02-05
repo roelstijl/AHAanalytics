@@ -32,8 +32,8 @@ shinyUI(fluidPage(
       br(),
       
       selectInput("Select_Class", label=NULL,choices = 
-                    list("Integer"="Integer","numeric"="numeric","character"="character", "date"="date",
-                         "dateymd" = "dateymd", "datetime" = "datetime", "datetimeYDM" = "datetimeYDM","datetimeM"="datetimeM"),selected = "character"),
+                    list("integer"="integer","numeric"="numeric","logical"="logical","character"="character", "dmy_hm"="dmy_hm",
+                         "dmy" = "dmy", "ymd" = "ymd", "my_hms" = "my_hms","ymd_hms"="ymd_hms"),selected = "character"),
       actionButton("Update_Class", label = "Update class"),
       br(),
 

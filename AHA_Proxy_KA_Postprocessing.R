@@ -87,7 +87,8 @@ setpbarwrapper(pb, label = "Calculating Proxy  ");
 
 if(cfg$Proxy>0) 
 {setpbarwrapper(pb,"Select files for proxy\n")
-ValidatieSet = IncludeProxy(ValidatieSet,pb,cfg)}
+ValidatieSet = IncludeProxy(ValidatieSet,pb,cfg)
+}
 
 setpbarwrapper(pb, label = "Calculating ValidatieSet");  
 ValidatieSet[,in_NORlog:=(ID_NAN %in% assets_NOR$all$ID_NAN)]
@@ -299,13 +300,14 @@ calcklak1 = function(y)
 
 calcklak2 = function(x,y) 
 { 
-  if (any("DateLength_ch" %in% colnames(y[[x]])))
-    {ifelse(class(y[[x]]=="character",
+  a=1
+  if (any("DateLength_ch" %in% colnames(y[[x]])) | any("DateLength_ch" %in% colnames(y)))
+    {ifelse(any(class(y[[x]])=="character"),
                     {z = y[,list(ID_NAN,DateRemoved,DateAdded,DateLength_ch,Length_ch,Coo_X_van,Coo_Y_van,PC_6_van,Coo_X_naar,Coo_Y_naar,PC_6_naar)]},
-                    {z = y[[x]][,list(ID_NAN,DateRemoved,DateAdded,DateLength_ch,Length_ch,Coo_X_van,Coo_Y_van,PC_6_van,Coo_X_naar,Coo_Y_naar,PC_6_naar)]})} 
+                    {z = y[[x]][,list(ID_NAN,DateRemoved,DateAdded,DateLength_ch,Length_ch,Coo_X_van,Coo_Y_van,PC_6_van,Coo_X_naar,Coo_Y_naar,PC_6_naar)]})}
   else 
-    {ifelse(class(y[[x]]=="character",
-                    {z = [,list(ID_NAN,DateRemoved,DateAdded,Coo_X,Coo_Y,PC_6)]},
+    {ifelse(any(class(y[[x]])=="character"),
+                    {z = y[,list(ID_NAN,DateRemoved,DateAdded,Coo_X,Coo_Y,PC_6)]},
                     {z = y[[x]][,list(ID_NAN,DateRemoved,DateAdded,Coo_X,Coo_Y,PC_6)]})}
   z$ID_KLAK_Melding=x; 
   z

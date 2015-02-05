@@ -107,7 +107,8 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
     header[,3]   = matrix(0,ncol(mindataset))
     header[,4]   = matrix("comment",length(colnames(mindataset)))
     header[,5]   = sapply(mindataset, class,simplify=TRUE);
-    colnames(header) = c(curdataname,"Original name","Meenemen","Notities","Class")
+    header[,6:8] = t(mindataset[1:3,])
+    colnames(header) = c(curdataname,"Original name","Meenemen","Notities","Class","Value 1","Value 2","Value 3")
     
     # Load the xlsx file or create it if non existing
     if (file.exists(headerfile)) {
@@ -126,13 +127,14 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
 # Set colclasses to the desired (excel sheet)
 for(i in header[header[,5]=="numeric",1]) {mindataset[,i] = as.numeric(gsub(",",".",mindataset[,i]))}
 for(i in header[header[,5]=="integer",1]) {mindataset[,i] = as.integer(mindataset[,i])}
+for(i in header[header[,5]=="logical",1]) {mindataset[,i] = as.logical(mindataset[,i])}
 
 # The different date formats
-for(i in header[header[,5]=="date",1])    {mindataset[,i] = as.Date(dmy(mindataset[,i]))} #Timezone note taken into account for perforamnce
-for(i in header[header[,5]=="dateymd",1]) {mindataset[,i] = as.Date(ymd(mindataset[,i]))} #Timezone note taken into account for perforamnce
-for(i in header[header[,5]=="datetime",1]){mindataset[,i] = as.Date(my_hms(mindataset[,i]))}
-for(i in header[header[,5]=="datetimeYDM",1]){mindataset[,i] = as.Date(ymd_hms(mindataset[,i]))}
-for(i in header[header[,5]=="datetimeM",1]){mindataset[,i] = as.Date(dmy_hm(mindataset[,i]))}
+for(i in header[header[,5]=="date"|header[,5]=="dmy",1])           {mindataset[,i] = as.Date(dmy(mindataset[,i]))} #Timezone note taken into account for perforamnce
+for(i in header[header[,5]=="dateymd"|header[,5]=="ymd",1])        {mindataset[,i] = as.Date(ymd(mindataset[,i]))} #Timezone note taken into account for perforamnce
+for(i in header[header[,5]=="datetime"|header[,5]=="my_hms",1])    {mindataset[,i] = as.Date(my_hms(mindataset[,i]))}
+for(i in header[header[,5]=="datetimeYDM"|header[,5]=="ymd_hms",1]){mindataset[,i] = as.Date(ymd_hms(mindataset[,i]))}
+for(i in header[header[,5]=="datetimeM"|header[,5]=="dmy_hm",1])   {mindataset[,i] = as.Date(dmy_hm(mindataset[,i]))}
 
 # Correct for missing information if 2 digit year in the 20th century
 l_ply(names(mindataset[sapply(mindataset,class)=="Date"]),
