@@ -9,8 +9,8 @@
   settings <<- load_settings()
   
   # Install required packages if not installed already -------------------------------
-  packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash","parallel","doParallel","maptools",
-               "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2","foreign")
+  packages = c( "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash","parallel","doParallel","maptools",
+                "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2","foreign")
   
   for (m in 1:length(packages)){
     # Install if not present
@@ -24,12 +24,12 @@
   }
   # require packages
   for (m in 1:length(packages)){
-    suppressMessages(library(packages[m],character.only=TRUE))
+    try(suppressMessages(library(packages[m],character.only=TRUE)))
   }
   
   # Source some functions --------------------------------
   sourcefiles = c("AHA_Visual_RDS_to_GPS.R","AHA_Data_Import.R","AHA_Data_Batch_Processing.R","AHA_Data_NOR_Log.R", 'AHA_Data_Geo_Functions.R', "AHA_Proxy_KA_Preprocessing.R",
-  "AHA_Data_BAR_Log.R","AHA_Proxy_KA_Postprocessing.R","AHA_Extra_Functions.R")
+                  "AHA_Data_BAR_Log.R","AHA_Proxy_KA_Postprocessing.R","AHA_Extra_Functions.R")
   l_ply(sourcefiles,function(x) try(source(x)))
   
   # l_ply(ffiles,source)
@@ -71,6 +71,16 @@ load_settings = function(){
     settings$Results = "E:/2. Datasets/1. Alliander/AHAdata/6. Results"
     .libPaths ("C:/Data/R")}
   
+  # R Server
+  else if (Sys.info()["nodename"] =="SP0651") {
+    settings$Bron_Datasets = "E:/1. Programmeerwerk/Multivariate Analyse/AHAdata/0. Ongebruikte en brondata"
+    settings$Ruwe_Datasets = "E:/1. Programmeerwerk/Multivariate Analyse/AHAdata/1. Ruwe Datasets"
+    settings$Input_Datasets = "E:/1. Programmeerwerk/Multivariate Analyse/AHAdata/2. Input Datasets"
+    settings$Analyse_Datasets = "E:/1. Programmeerwerk/Multivariate Analyse/AHAdata/AHAdata/3. Analyse Datasets"
+    settings$Visuals = "E:/1. Programmeerwerk/Multivariate Analyse/AHAdata/5. Visuals and Tableau workbooks"
+    settings$Results = "E:/1. Programmeerwerk/Multivariate Analyse/AHAdata/6. Results"
+    .libPaths ("E:/1. Programmeerwerk/R packages")}
+  
   # Desktop Jacco
   else if (Sys.info()["nodename"] =="D-AW15BX") {
     settings$Bron_Datasets = "C:/Data/AHAdata/0. Ongebruikte en brondata"
@@ -111,48 +121,5 @@ load_settings = function(){
     settings$Input_Datasets = "N:/Multivariate Analyse/AHAdata/2. Input Datasets"
     settings$Analyse_Datasets = "N:/Multivariate Analyse/AHAdata/3. Analyse Datasets"
     warning("Computer hostname unknown please check\n")}
-  
-<<<<<<< HEAD
-  # Save settings to global variable space for access later
-
-  # Install required packages if not installed already -------------------------------
-  packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash",
-               "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2","RANN")
-
-  packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash","parallel","doParallel",
-               "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2")
-  
-  for (m in 1:length(packages)){
-    # Install if not present
-    if(install.p)  install.packages(packages[m])
-    
-    # Download from ZIP if not present
-    if(download.p)  download.packages(packages[m],paste0(settings$Ruwe_Datasets,"/0. Packages"))
-    
-    # Install from ZIP if not present
-    if(install.p.zip) install.packages(list.files(paste0(settings$Ruwe_Datasets,"/0. Packages"),full.names =TRUE)[m])
-  }
-  # require packages
-  for (m in 1:length(packages)){
-    suppressMessages(library(packages[m],character.only=TRUE))
-  }
-  
-  # Source some functions --------------------------------
-  source("AHA_Visual_RDS_to_GPS.R")
-  source("AHA_Data_Import.R")
-  source("AHA_Data_Batch_Processing.R")
-  source("AHA_Data_NOR_Log.R")
-  source('AHA_Data_Geo_Functions.R')
-  source("AHA_Proxy_KA_Preprocessing.R")
-  source("AHA_Data_BAR_Log.R")
-  source("AHA_Proxy_KA_Postprocessing.R")
-  source("AHA_Extra_Functions.R")
-  
-  # l_ply(ffiles,source)
-  settings <<- settings
-  # Finnish -------------------------------------
-  cat("Loaded settings, built by R Stijl (Bearingpoint), J Heres (Alliander)")  
-=======
   return(settings)
->>>>>>> a5c622b43ce03e956d029bf9d4645923c19c9136
 }

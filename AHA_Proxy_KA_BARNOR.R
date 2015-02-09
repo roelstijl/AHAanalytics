@@ -18,14 +18,20 @@ AHA_Proxy_KA_BAR_NOR =
     config$szoek$LS     = 200 # Afstand waarover assets gezocht worden bij XY-proxy
     config$szoek$MS     =2000 # Afstand waarover assets gezocht worden bij XY-proxy
     config$set          = set
-    
+    switch(set,
+           NOR={config$kabelscol    = c("ID_unique","ID_NAN","is.verv","DateAdded","DateRemoved","DateLength_ch")
+                config$moffencol    = c("ID_unique","ID_NAN","Coo_X","Coo_Y","DateAdded","DateRemoved")},
+           BAR={config$kabelscol    = c("Index","ID_NAN", "DateAdded","DateRemoved","DateLength_ch")
+                config$moffencol    = c("Index","ID_NAN", "Coo_X","Coo_Y",, "DateAdded","DateRemoved")})
+    require(RANN)
     
     #developer parameters
-    develop                        <<-  list()
-    develop$countremoved$LSkabels  <<-  0
-    develop$countremoved$LSmoffen  <<-  0
-    develop$countremoved$MSkabels  <<-  0
-    develop$countremoved$MSmoffen  <<-  0
+    develop                        <-  list()
+    develop$countremoved$LSkabels  <-  0
+    develop$countremoved$LSmoffen  <-  0
+    develop$countremoved$MSkabels  <-  0
+    develop$countremoved$MSmoffen  <-  0
+    develop                        <<- develop
     
     #progress bar
     pb  <- txtProgressBar()
@@ -39,7 +45,7 @@ AHA_Proxy_KA_BAR_NOR =
              NOR=load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_NOR.Rda"),envir = .GlobalEnv),
              BAR=load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_BAR.Rda"),envir = .GlobalEnv))
       load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_nettopo.Rda"),envir = .GlobalEnv)
-      load(paste0(settings$Input_Datasets,"/1 . AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"),envir = .GlobalEnv)
+      load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"),envir = .GlobalEnv)
       toc();
     }; 
     
@@ -156,21 +162,22 @@ Proxy_PC_6 = function(klakl,klakmelders,voltage,assets,assetsl,config)
            PCdt    = data.table(PC_6_naar=PClijst)
            
            # Zoeken op Postcode 6 van, voeg andere assets die op PC6_naar matchen ook toe
-           assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[which(assets$LSkabels$PC_6_van %in% PClijst | assets$LSkabels$PC_6_naar %in% PClijst)]                                                 
+           assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[which(assets$LSkabels$PC_6_van %in% PClijst | assets$LSkabels$PC_6_naar %in% PClijst),config$kabelscol,with=F]                                                 
            #if(nrow(assetsl$LSkabels[[klakl$ID_KLAK_Melding]])>200){assetsl$LSkabels[[klakl$ID_KLAK_Melding]]=assetsl$LSkabels[[klakl$ID_KLAK_Melding]][,1:100]}
+           assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = cbind(assetsl$LSkabels[[klakl$ID_KLAK_Melding]],ID_KLAK_Melding=klakl$ID_KLAK_Melding)
            assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels",config)  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
            
-           assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[J(PClijst)]                                                     # Zoeken op Postcode 6
+           assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[J(PClijst),config$moffencol,with=F]                                                     # Zoeken op Postcode 6
            assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen",config)  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
          },
          MS={
            PClijst = list(unique(c(klakl$PC_4,substr(klakmelders$PC_6,1,4))))
            
-           assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = assets$MSkabels[PClijst] # Zoeken op Postcode 4
+           assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = assets$MSkabels[which(assets$MSkabels$PC_6_van %in% PClijst | assets$MSkabels$PC_6_naar %in% PClijst),config$kabelscol,with=F] # Zoeken op Postcode 4
            #if(nrow(assetsl$MSkabels[[klakl$ID_KLAK_Melding]])>200){assetsl$MSkabels[[klakl$ID_KLAK_Melding]]=assetsl$MSkabels[[klakl$ID_KLAK_Melding]][,1:100]}
            assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels",config)  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
            
-           assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = assets$MSmoffen[PClijst] # Zoeken op postcode 4
+           assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = assets$MSmoffen[PClijst,config$moffencol,with=F] # Zoeken op postcode 4
            assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen",config)  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
          }) 
   
