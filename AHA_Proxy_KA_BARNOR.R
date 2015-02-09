@@ -161,6 +161,7 @@ Proxy_PC_6 = function(klakl,klakmelders,voltage,assets,assetsl,config)
            PClijst = unique(c(klakl$PC_6,klakmelders$PC_6))
            PCdt    = data.table(PC_6_naar=PClijst)
            
+           print(klakl$ID_KLAK_Melding)
            # Zoeken op Postcode 6 van, voeg andere assets die op PC6_naar matchen ook toe
            assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[which(assets$LSkabels$PC_6_van %in% PClijst | assets$LSkabels$PC_6_naar %in% PClijst),config$kabelscol,with=F]                                                 
            #if(nrow(assetsl$LSkabels[[klakl$ID_KLAK_Melding]])>200){assetsl$LSkabels[[klakl$ID_KLAK_Melding]]=assetsl$LSkabels[[klakl$ID_KLAK_Melding]][,1:100]}
