@@ -10,7 +10,8 @@
   
   # Install required packages if not installed already -------------------------------
   packages = c( "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash","parallel","doParallel","maptools",
-                "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2","foreign")
+                "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2","foreign",
+                "RANN","ff","ffbase")
   
   for (m in 1:length(packages)){
     # Install if not present
@@ -121,10 +122,7 @@ load_settings = function(){
     settings$Input_Datasets = "N:/Multivariate Analyse/AHAdata/2. Input Datasets"
     settings$Analyse_Datasets = "N:/Multivariate Analyse/AHAdata/3. Analyse Datasets"
     warning("Computer hostname unknown please check\n")}
-<<<<<<< HEAD
-=======
-  
+
   # Save settings to global variable space for access later  
->>>>>>> a24bb4f6304e02e7ac1a2d35797aaf7fa4c1242a
   return(settings)
 }
