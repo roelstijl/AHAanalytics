@@ -30,21 +30,21 @@ couplingMVA = function(){
   #############################
   
   #set the number of keys to be used per dataset (1 or 2)
-  no_of_keys=1
+  no_of_keys=2
   
   #Set the primary column names to be used as key in set 1 and set 2
-  key1_nameA="x_van"
-  key2_nameA="x_van"
+  key1_nameA="Coo_X"
+  key2_nameA="Coo_X"
   
   #Set the secondary column names to be used as key. These keys are only used if no_of_keys is set to 2
-  key1_nameB="y_van"
-  key2_nameB="y_van"
+  key1_nameB="Coo_Y"
+  key2_nameB="Coo_Y"
   
   #Set the location and names of the input datasets
-  Set1Name=paste0(settings$Testcodes,"/Set1.Rda")
-  #Set1Name=paste0(settings$Ruwe_Datasets,"/8. CAR/CAR_2013_XY.Rda")
-  #Set2Name=paste0(settings$Ruwe_Datasets,"/16. Zakking/500x250_Zakking_Nederland.Rda")
-  Set2Name=paste0(settings$Testcodes,"/Set2.Rda")
+  #Set1Name=paste0(settings$Testcodes,"/Set1.Rda")
+  Set1Name=paste0(settings$Ruwe_Datasets,"/8. CAR/Sample50k_CAR.Rda")
+  Set2Name=paste0(settings$Ruwe_Datasets,"/16. Zakking/500x250_Zakking_Nederland.Rda")
+  #Set2Name=paste0(settings$Testcodes,"/Set2.Rda")
   
   
   #Set the location and name of the output dataset
@@ -60,8 +60,14 @@ couplingMVA = function(){
   Set1NameCheck=load(Set1Name)
   Set1=get(Set1NameCheck)
   
+  
   Set2NameCheck=load(Set2Name)
   Set2=get(Set2NameCheck)
+  
+  #check whether both sets are data.tables to avoid errors down the line
+  if (is.data.table(Set1)==F || is.data.table(Set1)==F ){
+    stop("One of the input sets is not in data table format, please correct")
+  }
     
   #Here we do some error catching for:
   #A: coordinates in lat/lon format
@@ -69,9 +75,12 @@ couplingMVA = function(){
   
   #A: TODO
 
+  
+  
   #B Check whether the class of key 1 is numeric and make sure that key 2 has the same class. Note that this
   #fails if key 2 column content is not supposed to be the same class, but in that case 
   #the coupling will fail anyway
+  
   if (no_of_keys==1){
     if (is.numeric(Set1[,get(key1_nameA)])==T)
     {
@@ -89,6 +98,7 @@ couplingMVA = function(){
     }
   }
     
+  
   #In case of a single key, set the key such that unique will know how to filter
   if (no_of_keys==1){
     setkeyv(Set1,key1_nameA)
@@ -104,6 +114,7 @@ couplingMVA = function(){
   #at the same time 10-20 and 21-50 trees nearby, which should not be possible
   
   #first run unique on Set2 to make sure that there are no double entries
+  
   uniSet2=unique(Set2)
   
   #If there are 2 keys, we assume that they are x and y location and we merge on nearest neighbour
@@ -111,22 +122,30 @@ couplingMVA = function(){
   
   if (no_of_keys==2){
     N=nrow(Set1) #check the number of rows in Set1 for looping
-  
+
     #create an empty data.table to be filled inside the loop
     indexVec=data.table(ind=(1:N)*0)
     
-    for (i in 1:N){    
+    
+    for (i in 1:N){
+      if (i %% 100==0) {
+      cat("Coupling ",i," of ",N,"\n")
+      }
+      
       #calculate vector with distance of i to uniSet2 
       vec=with(uniSet2,(Set1[i,get(key1_nameA)]-get(key2_nameA))^2+(Set1[i,get(key1_nameB)]-get(key2_nameB))^2)
-      
-      #calculate minimum of that vector and store the index
-      indexVec[i,ind:=which.min(vec)]
-      
+          
+      #catch NA entries in Set1, just leave indexVec$ind at 0 for those
+      if (is.na(Set1[i,get(key1_nameA)])==F && is.na(Set1[i,get(key2_nameA)])==F){
+        #calculate minimum of that vector and store the index
+        indexVec[i,ind:=which.min(vec)]
+      }
     }#loop over all rows in Set1
+    
     
     #Create a new column in Set1 with the merge ID, 
     #also insert a column in uniSet2 with these IDs (essentially row numbers for Set2)
-    Set1[,mID:=indexVec]
+    Set1[,mID:=indexVec$ind]
     uniSet2[,mID:=1:nrow(uniSet2)]
     
     #Now the indices have been added to the sets and they are unique in uniSet2 so we can
