@@ -33,22 +33,22 @@ couplingMVA = function(){
   no_of_keys=2
   
   #Set the primary column names to be used as key in set 1 and set 2
-  key1_nameA="Coo_X"
+  key1_nameA="LON..east."
   key2_nameA="Coo_X"
   
   #Set the secondary column names to be used as key. These keys are only used if no_of_keys is set to 2
-  key1_nameB="Coo_Y"
+  key1_nameB="LAT..north."
   key2_nameB="Coo_Y"
   
   #Set the location and names of the input datasets
   #Set1Name=paste0(settings$Testcodes,"/Set1.Rda")
-  Set1Name=paste0(settings$Ruwe_Datasets,"/8. CAR/Sample50k_CAR.Rda")
+  Set1Name=paste0(settings$Ruwe_Datasets,"/18. KNMI/Sample1k_KNMI.Rda")
   Set2Name=paste0(settings$Ruwe_Datasets,"/16. Zakking/500x250_Zakking_Nederland.Rda")
   #Set2Name=paste0(settings$Testcodes,"/Set2.Rda")
   
   
   #Set the location and name of the output dataset
-  outFileName=paste0(settings$Testcodes,"/CoupledToNearest.Rda")
+  outFileName=paste0(settings$Testcodes,"/CoupledToNearestWithLatLon.Rda")
   
   #############################
   #End of user input section  #
@@ -70,14 +70,11 @@ couplingMVA = function(){
   }
     
   #Here we do some error catching for:
-  #A: coordinates in lat/lon format
-  #B: coordinates with type character that should be numeric
-  
-  #A: TODO
-
+  #A: coordinates with type character that should be numeric
+  #B: coordinates in RDC should be converted to lat/lon format
   
   
-  #B Check whether the class of key 1 is numeric and make sure that key 2 has the same class. Note that this
+  #A Check whether the class of key 1 is numeric and make sure that key 2 has the same class. Note that this
   #fails if key 2 column content is not supposed to be the same class, but in that case 
   #the coupling will fail anyway
   
@@ -87,14 +84,26 @@ couplingMVA = function(){
       Set2[,(key2_nameA):=as.numeric(get(key2_nameA))]
     }
   }
-  else if (no_of_keys==2){
-    if (is.numeric(Set1[,get(key1_nameA)])==T)
-    {
+  else if (no_of_keys==2){ 
+    #in this case we assume to have x,y data so they HAVE to be numeric in both sets
+      Set1[,(key1_nameA):=as.numeric(get(key1_nameA))]
       Set2[,(key2_nameA):=as.numeric(get(key2_nameA))]
-    }
-    if (is.numeric(Set1[,get(key1_nameB)])==T)
-    {
+      Set1[,(key1_nameB):=as.numeric(get(key1_nameB))]
       Set2[,(key2_nameB):=as.numeric(get(key2_nameB))]
+  }
+  
+  #B: can use the existing function AHA_RDCtoGPS for this
+  #First check whether the coordinates are in RDC by just checking whether they
+  #exceed say 1000. Check this on the last element, since NA are grouped at the beginning
+  
+  if (no_of_keys==2){
+    if (Set1[nrow(Set1),get(key1_nameA)]>1000){
+      Set1[,c(eval(key1_nameA),eval(key1_nameB)):=
+             AHA_RDCtoGPS(subset(Set1,select=c(get(key1_nameA),get(key1_nameB))))]  
+    }
+    if (Set2[nrow(Set2),get(key2_nameA)]>1000){
+      Set2[,c(eval(key2_nameA),eval(key2_nameB)):=
+             AHA_RDCtoGPS(subset(Set2,select=c(get(key2_nameA),get(key2_nameB))))]  
     }
   }
     
@@ -136,7 +145,7 @@ couplingMVA = function(){
       vec=with(uniSet2,(Set1[i,get(key1_nameA)]-get(key2_nameA))^2+(Set1[i,get(key1_nameB)]-get(key2_nameB))^2)
           
       #catch NA entries in Set1, just leave indexVec$ind at 0 for those
-      if (is.na(Set1[i,get(key1_nameA)])==F && is.na(Set1[i,get(key2_nameA)])==F){
+      if (is.na(Set1[i,get(key1_nameA)])==F && is.na(Set1[i,get(key1_nameB)])==F){
         #calculate minimum of that vector and store the index
         indexVec[i,ind:=which.min(vec)]
       }
@@ -177,8 +186,14 @@ couplingMVA = function(){
     coupledSet[,mID:=NULL]
     coupledSet[,eval(key2_nameA):=NULL]
     coupledSet[,eval(key2_nameB):=NULL]
-    setnames(coupledSet,paste0("i.",key1_nameA),key1_nameA)
-    setnames(coupledSet,paste0("i.",key1_nameB),key1_nameB)
+    
+    #if column names were the same in both dataset, adjust them to their old name here
+    if (key1_nameA==key2_nameA){
+      setnames(coupledSet,paste0("i.",key1_nameA),key1_nameA)
+    }
+    if (key1_nameB==key2_nameB){
+      setnames(coupledSet,paste0("i.",key1_nameB),key1_nameB)
+    }
   }
   
   
