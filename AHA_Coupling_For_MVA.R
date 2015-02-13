@@ -25,30 +25,32 @@
 ######################################################################
 
 couplingMVA = function(){
+  require("RANN")
   #############################
   #Start of user input section#
   #############################
   
   #set the number of keys to be used per dataset (1 or 2)
-  no_of_keys=2
+  no_of_keys=1
   
   #Set the primary column names to be used as key in set 1 and set 2
-  key1_nameA="LON..east."
-  key2_nameA="Coo_X"
+  key1_nameA="GM_CODE"
+  key2_nameA="GM_CODE"
   
   #Set the secondary column names to be used as key. These keys are only used if no_of_keys is set to 2
-  key1_nameB="LAT..north."
+  key1_nameB="Coo_Y"
   key2_nameB="Coo_Y"
   
   #Set the location and names of the input datasets
   #Set1Name=paste0(settings$Testcodes,"/Set1.Rda")
-  Set1Name=paste0(settings$Ruwe_Datasets,"/18. KNMI/Sample1k_KNMI.Rda")
-  Set2Name=paste0(settings$Ruwe_Datasets,"/16. Zakking/500x250_Zakking_Nederland.Rda")
+  Set1Name=paste0(settings$Ruwe_Datasets,"/15. CBS/buurt_wijk_shp.Rda")
+  #Set2Name=paste0(settings$Ruwe_Datasets,"/16. Zakking/Sample1k_Zakking.Rda")
+  Set2Name=paste0(settings$Ruwe_Datasets,"/15. CBS/gem_2013_v1_shp.Rda")
   #Set2Name=paste0(settings$Testcodes,"/Set2.Rda")
   
   
   #Set the location and name of the output dataset
-  outFileName=paste0(settings$Testcodes,"/CoupledToNearestWithLatLon.Rda")
+  outFileName=paste0(settings$Ruwe_Datasets,"/15. CBS/buurt_wijk_gem_shp.Rda")
   
   #############################
   #End of user input section  #
@@ -59,13 +61,16 @@ couplingMVA = function(){
   #(Set?NameCheck) and then performing a get on that to store the object in my preferred data table
   Set1NameCheck=load(Set1Name)
   Set1=get(Set1NameCheck)
-  
+
+  #IMPORTANT NOTE: if the loaded set contains more then 1 data.table you have to directly specify mindataset
   
   Set2NameCheck=load(Set2Name)
+  #Set2=mindataset
   Set2=get(Set2NameCheck)
+ 
   
   #check whether both sets are data.tables to avoid errors down the line
-  if (is.data.table(Set1)==F || is.data.table(Set1)==F ){
+  if (is.data.table(Set1)==F || is.data.table(Set2)==F ){
     stop("One of the input sets is not in data table format, please correct")
   }
     
@@ -130,31 +135,41 @@ couplingMVA = function(){
   #if there is only 1 key we don't need this operation
   
   if (no_of_keys==2){
-    N=nrow(Set1) #check the number of rows in Set1 for looping
-
-    #create an empty data.table to be filled inside the loop
-    indexVec=data.table(ind=(1:N)*0)
     
     
-    for (i in 1:N){
-      if (i %% 100==0) {
-      cat("Coupling ",i," of ",N,"\n")
-      }
-      
-      #calculate vector with distance of i to uniSet2 
-      vec=with(uniSet2,(Set1[i,get(key1_nameA)]-get(key2_nameA))^2+(Set1[i,get(key1_nameB)]-get(key2_nameB))^2)
-          
-      #catch NA entries in Set1, just leave indexVec$ind at 0 for those
-      if (is.na(Set1[i,get(key1_nameA)])==F && is.na(Set1[i,get(key1_nameB)])==F){
-        #calculate minimum of that vector and store the index
-        indexVec[i,ind:=which.min(vec)]
-      }
-    }#loop over all rows in Set1
+    #IMPORTANT NOTE: nn2 fails when there is an NA in Set1 or Set2
+    #some preprocessing and error catching for that is needed!!
+    #CHECK whether I can work with this by using the RADIUS option of nn2
     
+    #Radius works as expected, so I can identify NA entries, change them
+    #to some ridiculous value and make sure that they are not a problem for
+    #the search algorithm. Make sure to adjust parameters in set1 to large positive
+    #and set2 to large negative (otherwise NA will couple to NA)
+    
+    #identify the rows with NA in X or Y in both sets
+    S1X_NA_IDs=which(is.na(Set1[,get(key1_nameA)]))
+    S1Y_NA_IDs=which(is.na(Set1[,get(key1_nameB)]))
+    S2X_NA_IDs=which(is.na(uniSet2[,get(key2_nameA)]))
+    S2Y_NA_IDs=which(is.na(uniSet2[,get(key2_nameB)]))
+    
+    #change their values to large negative numbers
+    Set1[S1X_NA_IDs,eval(key1_nameA):=1e99]
+    Set1[S1Y_NA_IDs,eval(key1_nameB):=1e99]
+    uniSet2[S2X_NA_IDs,eval(key2_nameA):=-1e99]
+    uniSet2[S2Y_NA_IDs,eval(key2_nameB):=-1e99]
+    
+    
+    #find the nearest neighbour indices using nn2 from the RANN package
+    indexNearest=nn2(uniSet2[,c(eval(key2_nameA),eval(key2_nameB)),with=F],
+                     Set1[,c(eval(key1_nameA),eval(key1_nameB)),with=F],k=1,
+                     searchtype="radius",radius=100000)
+    
+    
+    #return(indexNearest)
     
     #Create a new column in Set1 with the merge ID, 
     #also insert a column in uniSet2 with these IDs (essentially row numbers for Set2)
-    Set1[,mID:=indexVec$ind]
+    Set1[,mID:=indexNearest$nn.idx]
     uniSet2[,mID:=1:nrow(uniSet2)]
     
     #Now the indices have been added to the sets and they are unique in uniSet2 so we can
@@ -204,7 +219,7 @@ couplingMVA = function(){
   #write the coupled set to a csv file
   #write.csv(coupledSet,outFileName,row.names=F)
   
-  return(proc.time() - ptm)
+  return(proc.time()-ptm)
 }
 
 
