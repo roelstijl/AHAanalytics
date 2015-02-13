@@ -19,10 +19,10 @@ AHA_Proxy_KA_BAR_NOR =
     config$szoek$MS     =2000 # Afstand waarover assets gezocht worden bij XY-proxy
     config$set          = set
     switch(set,
-           NOR={config$kabelscol    = c("ID_unique","ID_NAN","is.verv","DateAdded","DateRemoved","DateLength_ch")
-                config$moffencol    = c("ID_unique","ID_NAN","Coo_X","Coo_Y","DateAdded","DateRemoved")},
-           BAR={config$kabelscol    = c("Index","ID_NAN", "DateAdded","DateRemoved","DateLength_ch")
-                config$moffencol    = c("Index","ID_NAN", "Coo_X","Coo_Y",, "DateAdded","DateRemoved")})
+           NOR={config$kabelscol    = c("ID_unique","ID_NAN","Status_ID","is.verv","DateAdded","DateRemoved","DateLength_ch")
+                config$moffencol    = c("ID_unique","ID_NAN","Status_ID","Coo_X","Coo_Y","DateAdded","DateRemoved")},
+           BAR={config$kabelscol    = c("ID_BAR","ID_NAN", "Status_ID","is.verv","DateAdded","DateRemoved","DateLength_ch")
+                config$moffencol    = c("ID_BAR","ID_NAN", "Status_ID","Coo_X","Coo_Y","DateAdded","DateRemoved")})
     require(RANN)
     
     #developer parameters
@@ -161,11 +161,9 @@ Proxy_PC_6 = function(klakl,klakmelders,voltage,assets,assetsl,config)
            PClijst = unique(c(klakl$PC_6,klakmelders$PC_6))
            PCdt    = data.table(PC_6_naar=PClijst)
            
-           print(klakl$ID_KLAK_Melding)
            # Zoeken op Postcode 6 van, voeg andere assets die op PC6_naar matchen ook toe
            assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[which(assets$LSkabels$PC_6_van %in% PClijst | assets$LSkabels$PC_6_naar %in% PClijst),config$kabelscol,with=F]                                                 
            #if(nrow(assetsl$LSkabels[[klakl$ID_KLAK_Melding]])>200){assetsl$LSkabels[[klakl$ID_KLAK_Melding]]=assetsl$LSkabels[[klakl$ID_KLAK_Melding]][,1:100]}
-           assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = cbind(assetsl$LSkabels[[klakl$ID_KLAK_Melding]],ID_KLAK_Melding=klakl$ID_KLAK_Melding)
            assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels",config)  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
            
            assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[J(PClijst),config$moffencol,with=F]                                                     # Zoeken op Postcode 6
@@ -204,11 +202,11 @@ Proxy_TOPO = function(klakl,klakmelders,voltage,assets,assetsl,nettopo,config)
              assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[0,]
              assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[0,]
            }else{
-             assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[HLDs]                                              # Zoeken op Postcode 6
+             assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[HLDs,config$kabelscol,with=F]                                              # Zoeken op Postcode 6
              if(nrow(assetsl$LSkabels[[klakl$ID_KLAK_Melding]] )>100){print(paste(klakl$ID_KLAK_Melding, nrow(assetsl$LSkabels[[klakl$ID_KLAK_Melding]] )))}
              assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels",config)  # Aanroepen functie om tijdsverschillen e.d. te berekenen
              
-             assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[HLDs]                                              # Zoeken op Postcode 6
+             assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[HLDs,config$kabelscol,with=F]                                               # Zoeken op Postcode 6
              if(nrow(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] )>100){print(paste(klakl$ID_KLAK_Melding, nrow(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] )))}
              assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen",config)  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
            }
@@ -223,12 +221,12 @@ Proxy_TOPO = function(klakl,klakmelders,voltage,assets,assetsl,nettopo,config)
              assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = assets$MSkabels[0,]
              assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = assets$MSmoffen[0,]
            }else{
-             assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = assets$MSkabels[Routes]                                              # Zoeken op Postcode 6
+             assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = assets$MSkabels[Routes,config$kabelscol,with=F]                                              # Zoeken op Postcode 6
              if(nrow(assetsl$MSkabels[[klakl$ID_KLAK_Melding]] )>100){print(paste(klakl$ID_KLAK_Melding, nrow(assetsl$MSkabels[[klakl$ID_KLAK_Melding]] )))}
              assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels",config)  # Aanroepen functie om tijdsverschillen e.d. te berekenen
              
              
-             assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = assets$MSmoffen[Routes]                                              # Zoeken op Postcode 6
+             assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = assets$MSmoffen[Routes,config$kabelscol,with=F]                                              # Zoeken op Postcode 6
              if(nrow(assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] )>100){print(paste(klakl$ID_KLAK_Melding, nrow(assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] )))}
              assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen",config)  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
            }
@@ -297,7 +295,6 @@ Proxy_XY = function(klakl,klakmelders,voltage,assets,assetsl,config)
            
            
            assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels",config)  # Aanroepen functie om tijdsverschillen e.d. te berekenen
-           
            assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen",config)  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
            
          }) 
@@ -308,7 +305,6 @@ Proxy_XY = function(klakl,klakmelders,voltage,assets,assetsl,config)
 process.table = function(assetstb,klakl,assettype,config){
   #bugfixing regels:
   #try(print(paste(klakl$ID_KLAK_Melding,length(assetstb),nrow(assetstb),class(assetstb),assettype)))
-  
   #try(print(paste(sum(complete.cases(assetstb$ID_unique)), nrow(assetstb),class(assetstb),assettype)))
   if(length(assetstb)              ==   0){print(head(assetstb))}else{
     try({switch(config$set,
@@ -317,6 +313,7 @@ process.table = function(assetstb,klakl,assettype,config){
          if (countnna == 0 ){assetstb <- assetstb[0,]}else{                                                   # Verwijder sets met enkel NA's
            if (sum(assetstb$Status_ID=="Removed"|assetstb$Status_ID=="Lengthch") ==0){assetstb <- assetstb[0,]} # Indien alleen toegevoegde assets -> verwijder alle rijen
            else  {
+             assetstb <- cbind(assetstb,ID_KLAK_Melding=klakl$ID_KLAK_Melding)                             # Toevoegen KLAkmeldingnummer    
              # uitrekenen tijdsverschillen met storing
              if (is.na(klakl$Datum_Verwerking_Gereed)){     #calculate differences between the changes in the NOR/BARlog and the time of start interruption, if time of processing is NA
                diff = 
@@ -350,10 +347,12 @@ process.table = function(assetstb,klakl,assettype,config){
              )
              switch(assettype, 
                     moffen = {assetstb$in.timediff <- ((assetstb$Adiff > config$timediff$min) & (assetstb$Adiff < config$timediff$max) | 
-                                                         (assetstb$Rdiff > config$timediff$min) & (assetstb$Rdiff < config$timediff$max) )},
+                                                         (assetstb$Rdiff > config$timediff$min) & (assetstb$Rdiff < config$timediff$max) );
+                              assetstb$in.timediff <- ifelse(is.na(assetstb$in.timediff),FALSE,assetstb$in.timediff)},
                     kabels = {assetstb$in.timediff <- ((assetstb$Adiff > config$timediff$min) & (assetstb$Adiff < config$timediff$max) | 
                                                          (assetstb$Rdiff > config$timediff$min) & (assetstb$Rdiff < config$timediff$max) |
-                                                         (assetstb$Ldiff > config$timediff$min) & (assetstb$Ldiff < config$timediff$max))}
+                                                         (assetstb$Ldiff > config$timediff$min) & (assetstb$Ldiff < config$timediff$max));
+                              assetstb$in.timediff <- ifelse(is.na(assetstb$in.timediff),FALSE,assetstb$in.timediff)}
              )
              switch(assettype, 
                     moffen = {
@@ -462,7 +461,7 @@ Proxy_filter = function()
   table(LSkabelsklakhld$Netcomponent)
 }
 
-#Functie om alle proxymethoden te runnen
+# Functie om alle proxymethoden te runnen -------------------------------------------------------
 runall = function(){
   
   for(method in c("PC","XY","TOPO"))  {
