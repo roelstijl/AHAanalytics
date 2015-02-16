@@ -64,7 +64,8 @@ AHA_Proxy_KA_BAR_NOR =
     storingen$MS$Datum_Verwerking_Gereed <- as.Date(storingen$MS$Datum_Verwerking_Gereed) #converteren tijdstippen naar datumnotatie
     
     switch(set,
-           NOR={if(names(assets$LSkabels)[1]=="ID_Hoofdleiding"){setnames(assets$LSkabels,c("ID_Verbinding","ID_Hoofdleiding"),c("ID_Hoofdleiding","ID_Verbinding"))}},
+           NOR={if(names(assets$LSkabels)[1]=="ID_Hoofdleiding"){setnames(assets$LSkabels,c("ID_Verbinding","ID_Hoofdleiding"),c("ID_Hoofdleiding","ID_Verbinding"))}
+                if(names(assets$LSmoffen)[4]=="ID_Hoofdleiding"){setnames(assets$LSmoffen,c("ID_Verbinding","ID_Hoofdleiding"),c("ID_Hoofdleiding","ID_Verbinding"))}},
            BAR={l_ply(assets[1:4],function(x) try(setnames(x,"Status_R","Status_ID"),silent=T))
                 l_ply(assets[1:4],function(x) try(setnames(x,"Hoofdleiding","ID_Hoofdleiding"),silent=T))
                 l_ply(assets[1:4],function(x) try(setnames(x,"ID_LS_Hoofdleiding","ID_Hoofdleiding_2"),silent=T))
@@ -88,8 +89,8 @@ AHA_Proxy_KA_BAR_NOR =
     assetsltb$MSkabels        = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$MS$ID_KLAK_Melding[nr1:nr2]))])
     names(assetsltb$MSkabels) = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$MS$ID_KLAK_Melding[nr1:nr2]))])
     
-    assetsltb$LSmoffen        = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$LS$ID_KLAK_Melding[nr1:nr2]))])
-    names(assetsltb$LSmoffen) = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$LS$ID_KLAK_Melding[nr1:nr2]))])
+    assetsltb$LSmoffen        = as.list(storingen$LS$ID_KLAK_Melding[which(complete.cases(storingen$LS$ID_KLAK_Melding[nr1:nr2]))])
+    names(assetsltb$LSmoffen) = as.list(storingen$LS$ID_KLAK_Melding[which(complete.cases(storingen$LS$ID_KLAK_Melding[nr1:nr2]))])
     
     assetsltb$MSmoffen        = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$MS$ID_KLAK_Melding[nr1:nr2]))])
     names(assetsltb$MSmoffen) = as.list(storingen$MS$ID_KLAK_Melding[which(complete.cases(storingen$MS$ID_KLAK_Melding[nr1:nr2]))])
@@ -206,7 +207,7 @@ Proxy_TOPO = function(klakl,klakmelders,voltage,assets,assetsl,nettopo,config)
              if(nrow(assetsl$LSkabels[[klakl$ID_KLAK_Melding]] )>100){print(paste(klakl$ID_KLAK_Melding, nrow(assetsl$LSkabels[[klakl$ID_KLAK_Melding]] )))}
              assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels",config)  # Aanroepen functie om tijdsverschillen e.d. te berekenen
              
-             assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[HLDs,config$kabelscol,with=F]                                               # Zoeken op Postcode 6
+             assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[HLDs,config$moffencol,with=F]                                               # Zoeken op Postcode 6
              if(nrow(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] )>100){print(paste(klakl$ID_KLAK_Melding, nrow(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] )))}
              assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen",config)  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
            }
@@ -226,7 +227,7 @@ Proxy_TOPO = function(klakl,klakmelders,voltage,assets,assetsl,nettopo,config)
              assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels",config)  # Aanroepen functie om tijdsverschillen e.d. te berekenen
              
              
-             assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = assets$MSmoffen[Routes,config$kabelscol,with=F]                                              # Zoeken op Postcode 6
+             assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = assets$MSmoffen[Routes,config$moffencol,with=F]                                              # Zoeken op Postcode 6
              if(nrow(assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] )>100){print(paste(klakl$ID_KLAK_Melding, nrow(assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] )))}
              assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen",config)  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
            }
@@ -259,10 +260,10 @@ Proxy_XY = function(klakl,klakmelders,voltage,assets,assetsl,config)
              YRange = c(0)
            }
            switch(config$set,
-                  NOR = {assetsl$LSkabels[[klakl$ID_KLAK_Melding]] <- assets$LSkabels[((Coo_X_van %in% XRange) & (Coo_Y_van %in% YRange))|((Coo_X_naar %in% XRange)&(Coo_Y_naar %in% YRange))]                # Zoeken op XY
-                         assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] <- assets$LSmoffen[(Coo_X %in% XRange) & (Coo_Y %in% YRange)]},                                                                             # Zoeken op XY
-                  BAR = {assetsl$LSkabels[[klakl$ID_KLAK_Melding]] <- assets$LSkabels[((Coo_X_van < Xmax & Coo_X_van > Xmin) & (Coo_Y_van < Ymax & Coo_Y_van > Ymin))|((Coo_X_naar < Xmax ) & (Coo_X_naar > Xmin ) &(Coo_Y_naar < Ymax) &(Coo_Y_naar > Ymin))]               
-                         assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] <- assets$LSmoffen[((Coo_X < Xmax & Coo_X > Xmin) & (Coo_Y < Ymax & Coo_Y > Ymin))]               
+                  NOR = {assetsl$LSkabels[[klakl$ID_KLAK_Melding]] <- assets$LSkabels[((Coo_X_van %in% XRange) & (Coo_Y_van %in% YRange))|((Coo_X_naar %in% XRange)&(Coo_Y_naar %in% YRange)),config$kabelscol,with=F]                # Zoeken op XY
+                         assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] <- assets$LSmoffen[(Coo_X %in% XRange) & (Coo_Y %in% YRange),config$moffencol,with=F]},                                                                             # Zoeken op XY
+                  BAR = {assetsl$LSkabels[[klakl$ID_KLAK_Melding]] <- assets$LSkabels[((Coo_X_van < Xmax & Coo_X_van > Xmin) & (Coo_Y_van < Ymax & Coo_Y_van > Ymin))|((Coo_X_naar < Xmax ) & (Coo_X_naar > Xmin ) &(Coo_Y_naar < Ymax) &(Coo_Y_naar > Ymin)),config$kabelscol,with=F]               
+                         assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] <- assets$LSmoffen[((Coo_X < Xmax & Coo_X > Xmin) & (Coo_Y < Ymax & Coo_Y > Ymin)),config$moffencol,with=F]               
                   })
            
            
@@ -287,10 +288,10 @@ Proxy_XY = function(klakl,klakmelders,voltage,assets,assetsl,config)
            }
            #Zoeken op XY
            switch(config$set,
-                  NOR = {assetsl$MSkabels[[klakl$ID_KLAK_Melding]] <- assets$MSkabels[((Coo_X_van %in% XRange) & (Coo_Y_van %in% YRange))|((Coo_X_naar %in% XRange)&(Coo_Y_naar %in% YRange))]                # Zoeken op XY
-                         assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] <- assets$MSmoffen[(Coo_X %in% XRange) & (Coo_Y %in% YRange)]},                                                                             # Zoeken op XY
-                  BAR = {assetsl$MSkabels[[klakl$ID_KLAK_Melding]] <- assets$MSkabels[((Coo_X_van < Xmax & Coo_X_van > Xmin) & (Coo_Y_van < Ymax & Coo_Y_van > Ymin))|((Coo_X_naar < Xmax ) & (Coo_X_naar > Xmin ) &(Coo_Y_naar < Ymax) &(Coo_Y_naar > Ymin))]               
-                         assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] <- assets$MSmoffen[((Coo_X < Xmax & Coo_X > Xmin) & (Coo_Y < Ymax & Coo_Y > Ymin))]               
+                  NOR = {assetsl$MSkabels[[klakl$ID_KLAK_Melding]] <- assets$MSkabels[((Coo_X_van %in% XRange) & (Coo_Y_van %in% YRange))|((Coo_X_naar %in% XRange)&(Coo_Y_naar %in% YRange)),config$kabelscol,with=F]                # Zoeken op XY
+                         assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] <- assets$MSmoffen[(Coo_X %in% XRange) & (Coo_Y %in% YRange),config$moffencol,with=F]},                                                                             # Zoeken op XY
+                  BAR = {assetsl$MSkabels[[klakl$ID_KLAK_Melding]] <- assets$MSkabels[((Coo_X_van < Xmax & Coo_X_van > Xmin) & (Coo_Y_van < Ymax & Coo_Y_van > Ymin))|((Coo_X_naar < Xmax ) & (Coo_X_naar > Xmin ) &(Coo_Y_naar < Ymax) &(Coo_Y_naar > Ymin)),config$kabelscol,with=F]               
+                         assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] <- assets$MSmoffen[((Coo_X < Xmax & Coo_X > Xmin) & (Coo_Y < Ymax & Coo_Y > Ymin)),config$moffencol,with=F]               
                   })
            
            
