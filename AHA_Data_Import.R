@@ -28,11 +28,12 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
     filechooser= (file.choose());
     datafiles  = basename(filechooser)
     folder     = strsplit(tail(strsplit(dirname(filechooser),"/")[[1]],1)," ")[[1]][2]
-    curdataname = substring(datafiles[[1]],1,nchar(datafiles[[1]])-4)
+    if (substring(datafiles[[1]],nchar(datafiles[[1]])-3,nchar(datafiles[[1]])) == "xlsx")
+    {extl = 5} else {extl=4}
+    curdataname = substring(datafiles[[1]],1,nchar(datafiles[[1]])-extl)
     setfolder  = tail(strsplit(dirname(filechooser),"/")[[1]],1)
     headerfile = paste0(settings$Ruwe_Datasets,"/",
-                        setfolder,"/",
-                        substring(datafiles[[1]],1,nchar(datafiles[[1]])-5),"_headers.xlsx")
+                        setfolder,"/",substring(datafiles[[1]],1,nchar(datafiles[[1]])-extl),"_headers.xlsx")
   } 
   else{
     setfolder     = list.files(settings$Bron_Datasets,pattern=folder)[1]; 
@@ -61,9 +62,10 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
   # Import data and rename cols
   for (filenumber in 1:length(datafiles))
   {
-    sourcefile  = paste0(settings$Bron_Datasets,"/",setfolder,"/",datafiles[filenumber])   
-    curdataname = substring(datafiles[filenumber],1,nchar(datafiles[filenumber])-5);
-    curdataext  = substring(datafiles[filenumber],nchar(datafiles[filenumber])-2,nchar(datafiles[filenumber]));
+    sourcefile  = paste0(settings$Bron_Datasets,"/",setfolder,"/",datafiles[filenumber]) 
+    if(!file.exists(sourcefile)) warning("FILE NOT FOUND!")
+    curdataname = substring(datafiles[filenumber],1,nchar(datafiles[filenumber])-4);
+    curdataext  = substring(datafiles[filenumber],nchar(datafiles[filenumber])-extl+2,nchar(datafiles[filenumber]));
     
     setpbarwrapper (pb, title = paste0("AHA_Data_Import, Started:",cfg$started," ,file: ",datafiles[filenumber]), label = "Starting import"); 
     
@@ -88,7 +90,7 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
                                         no=data.frame(fread(sourcefile,header=TRUE,sep=";",colClasses=colclass)),
                                         yes=data.frame(read.csv(sourcefile,header=TRUE,sep=";",colClasses=colclass)))},
                           
-                          lsx= {data.frame(read.xlsx(sourcefile,1))},
+                          xlsx= {data.frame(read.xlsx(sourcefile,1))},
                           
                           shp = {spatialset = readShapeSpatial(sourcefile)
                                  mindataset = spatialset@data
@@ -183,4 +185,3 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
     }else{
       cat("Wrong mode selected, load, save or shiny\n")
     } } }
-
