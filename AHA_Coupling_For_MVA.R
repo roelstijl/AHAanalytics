@@ -1,5 +1,5 @@
 #######################################################################
-# Written by Michiel Musterd - 09-02-2015 (last update:11-02-2015)
+# Written by Michiel Musterd - 09-02-2015 (last update:13-02-2015)
 # -------------
 # This code is meant to couple two sets based on their common keys. 
 # Possible keys:
@@ -15,11 +15,15 @@
 # whereas the dependent set is Set2, in which duplicates are not allowed 
 # (and in fact filtered out to catch errors)
 
+# Functionality to be added: 
+# ----
+# Add coupling on more than 2 keys
+# Add coupling on geoquery (shape files: SP package)
 
 # Non-implemented nice to haves:
 # -----------------
 # - Coupling between PC4 and PC6 by truncation of the PC6 set
-# - Maximum on the nearest neighbour coupling (e.g. only couple within 1 km radius)
+# - 
 # - ...
 #
 ######################################################################
@@ -31,11 +35,14 @@ couplingMVA = function(){
   #############################
   
   #set the number of keys to be used per dataset (1 or 2)
-  no_of_keys=1
+  no_of_keys=2
+  
+  #set the method to couple, 0 is direct comparison, 1 is nearest neighbour, 2 is geoquery
+  couple_method=2
   
   #Set the primary column names to be used as key in set 1 and set 2
-  key1_nameA="GM_CODE"
-  key2_nameA="GM_CODE"
+  key1_nameA="Coo_X"
+  key2_nameA="Coo_X"
   
   #Set the secondary column names to be used as key. These keys are only used if no_of_keys is set to 2
   key1_nameB="Coo_Y"
@@ -43,14 +50,14 @@ couplingMVA = function(){
   
   #Set the location and names of the input datasets
   #Set1Name=paste0(settings$Testcodes,"/Set1.Rda")
-  Set1Name=paste0(settings$Ruwe_Datasets,"/15. CBS/buurt_wijk_shp.Rda")
-  #Set2Name=paste0(settings$Ruwe_Datasets,"/16. Zakking/Sample1k_Zakking.Rda")
-  Set2Name=paste0(settings$Ruwe_Datasets,"/15. CBS/gem_2013_v1_shp.Rda")
+  #Set1Name=paste0(settings$Ruwe_Datasets,"/MS_kabels_BAR_KLAK_Zakking.Rda")
+  Set1Name=paste0(settings$Ruwe_Datasets,"/16. Zakking/Sample1k_Zakking.Rda")
+  Set2Name=paste0(settings$Ruwe_Datasets,"/10. BAG/Woonplaatsen/Woonplaatsen_shp.Rda")
   #Set2Name=paste0(settings$Testcodes,"/Set2.Rda")
   
   
   #Set the location and name of the output dataset
-  outFileName=paste0(settings$Ruwe_Datasets,"/15. CBS/buurt_wijk_gem_shp.Rda")
+  outFileName=paste0(settings$Testcodes,"/trial.Rda")
   
   #############################
   #End of user input section  #
@@ -61,19 +68,23 @@ couplingMVA = function(){
   #(Set?NameCheck) and then performing a get on that to store the object in my preferred data table
   Set1NameCheck=load(Set1Name)
   Set1=get(Set1NameCheck)
-
+  
   #IMPORTANT NOTE: if the loaded set contains more then 1 data.table you have to directly specify mindataset
   
   Set2NameCheck=load(Set2Name)
   #Set2=mindataset
   Set2=get(Set2NameCheck)
- 
+  
+  cat('Sets loaded, proceeding...\n')
+  
+
+
   
   #check whether both sets are data.tables to avoid errors down the line
   if (is.data.table(Set1)==F || is.data.table(Set2)==F ){
     stop("One of the input sets is not in data table format, please correct")
   }
-    
+  
   #Here we do some error catching for:
   #A: coordinates with type character that should be numeric
   #B: coordinates in RDC should be converted to lat/lon format
@@ -91,27 +102,28 @@ couplingMVA = function(){
   }
   else if (no_of_keys==2){ 
     #in this case we assume to have x,y data so they HAVE to be numeric in both sets
-      Set1[,(key1_nameA):=as.numeric(get(key1_nameA))]
-      Set2[,(key2_nameA):=as.numeric(get(key2_nameA))]
-      Set1[,(key1_nameB):=as.numeric(get(key1_nameB))]
-      Set2[,(key2_nameB):=as.numeric(get(key2_nameB))]
+    Set1[,(key1_nameA):=as.numeric(get(key1_nameA))]
+    Set2[,(key2_nameA):=as.numeric(get(key2_nameA))]
+    Set1[,(key1_nameB):=as.numeric(get(key1_nameB))]
+    Set2[,(key2_nameB):=as.numeric(get(key2_nameB))]
   }
   
   #B: can use the existing function AHA_RDCtoGPS for this
   #First check whether the coordinates are in RDC by just checking whether they
-  #exceed say 1000. Check this on the last element, since NA are grouped at the beginning
+  #exceed say 1000. Check this somewhere halfway, since NA are grouped at the beginning or end
+  
   
   if (no_of_keys==2){
-    if (Set1[nrow(Set1),get(key1_nameA)]>1000){
+    if (Set1[round(nrow(Set1)/2)+1,get(key1_nameA)]>1000){
       Set1[,c(eval(key1_nameA),eval(key1_nameB)):=
              AHA_RDCtoGPS(subset(Set1,select=c(get(key1_nameA),get(key1_nameB))))]  
     }
-    if (Set2[nrow(Set2),get(key2_nameA)]>1000){
+    if (Set2[round(nrow(Set2)/2)+1,get(key2_nameA)]>1000){
       Set2[,c(eval(key2_nameA),eval(key2_nameB)):=
              AHA_RDCtoGPS(subset(Set2,select=c(get(key2_nameA),get(key2_nameB))))]  
     }
   }
-    
+  
   
   #In case of a single key, set the key such that unique will know how to filter
   if (no_of_keys==1){
@@ -129,6 +141,7 @@ couplingMVA = function(){
   
   #first run unique on Set2 to make sure that there are no double entries
   
+  cat("Identifying unique elements of Set2 \n")
   uniSet2=unique(Set2)
   
   #If there are 2 keys, we assume that they are x and y location and we merge on nearest neighbour
@@ -146,24 +159,35 @@ couplingMVA = function(){
     #the search algorithm. Make sure to adjust parameters in set1 to large positive
     #and set2 to large negative (otherwise NA will couple to NA)
     
-    #identify the rows with NA in X or Y in both sets
-    S1X_NA_IDs=which(is.na(Set1[,get(key1_nameA)]))
-    S1Y_NA_IDs=which(is.na(Set1[,get(key1_nameB)]))
-    S2X_NA_IDs=which(is.na(uniSet2[,get(key2_nameA)]))
-    S2Y_NA_IDs=which(is.na(uniSet2[,get(key2_nameB)]))
+    #Select only x and y columns from both sets and work with that for the neighbour ID
+    Set1Sub=Set1[,c(eval(key1_nameA),eval(key1_nameB)),with=F]
+    Set2Sub=uniSet2[,c(eval(key2_nameA),eval(key2_nameB)),with=F]
     
-    #change their values to large negative numbers
-    Set1[S1X_NA_IDs,eval(key1_nameA):=1e99]
-    Set1[S1Y_NA_IDs,eval(key1_nameB):=1e99]
-    uniSet2[S2X_NA_IDs,eval(key2_nameA):=-1e99]
-    uniSet2[S2Y_NA_IDs,eval(key2_nameB):=-1e99]
+    #identify the rows with NA in X or Y in both sets
+    S1X_NA_IDs=which(is.na(Set1Sub[,get(key1_nameA)]))
+    S1Y_NA_IDs=which(is.na(Set1Sub[,get(key1_nameB)]))
+    S2X_NA_IDs=which(is.na(Set2Sub[,get(key2_nameA)]))
+    S2Y_NA_IDs=which(is.na(Set2Sub[,get(key2_nameB)]))
+    
+    #change their values to large numbers
+    Set1Sub[S1X_NA_IDs,eval(key1_nameA):=1e99]
+    Set1Sub[S1Y_NA_IDs,eval(key1_nameB):=1e99]
+    Set2Sub[S2X_NA_IDs,eval(key2_nameA):=-1e99]
+    Set2Sub[S2Y_NA_IDs,eval(key2_nameB):=-1e99]
+    
+    cat("Starting nearest neighbour identification \n")
     
     
     #find the nearest neighbour indices using nn2 from the RANN package
-    indexNearest=nn2(uniSet2[,c(eval(key2_nameA),eval(key2_nameB)),with=F],
-                     Set1[,c(eval(key1_nameA),eval(key1_nameB)),with=F],k=1,
-                     searchtype="radius",radius=100000)
+    indexNearest=nn2(Set2Sub,Set1Sub,k=1)
     
+    cat("Nearest neighours identified, proceed to coupling \n")
+    
+
+    
+    #Correcting the identified neighbours which were actually NAs
+    indexNearest$nn.idx[S1X_NA_IDs]=0
+    indexNearest$nn.idx[S1Y_NA_IDs]=0
     
     #return(indexNearest)
     
@@ -188,12 +212,14 @@ couplingMVA = function(){
     setkey(uniSet2,mID)
   }
   
-  
+  cat("Start coupling \n")
   #finally we merge uniSet2 into Set1
   coupledSet=uniSet2[Set1] #this notation couples according to the key in Set1, so an entry that doesn't exist
-                           #in Set 2 gets NA, but an entry that doesn't exist in Set1 (and does in Set2) does not appear at all
+  #in Set 2 gets NA, but an entry that doesn't exist in Set1 (and does in Set2) does not appear at all
   #coupledSet=uniSet2[Set1,nomatch=0] #This is perhaps a cleaner option, then above, because it eliminates rows for which we don't
   #have the "environmental" information
+  
+  cat("Coupling done, starting cleanup \n")
   
   #throw away the merge identifier to clean up the data and the x/y data in the second set, because
   #it isn't descriptive
@@ -212,14 +238,17 @@ couplingMVA = function(){
   }
   
   
-  
+  cat("Saving coupled set \n")
   #write the coupled set to the RDA file
   save(coupledSet,file=outFileName)
   
   #write the coupled set to a csv file
   #write.csv(coupledSet,outFileName,row.names=F)
+  cat("Freeing memory \n")
+  gc()
   
-  return(proc.time()-ptm)
+  cat("Done! \n")
+  
+  return(coupledSet)
 }
-
 

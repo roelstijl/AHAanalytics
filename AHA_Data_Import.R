@@ -1,4 +1,4 @@
-AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="save",override="no"){
+AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="save",override="no",ID_Object=F){
   
   # Asset health analytics import script, 
   # Load project first
@@ -91,6 +91,7 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
                           xlsx= {data.frame(read.xlsx(sourcefile,1))},
                           
                           shp = {spatialset = readShapeSpatial(sourcefile)
+                                 spatialsetdataframe = spatialset
                                  mindataset = spatialset@data
                                  spatialset = SpatialPolygons(spatialset@polygons,proj4string=CRS("+init=epsg:28992"))
                                  mindataset},
@@ -165,9 +166,9 @@ else if(mode=="load") {
   dataclasses= sapply(mindataset, class)
   mindataset = data.table(mindataset[,header[header[,3]==1,1]])
   setkeyv(mindataset, colnames(mindataset)[1])
-  
   # Save to file
   savefile = paste0(settings$Ruwe_Datasets, "/", setfolder,"/",curdataname,".Rda")
+  if (ID_Object) mindataset[,ID_Object:=1:nrow(mindataset)]
   
   if(curdataext=="shp") {
     save(spatialset,mindataset,dataclasses,file=savefile)} 
