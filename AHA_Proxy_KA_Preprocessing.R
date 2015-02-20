@@ -15,10 +15,10 @@ cfg$firstdate = as.Date("2014-02-16")
 cfg$lastdate  = as.Date("2015-01-01")
 
 # Set what dates unexplainable bumps in the data occured
-BadDates = list()
-BadDates$kabels = as.Date(c("2010-3-7",'2011-05-02', "2011-04-06","2012-05-05"))
-BadDates$moffen = as.Date(c("2010-3-7",'2011-05-02', "2011-04-06","2012-05-05"))
-BadDates$verbindingen = as.Date(c("2011-08-01","2011-04-06","2012-05-05"))
+cfg$BadDates = list()
+cfg$BadDates$kabels = as.Date(c("2007-01-06","2010-07-03",'2011-02-05', "2011-04-06","2012-05-05"))
+cfg$BadDates$moffen = as.Date(c("2007-01-06","2010-07-03",'2011-02-05', "2011-04-06","2012-05-05"))
+cfg$BadDates$Verbindingen = as.Date(c("2007-01-06","2011-01-08","2011-04-06","2012-05-05"))
 
 # Choose the correct functions 
 switch (datasets,
@@ -28,9 +28,6 @@ switch (datasets,
   storingen = AHA_storingen(cfg),
   validatie = AHA_validatie(cfg)
 )
-
-# switch between datasets
-
 
 # Final message
 setpbarwrapper(cfg$pb, label = "Done");
@@ -48,7 +45,7 @@ AHA_assetsBAR = function(cfg){
   
   setpbarwrapper(cfg$pb, label = "Calculating BAR data");
   # Laad alleen dat deel van de assets dat binnen de periode valt
-  # Moffen
+  # moffen
   MSm=(assets$MSmoffen$DateAdded > cfg$firstdate & assets$MSmoffen$DateAdded < cfg$lastdate)| 
     (assets$MSmoffen$DateRemoved > cfg$firstdate & assets$MSmoffen$DateRemoved < cfg$lastdate)
   MSm[is.na(MSm)] = FALSE
@@ -59,7 +56,7 @@ AHA_assetsBAR = function(cfg){
   LSm[is.na(LSm)] = FALSE
   assets$LSmoffen = assets$LSmoffen[LSm]
   
-  # Kabels
+  # kabels
   MSk=(assets$MSkabels$DateAdded > cfg$firstdate & assets$MSkabels$DateAdded < cfg$lastdate)| 
     (assets$MSkabels$DateLength_ch > cfg$firstdate & assets$MSkabels$DateLength_ch < cfg$lastdate)|  
     (assets$MSkabels$DateRemoved > cfg$firstdate & assets$MSkabels$DateRemoved < cfg$lastdate)
@@ -68,6 +65,7 @@ AHA_assetsBAR = function(cfg){
   
   LSk=(assets$LSkabels$DateAdded > cfg$firstdate & assets$LSkabels$DateAdded < cfg$lastdate)| 
     (assets$LSkabels$DateLength_ch > cfg$firstdate & assets$LSkabels$DateLength_ch < cfg$lastdate)|  
+    (assets$LSkabels$Date_Status_ch > cfg$firstdate & assets$LSkabels$Date_Status_ch < cfg$lastdate)|  
     (assets$LSkabels$DateRemoved > cfg$firstdate & assets$LSkabels$DateRemoved < cfg$lastdate)
   LSk[is.na(LSk)]=FALSE
   assets$LSkabels = assets$LSkabels[LSk]
@@ -80,8 +78,10 @@ AHA_assetsBAR = function(cfg){
   assets$MSkabels[,PC_4_van:=substr(assets$MSkabels$PC_6_van,1,4)]
   assets$MSkabels[,PC_4_naar:=substr(assets$MSkabels$PC_6_naar,1,4)]  
   
-  assets$MSmoffen[,System:="NOR"]
-  assets$LSmoffen[,System:="NOR"]
+  assets$MSmoffen[,System:="BAR"]
+  assets$LSmoffen[,System:="BAR"]
+  assets$MSkabels[,System:="BAR"]
+  assets$LSkabels[,System:="BAR"]
   
   assets$MSHLDROUTE = NULL
   
@@ -97,19 +97,27 @@ AHA_assetsNOR = function(cfg){
   setpbarwrapper(cfg$pb, label = "Loading NOR data");
   # Laad de assets en converteer de datums als deze verkeerd staan 
   load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_assets.Rda"))
-  assets$kabels[,DateLength_ch := as.Date(assets$kabel$DateLength_ch,"1970-01-01")]
+  try(setnames(assets$kabels,"PC_6_naar.y","PC_6_naar"))
+  assets$moffen[is.na(DateRemoved),DateRemoved:=as.Date("01-01-1970")]
   
-  LSm = (assets$moffen$DateAdded > cfg$firstdate & assets$moffen$DateAdded < cfg$lastdate)| 
-    (assets$moffen$DateRemoved > cfg$firstdate & assets$moffen$DateRemoved < cfg$lastdate)
+  LSm = (assets$moffen$DateAdded > cfg$firstdate & assets$moffen$DateAdded < cfg$lastdate & !(assets$moffen$DateAdded %in% cfg$BadDates$moffen))|
+    (assets$moffen$DateRemoved > cfg$firstdate & assets$moffen$DateRemoved < cfg$lastdate & !(assets$moffen$DateRemoved %in% cfg$BadDates$moffen))
   LSm[is.na(LSm)] = FALSE
   assets$moffen = assets$moffen[LSm]
   
   setpbarwrapper(cfg$pb, label = "Calculating NOR data");
   
-  # Kabels
-  MSk=(assets$kabels$DateAdded > cfg$firstdate & assets$kabels$DateAdded < cfg$lastdate)| 
-    (assets$kabels$DateLength_ch > cfg$firstdate & assets$kabels$DateLength_ch < cfg$lastdate)|  
-    (assets$kabels$DateRemoved > cfg$firstdate & assets$kabels$DateRemoved < cfg$lastdate)
+  # kabels
+  assets$kabels[is.na(DateRemoved),DateRemoved:=as.Date("01-01-1970")]
+  assets$kabels[is.na(DateLength_ch),DateLength_ch:=as.Date("01-01-1970")]
+  assets$kabels[is.na(Date_Status_ch),Date_Status_ch:=as.Date("01-01-1970")]
+  assets$kabels[is.na(DateAdded),DateAdded:=as.Date("01-01-1970")]
+  
+  MSk=(assets$kabels$DateAdded > cfg$firstdate & assets$kabels$DateAdded < cfg$lastdate & !(assets$kabels$DateAdded %in% cfg$BadDates$kabels))| 
+    (assets$kabels$Date_Status_ch > cfg$firstdate & assets$kabels$Date_Status_ch < cfg$lastdate & !(assets$kabels$Date_Status_ch %in% cfg$BadDates$kabels))|  
+    (assets$kabels$DateLength_ch > cfg$firstdate & assets$kabels$DateLength_ch < cfg$lastdate & !(assets$kabels$DateLength_ch %in% cfg$BadDates$kabels))|  
+    (assets$kabels$DateRemoved > cfg$firstdate & assets$kabels$DateRemoved < cfg$lastdate & !(assets$kabels$DateRemoved %in% cfg$BadDates$kabels))
+    
   MSk[is.na(MSk)]=FALSE
   assets$kabels = assets$kabels[MSk]
   
@@ -119,15 +127,15 @@ AHA_assetsNOR = function(cfg){
   assets$kabels[,PC_4_van:=substr(assets$kabels$PC_6_van,1,4)]
   assets$kabels[,PC_4_naar:=substr(assets$kabels$PC_6_naar,1,4)]  
   
-  assets$MSmoffen[,System:="BAR"]
-  assets$LSmoffen[,System:="BAR"]
-  assets$MSmoffen[,System:="BAR"]
-  assets$LSmoffen[,System:="BAR"]
-  
   assets$LSkabels = assets$kabels[Brontabel == "ls_kabels"]
   assets$MSkabels = assets$kabels[Brontabel == "ms_kabels"]
   assets$LSmoffen = assets$moffen[Brontabel == "ls_moffen"]
   assets$MSmoffen = assets$moffen[Brontabel == "ms_moffen"]
+  
+  assets$MSmoffen[,System:="NOR"]
+  assets$LSmoffen[,System:="NOR"]
+  assets$MSkabels[,System:="NOR"]
+  assets$LSkabels[,System:="NOR"]
   
   assets$moffen = NULL
   assets$kabels = NULL
