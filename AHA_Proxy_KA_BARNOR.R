@@ -64,8 +64,7 @@ AHA_Proxy_KA_BAR_NOR =
     storingen$MS$Datum_Verwerking_Gereed <- as.Date(storingen$MS$Datum_Verwerking_Gereed) #converteren tijdstippen naar datumnotatie
     
     switch(set,
-           NOR={if(names(assets$LSkabels)[1]=="ID_Hoofdleiding"){setnames(assets$LSkabels,c("ID_Verbinding","ID_Hoofdleiding"),c("ID_Hoofdleiding","ID_Verbinding"))}
-                if(names(assets$LSmoffen)[4]=="ID_Hoofdleiding"){setnames(assets$LSmoffen,c("ID_Verbinding","ID_Hoofdleiding"),c("ID_Hoofdleiding","ID_Verbinding"))}},
+           NOR={l_ply(assets[1:4],function(x) try(x[,Index:=rownames(x)]))}, #Toevoegen unieke index aan assets
            BAR={l_ply(assets[1:4],function(x) try(setnames(x,"Status_R","Status_ID"),silent=T))
                 l_ply(assets[1:4],function(x) try(setnames(x,"Hoofdleiding","ID_Hoofdleiding"),silent=T))
                 l_ply(assets[1:4],function(x) try(setnames(x,"ID_LS_Hoofdleiding","ID_Hoofdleiding_2"),silent=T))
