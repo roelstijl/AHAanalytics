@@ -90,6 +90,16 @@ load_settings = function(){
     settings$Results = "-"
     .libPaths ("C:/Data/R")}
   
+  # R Server
+  else if (Sys.info()["nodename"] =="SP0651") {
+    settings$Bron_Datasets = "E:/1. Programmeerwerk/Multivariate Analyse/AHAdata/0. Ongebruikte en brondata"
+    settings$Ruwe_Datasets = "E:/1. Programmeerwerk/Multivariate Analyse/AHAdata/1. Ruwe Datasets"
+    settings$Input_Datasets = "E:/1. Programmeerwerk/Multivariate Analyse/AHAdata/2. Input Datasets"
+    settings$Analyse_Datasets = "E:/1. Programmeerwerk/Multivariate Analyse/AHAdata/AHAdata/3. Analyse Datasets"
+    settings$Visuals = "E:/1. Programmeerwerk/Multivariate Analyse/AHAdata/5. Visuals and Tableau workbooks"
+    settings$Results = "E:/1. Programmeerwerk/Multivariate Analyse/AHAdata/6. Results"
+    .libPaths ("E:/1. Programmeerwerk/R packages")}
+  
   # Desktop Jacco
   else if (Sys.info()["nodename"] =="D-AW15BX") {
     settings$Bron_Datasets = "C:/Data/AHAdata/0. Ongebruikte en brondata"
