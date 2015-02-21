@@ -1,5 +1,5 @@
 AHA_Data_KA_Proxy_Preprocessing = function(datasets=c("assetsBAR","assetsNOR","nettopo","storingen","validatieset"),
-                           firstdate="2014-02-16",lastdate="2015-01-01"){
+                           firstdate="2007-02-01",lastdate="2015-02-01"){
 # Merges the Delta data into small datasets for analysis
 # Datasets selects only a certain set to process (default = all)
 # cfg$firstdate is the startdate of the data subset
@@ -11,14 +11,23 @@ cfg = list()
 cfg$pb  = pbarwrapper(title = paste0("AHA_Data_KA_Proxy_Preprocessing: ",as.character(Sys.time())), 
                  label = "Start", min = 0, max = 3*length(datasets)+1, initial = 0, width = 450);
 
-cfg$firstdate = as.Date("2014-02-16")
-cfg$lastdate  = as.Date("2015-01-01")
+cfg$firstdate = as.Date(firstdate)
+cfg$NAdate = as.Date("1970-01-01")  
+cfg$lastdate  = as.Date(lastdate)
 
 # Set what dates unexplainable bumps in the data occured
 cfg$BadDates = list()
-cfg$BadDates$kabels = as.Date(c("2007-01-06","2010-07-03",'2011-02-05', "2011-04-06","2012-05-05"))
-cfg$BadDates$moffen = as.Date(c("2007-01-06","2010-07-03",'2011-02-05', "2011-04-06","2012-05-05"))
-cfg$BadDates$Verbindingen = as.Date(c("2007-01-06","2011-01-08","2011-04-06","2012-05-05"))
+cfg$BadDates$kabels = data.table(
+  DateAdded   = as.Date(c("2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05")),
+  DateRemoved = as.Date(c("1970-01-01","2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05")),
+  Date_Status_ch = as.Date("1970-01-01","2012-12-08"),
+  DateLength_Ch = as.Date("1970-01-01"))
+
+cfg$BadDates$moffen = data.table(
+  DateAdded   = as.Date(c("2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05")),
+  DateRemoved = as.Date(c("1970-01-01","2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05")))
+
+cfg$BadDates$Verbindingen = as.Date(ymd(c("2007-01-06","2011-08-01","2011-04-06","2012-05-05")))
 
 # Choose the correct functions 
 switch (datasets,
@@ -98,7 +107,7 @@ AHA_assetsNOR = function(cfg){
   # Laad de assets en converteer de datums als deze verkeerd staan 
   load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_assets.Rda"))
   try(setnames(assets$kabels,"PC_6_naar.y","PC_6_naar"))
-  assets$moffen[is.na(DateRemoved),DateRemoved:=as.Date("01-01-1970")]
+  assets$moffen[is.na(DateRemoved),DateRemoved:=as.Date("1970-01-01")]
   
   LSm = (assets$moffen$DateAdded > cfg$firstdate & assets$moffen$DateAdded < cfg$lastdate & !(assets$moffen$DateAdded %in% cfg$BadDates$moffen))|
     (assets$moffen$DateRemoved > cfg$firstdate & assets$moffen$DateRemoved < cfg$lastdate & !(assets$moffen$DateRemoved %in% cfg$BadDates$moffen))
@@ -108,10 +117,10 @@ AHA_assetsNOR = function(cfg){
   setpbarwrapper(cfg$pb, label = "Calculating NOR data");
   
   # kabels
-  assets$kabels[is.na(DateRemoved),DateRemoved:=as.Date("01-01-1970")]
-  assets$kabels[is.na(DateLength_ch),DateLength_ch:=as.Date("01-01-1970")]
-  assets$kabels[is.na(Date_Status_ch),Date_Status_ch:=as.Date("01-01-1970")]
-  assets$kabels[is.na(DateAdded),DateAdded:=as.Date("01-01-1970")]
+  assets$kabels[is.na(DateRemoved),DateRemoved:=as.Date("1970-01-01")]
+  assets$kabels[is.na(DateLength_ch),DateLength_ch:=as.Date("1970-01-01")]
+  assets$kabels[is.na(Date_Status_ch),Date_Status_ch:=as.Date("1970-01-01")]
+  assets$kabels[is.na(DateAdded),DateAdded:=as.Date("1970-01-01")]
   
   MSk=(assets$kabels$DateAdded > cfg$firstdate & assets$kabels$DateAdded < cfg$lastdate & !(assets$kabels$DateAdded %in% cfg$BadDates$kabels))| 
     (assets$kabels$Date_Status_ch > cfg$firstdate & assets$kabels$Date_Status_ch < cfg$lastdate & !(assets$kabels$Date_Status_ch %in% cfg$BadDates$kabels))|  
@@ -127,6 +136,12 @@ AHA_assetsNOR = function(cfg){
   assets$kabels[,PC_4_van:=substr(assets$kabels$PC_6_van,1,4)]
   assets$kabels[,PC_4_naar:=substr(assets$kabels$PC_6_naar,1,4)]  
   
+  l_ply(list("DateRemoved"),function(x) 
+    assets$moffen[assets$moffen[[x]]==as.Date("1970-01-01")]=NA)
+  
+  l_ply(list("DateAdded","DateRemoved","DateLength_ch","Date_Status_ch"),function(x) 
+        assets$kabels[assets$kabels[[x]]==as.Date("1970-01-01")]=NA)
+  
   assets$LSkabels = assets$kabels[Brontabel == "ls_kabels"]
   assets$MSkabels = assets$kabels[Brontabel == "ms_kabels"]
   assets$LSmoffen = assets$moffen[Brontabel == "ls_moffen"]
@@ -136,6 +151,21 @@ AHA_assetsNOR = function(cfg){
   assets$LSmoffen[,System:="NOR"]
   assets$MSkabels[,System:="NOR"]
   assets$LSkabels[,System:="NOR"]
+  
+  cfg$NAdate = as.Date("1970-01-01")  
+  l_ply(list("MSkabels","MSmoffen","LSkabels","LSmoffen"),
+        function(y)
+    l_ply(list("DateAdded","DateRemoved","DateLength_ch","Date_Status_ch"),
+        function(x) 
+    eval(parse(text=paste0("assets$",y,"[",x,"==cfg$NAdate,",x,":=NA]")))))
+  
+  
+  l_ply(list("MSkabels","MSmoffen"),
+        function(y)
+          l_ply(list("DateAdded","DateRemoved"),
+                function(x) 
+                  eval(parse(text=paste0("assets$",y,"[",x,"==cfg$NAdate,",x,":=NA]")))))
+  
   
   assets$moffen = NULL
   assets$kabels = NULL

@@ -28,8 +28,9 @@
   }
   
   # Source some functions --------------------------------
-  sourcefiles = c("AHA_Visual_RDS_to_GPS.R","AHA_Data_Import.R","AHA_Data_Batch_Processing.R","AHA_Data_NOR_Log.R", 'AHA_Data_Geo_Functions.R', "AHA_Proxy_KA_Preprocessing.R",
-  "AHA_Data_BAR_Log.R","AHA_Proxy_KA_Postprocessing.R","AHA_Extra_Functions.R")
+  sourcefiles = c("AHA_Visual_RDS_to_GPS.R","AHA_Data_Import.R","AHA_Data_Batch_Processing.R",
+                  "AHA_Data_NOR_Log.R", 'AHA_Data_Geo_Functions.R', "AHA_Proxy_KA_Preprocessing.R",
+                  "AHA_Data_BAR_Log.R","AHA_Proxy_KA_Postprocessing.R","AHA_Extra_Functions.R")
   l_ply(sourcefiles,function(x) try(source(x)))
   
   # l_ply(ffiles,source)
@@ -61,14 +62,22 @@ load_settings = function(){
     settings$Visuals = "F:/1. Alliander/3. Asset Health Analytics/5. Visuals and Tableau workbooks"
     settings$Results = "F:/1. Alliander/3. Asset Health Analytics/6. Results"}
   
+  else if (Sys.info()["nodename"] =="NLAMS4043734Z") {
+    settings$Bron_Datasets = "E:/1. Alliander/3. Asset Health Analytics/0. Ongebruikte en brondata"
+    settings$Ruwe_Datasets = "E:/1. Alliander/3. Asset Health Analytics/1. Ruwe Datasets"
+    settings$Input_Datasets = "E:/1. Alliander/3. Asset Health Analytics/2. Input Datasets"
+    settings$Analyse_Datasets = "E:/1. Alliander/3. Asset Health Analytics/3. Analyse Datasets"
+    settings$Visuals = "E:/1. Alliander/3. Asset Health Analytics/5. Visuals and Tableau workbooks"
+    settings$Results = "E:/1. Alliander/3. Asset Health Analytics/6. Results"}
+  
   # Laptop Roel Stijl Alliander
   else if (Sys.info()["nodename"] =="L-AW89JB") {
-    settings$Bron_Datasets = "E:/2. Datasets/1. Alliander/AHAdata/0. Ongebruikte en brondata"
-    settings$Ruwe_Datasets = "E:/AHAdata/1. Ruwe Datasets"
-    settings$Input_Datasets = "E:/AHAdata/2. Input Datasets"
-    settings$Analyse_Datasets = "E:/2. Datasets/1. Alliander/AHAdata/3. Analyse Datasets"
-    settings$Visuals = "E:/2. Datasets/1. Alliander/AHAdata/5. Visuals and Tableau workbooks"
-    settings$Results = "E:/2. Datasets/1. Alliander/AHAdata/6. Results"
+    settings$Bron_Datasets = "E:/1. Alliander/3. Asset Health Analytics/0. Ongebruikte en brondata"
+    settings$Ruwe_Datasets = "E:/1. Alliander/3. Asset Health Analytics/1. Ruwe Datasets"
+    settings$Input_Datasets = "E:/1. Alliander/3. Asset Health Analytics/2. Input Datasets"
+    settings$Analyse_Datasets = "E:/1. Alliander/3. Asset Health Analytics/3. Analyse Datasets"
+    settings$Visuals = "E:/1. Alliander/3. Asset Health Analytics/5. Visuals and Tableau workbooks"
+    settings$Results = "E:/1. Alliander/3. Asset Health Analytics/6. Results"
     .libPaths ("C:/Data/R")}
   
   # Laptop Michiel Musterd BearingPoint Folio 1040
