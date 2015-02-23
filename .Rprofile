@@ -73,9 +73,9 @@ load_settings = function(){
   
   # Laptop Michiel Musterd BearingPoint Folio 1040
   else if (Sys.info()["nodename"] =="NLAMS4044583A") {
-    settings$Bron_Datasets = "C:/Users/michiel.musterd/Documents/Alliander project/1. Alliander/2. Asset health analytics/0. Ongebruikte en brondata"
-    settings$Ruwe_Datasets = "C:/Users/michiel.musterd/Documents/Alliander project/1. Alliander/2. Asset health analytics/1. Ruwe Datasets"
-    settings$Input_Datasets = "C:/Users/michiel.musterd/Documents/Alliander project/1. Alliander/2. Asset health analytics/2. Input Datasets"
+    settings$Bron_Datasets = "E:/1. Alliander  Datasets/2. Asset health analytics/0. Ongebruikte en brondata"
+    settings$Ruwe_Datasets = "E:/1. Alliander  Datasets/1. Alliander/2. Asset health analytics/1. Ruwe Datasets"
+    settings$Input_Datasets = "E:/1. Alliander  Datasets/2. Asset health analytics/2. Input Datasets"
     settings$Analyse_Datasets = "-"
     settings$Visuals = "-"
     settings$Results = "-"
