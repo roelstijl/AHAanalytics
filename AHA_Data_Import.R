@@ -171,7 +171,7 @@ else if(mode=="load") {
   if (ID_Object) mindataset[,ID_Object:=1:nrow(mindataset)]
   
   if(curdataext=="shp") {
-    save(spatialset,mindataset,dataclasses,file=savefile)} 
+    save(spatialset,spatialsetdataframe,mindataset,dataclasses,file=savefile)} 
   else{
     save(mindataset,dataclasses,file=savefile)
   }
