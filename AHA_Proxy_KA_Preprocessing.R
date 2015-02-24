@@ -1,45 +1,35 @@
 AHA_Data_KA_Proxy_Preprocessing = function(datasets=c("assetsBAR","assetsNOR","nettopo","storingen","validatieset"),
-                           firstdate="2007-02-01",lastdate="2015-02-01"){
-# Merges the Delta data into small datasets for analysis
-# Datasets selects only a certain set to process (default = all)
-# cfg$firstdate is the startdate of the data subset
-# last date is the last date to take
-#
-# Settings  
-cat("Starting\n")
-cfg = list()
-cfg$pb  = pbarwrapper(title = paste0("AHA_Data_KA_Proxy_Preprocessing: ",as.character(Sys.time())), 
-                 label = "Start", min = 0, max = 3*length(datasets)+1, initial = 0, width = 450);
-
-cfg$firstdate = as.Date(firstdate)
-cfg$NAdate = as.Date("1970-01-01")  
-cfg$lastdate  = as.Date(lastdate)
-
-# Set what dates unexplainable bumps in the data occured
-cfg$BadDates = list()
-cfg$BadDates$kabels = list(
-  DateAdded   = as.Date(c("2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05")),
-  DateRemoved = as.Date(c("1970-01-01","2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05")),
-  Date_Status_ch = as.Date("1970-01-01","2012-12-08"),
-  DateLength_Ch = as.Date("1970-01-01"))
-
-cfg$BadDates$moffen = list(
-  DateAdded   = as.Date(c("2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05")),
-  DateRemoved = as.Date(c("1970-01-01","2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05")))
-
-cfg$BadDates$Verbindingen = as.Date(ymd(c("2007-01-06","2011-08-01","2011-04-06","2012-05-05")))
-
-# Choose the correct functions 
-switch (datasets,
-  assetsBAR = AHA_assetsBAR(cfg),
-  assetsNOR = AHA_assetsNOR(cfg),
-  nettopo   = AHA_nettopo(cfg),
-  storingen = AHA_storingen(cfg),
-  validatie = AHA_validatie(cfg)
-)
-
-# Final message
-setpbarwrapper(cfg$pb, label = "Done");
+                                           firstdate="2007-02-01",lastdate="2015-02-01"){
+  # Merges the Delta data into small datasets for analysis
+  # Datasets selects only a certain set to process (default = all)
+  # cfg$firstdate is the startdate of the data subset
+  # last date is the last date to take
+  #
+  # Settings  ----------------------
+  cat("Starting\n")
+  cfg = list()
+  cfg$pb  = pbarwrapper(title = paste0("AHA_Data_KA_Proxy_Preprocessing: ",as.character(Sys.time())), 
+                        label = "Start", min = 0, max = 3*length(datasets)+1, initial = 0, width = 450);
+  
+  firstdate="2007-02-01"
+  lastdate="2015-02-01"
+  cfg$firstdate = as.Date(firstdate)
+  cfg$lastdate  = as.Date(lastdate)
+  cfg$NAdate = as.Date("1970-01-01")  
+  
+  cfg$DateBarBegin =as.Date("2014-02-14")
+  
+  # Choose the correct functions 
+  switch (datasets,
+          assetsBAR = AHA_assetsBAR(cfg),
+          assetsNOR = AHA_assetsNOR(cfg),
+          nettopo   = AHA_nettopo(cfg),
+          storingen = AHA_storingen(cfg),
+          validatie = AHA_validatie(cfg)
+  )
+  
+  # Final message
+  setpbarwrapper(cfg$pb, label = "Done");
 }
 
 # Different functions for the dataset calculations----------------------------
@@ -48,47 +38,47 @@ AHA_assetsBAR = function(cfg){
   setpbarwrapper(cfg$pb, label = "Loading BAR data");
   # Laad de assets en converteer de datums als deze verkeerd staan 
   load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_BAR_assets.Rda"))
-  assets$LSkabel[,DateAdded:=as.Date(DateAdded)]
-  assets$LSkabel[,DateRemoved:=as.Date(DateRemoved)]
-  assets$LSkabel[,DateLength_ch:=as.Date(DateLength_ch)]
+  assets$MSHLDROUTE = NULL
   
   setpbarwrapper(cfg$pb, label = "Calculating BAR data");
-  # Laad alleen dat deel van de assets dat binnen de periode valt
-  # moffen
-  MSm=(assets$MSmoffen$DateAdded > cfg$firstdate & assets$MSmoffen$DateAdded < cfg$lastdate)| 
-    (assets$MSmoffen$DateRemoved > cfg$firstdate & assets$MSmoffen$DateRemoved < cfg$lastdate)
-  MSm[is.na(MSm)] = FALSE
-  assets$MSmoffen = assets$MSmoffen[MSm]
+  # behoud alleen dat deel van de assets dat binnen de periode veranderd is.
+  assets = lapply(assets,function(x)
+  {x[!(x$DateAdded == cfg$DateBarBegin & x$Status_ID=="Active")]})
   
-  LSm = (assets$LSmoffen$DateAdded > cfg$firstdate & assets$LSmoffen$DateAdded < cfg$lastdate)| 
-    (assets$LSmoffen$DateRemoved > cfg$firstdate & assets$LSmoffen$DateRemoved < cfg$lastdate)
-  LSm[is.na(LSm)] = FALSE
-  assets$LSmoffen = assets$LSmoffen[LSm]
-  
-  # kabels
-  MSk=(assets$MSkabels$DateAdded > cfg$firstdate & assets$MSkabels$DateAdded < cfg$lastdate)| 
-    (assets$MSkabels$DateLength_ch > cfg$firstdate & assets$MSkabels$DateLength_ch < cfg$lastdate)|  
-    (assets$MSkabels$DateRemoved > cfg$firstdate & assets$MSkabels$DateRemoved < cfg$lastdate)
-  MSk[is.na(MSk)] = FALSE
-  assets$MSkabels = assets$MSkabels[MSk]
-  
-  LSk=(assets$LSkabels$DateAdded > cfg$firstdate & assets$LSkabels$DateAdded < cfg$lastdate)| 
-    (assets$LSkabels$DateLength_ch > cfg$firstdate & assets$LSkabels$DateLength_ch < cfg$lastdate)|  
-    (assets$LSkabels$Date_Status_ch > cfg$firstdate & assets$LSkabels$Date_Status_ch < cfg$lastdate)|  
-    (assets$LSkabels$DateRemoved > cfg$firstdate & assets$LSkabels$DateRemoved < cfg$lastdate)
-  LSk[is.na(LSk)]=FALSE
-  assets$LSkabels = assets$LSkabels[LSk]
-  
-  assets$MSmoffen[,PC_4:=substr(assets$MSmoffen$PC_6,1,4)]
-  assets$LSmoffen[,PC_4:=substr(assets$LSmoffen$PC_6,1,4)]
-  
-  assets$LSkabels[,PC_4_van:=substr(assets$LSkabels$PC_6_van,1,4)]
-  assets$LSkabels[,PC_4_naar:=substr(assets$LSkabels$PC_6_naar,1,4)]  
-  assets$MSkabels[,PC_4_van:=substr(assets$MSkabels$PC_6_van,1,4)]
-  assets$MSkabels[,PC_4_naar:=substr(assets$MSkabels$PC_6_naar,1,4)]  
-  
+#   # moffen
+#   MSm=(assets$MSmoffen$DateAdded > cfg$firstdate & assets$MSmoffen$DateAdded < cfg$lastdate)| 
+#     (assets$MSmoffen$DateRemoved > cfg$firstdate & assets$MSmoffen$DateRemoved < cfg$lastdate)
+#   MSm[is.na(MSm)] = FALSE
+#   assets$MSmoffen = assets$MSmoffen[MSm]
+#   
+#   LSm = (assets$LSmoffen$DateAdded > cfg$firstdate & assets$LSmoffen$DateAdded < cfg$lastdate)| 
+#     (assets$LSmoffen$DateRemoved > cfg$firstdate & assets$LSmoffen$DateRemoved < cfg$lastdate)
+#   LSm[is.na(LSm)] = FALSE
+#   assets$LSmoffen = assets$LSmoffen[LSm]
+#   
+#   # kabels
+#   MSk=(assets$MSkabels$DateAdded > cfg$firstdate & assets$MSkabels$DateAdded < cfg$lastdate)| 
+#     (assets$MSkabels$DateLength_ch > cfg$firstdate & assets$MSkabels$DateLength_ch < cfg$lastdate)|  
+#     (assets$MSkabels$DateRemoved > cfg$firstdate & assets$MSkabels$DateRemoved < cfg$lastdate)
+#   MSk[is.na(MSk)] = FALSE
+#   assets$MSkabels = assets$MSkabels[MSk]
+#   
+#   LSk=(assets$LSkabels$DateAdded > cfg$firstdate & assets$LSkabels$DateAdded < cfg$lastdate)| 
+#     (assets$LSkabels$DateLength_ch > cfg$firstdate & assets$LSkabels$DateLength_ch < cfg$lastdate)|  
+#     (assets$LSkabels$Date_Status_ch > cfg$firstdate & assets$LSkabels$Date_Status_ch < cfg$lastdate)|  
+#     (assets$LSkabels$DateRemoved > cfg$firstdate & assets$LSkabels$DateRemoved < cfg$lastdate)
+#   LSk[is.na(LSk)]=FALSE
+#   assets$LSkabels = assets$LSkabels[LSk]
+#   
+#   assets$MSmoffen[,PC_4:=substr(assets$MSmoffen$PC_6,1,4)]
+#   assets$LSmoffen[,PC_4:=substr(assets$LSmoffen$PC_6,1,4)]
+#   
+#   assets$LSkabels[,PC_4_van:=substr(assets$LSkabels$PC_6_van,1,4)]
+#   assets$LSkabels[,PC_4_naar:=substr(assets$LSkabels$PC_6_naar,1,4)]  
+#   assets$MSkabels[,PC_4_van:=substr(assets$MSkabels$PC_6_van,1,4)]
+#   assets$MSkabels[,PC_4_naar:=substr(assets$MSkabels$PC_6_naar,1,4)]    
   l_ply(names(assets), function(x) eval(parse(text=paste0("assets$",x,"[,System:=\"BAR\"]"))))
-  assets$MSHLDROUTE = NULL
+  
   
   # Opsplitsen in MS en LS, zo zit het in de BARlog ook
   setpbarwrapper(cfg$pb, label = "Saving BAR data");
@@ -100,37 +90,56 @@ AHA_assetsNOR = function(cfg){
   
   # NOR Data ----------------------------------------------------------------
   setpbarwrapper(cfg$pb, label = "Loading NOR data");
+  
+  # Set what dates unexplainable bumps in the data occured, NOR
+  cfg$BadDates = list()
+  cfg$BadDates$kabels = list(
+    DateAdded   = as.Date(c("2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05")),
+    DateRemoved = as.Date(c("1970-01-01","2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05")),
+    Date_Status_ch = as.Date(c("1970-01-01","2012-12-08")),
+    DateLength_ch = as.Date("1970-01-01"))
+  
+  cfg$BadDates$moffen = list(
+    DateAdded   = as.Date(c("2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05")),
+    DateRemoved = as.Date(c("1970-01-01","2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05")))
+  
+  cfg$BadDates$Verbindingen = as.Date(ymd(c("2007-01-06","2011-08-01","2011-04-06","2012-05-05")))
+  
+  
   # Laad de assets en converteer de datums als deze verkeerd staan 
   load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_assets.Rda"))
   try(setnames(assets$kabels,"PC_6_naar.y","PC_6_naar"))
-  
   setpbarwrapper(cfg$pb, label = "Calculating NOR data");
-  l_ply(names(assets),
-        function(types)
-              assets[[type]] = unique(ldply(names(cfg$BadDates[[type]]),
-                    function(field) eval(parse(text=paste0(
-                    "assets$kabels[(",field," > cfg$firstdate &"
-                                     ,field," < cfg$lastdate &",
-                                     "!is.na(",field,")&",
-                                     "!(",field," %in% cfg$BadDates$kabels$",field,"))]"
-  ))))))
   
   # Bereken postcode 4
   assets$moffen[,PC_4:=substr(assets$moffen$PC_6,1,4)]
   assets$kabels[,PC_4_van:=substr(assets$kabels$PC_6_van,1,4)]
   assets$kabels[,PC_4_naar:=substr(assets$kabels$PC_6_naar,1,4)]  
   
-  assets$LSkabels = assets$kabels[Brontabel == "ls_kabels"]
-  assets$MSkabels = assets$kabels[Brontabel == "ms_kabels"]
-  assets$LSmoffen = assets$moffen[Brontabel == "ls_moffen"]
-  assets$MSmoffen = assets$moffen[Brontabel == "ms_moffen"]
+  # Gooi alle grote verandering weg
+  
+  minassets = list()
+  minassets$kabels=assets$kabels[(!is.na(DateAdded)& DateAdded > cfg$firstdate & DateAdded < cfg$lastdate & !(DateAdded %in% cfg$BadDates$kabels$DateAdded)) | 
+                                   (!is.na(DateRemoved)& DateRemoved > cfg$firstdate & DateRemoved < cfg$lastdate & !(DateRemoved %in% cfg$BadDates$kabels$DateRemoved))|
+                                   (!is.na(Date_Status_ch)& Date_Status_ch > cfg$firstdate & Date_Status_ch < cfg$lastdate & !(Date_Status_ch %in% cfg$BadDates$kabels$Date_Status_ch))|
+                                   (!is.na(DateLength_ch)& DateLength_ch > cfg$firstdate & DateLength_ch < cfg$lastdate & !(DateLength_ch %in% cfg$BadDates$kabels$DateLength_ch))]
+  
+  minassets$moffen=assets$moffen[(!is.na(DateAdded)& DateAdded > cfg$firstdate & DateAdded < cfg$lastdate & !(DateAdded %in% cfg$BadDates$moffen$DateAdded)) | 
+                                   (!is.na(DateRemoved)& DateRemoved > cfg$firstdate & DateRemoved < cfg$lastdate & !(DateRemoved %in% cfg$BadDates$moffen$DateRemoved))]
+  
+  
+  assets$LSkabels = minassets$kabels[Brontabel == "ls_kabels"]
+  assets$MSkabels = minassets$kabels[Brontabel == "ms_kabels"]
+  assets$LSmoffen = minassets$moffen[Brontabel == "ls_moffen"]
+  assets$MSmoffen = minassets$moffen[Brontabel == "ms_moffen"]
   
   l_ply(names(assets), function(x) eval(parse(text=paste0("assets$", x,"[,System:=\"NOR\"]"))))
   
-  l_ply(c("kabels","moffen"), function(x) assets[[x]] = NULL)
-
+  assets$kabels = NULL
+  assets$moffen = NULL
+  
   setpbarwrapper(cfg$pb, label = "Saving NOR data");
-  save(assets,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_NOR.Rda"))
+  save(assets,file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_NOR.Rda"),compress=F)
   remove("assets")
   
 }
@@ -222,7 +231,7 @@ AHA_storingen = function(cfg){
   
   setpbarwrapper(cfg$pb, label = "Loading Nettoplogy data");
   load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_nettopo_EAN.Rda"))
-
+  
   load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/MS_Stations.Rda")); 
   MS_Stations = mindataset
   
