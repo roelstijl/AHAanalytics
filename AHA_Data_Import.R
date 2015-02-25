@@ -93,8 +93,9 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
                           xlsx= {data.frame(read.xlsx(sourcefile,1))},
                           
                           shp = {spatialset = readShapeSpatial(sourcefile)
+                                 spatialsetdataframe=spatialset
                                  mindataset = spatialset@data
-                                 spatialset = SpatialPolygons(spatialset@polygons,proj4string=CRS("+init=epsg:28992"))
+                                 #spatialset = SpatialPolygons(spatialset@polygons,proj4string=CRS("+init=epsg:28992"))
                                  mindataset},
                           
                           dbf = {read.dbf(sourcefile)}
@@ -172,7 +173,7 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
       savefile = paste0(settings$Ruwe_Datasets, "/", setfolder,"/",curdataname,".Rda")
       
       if(curdataext=="shp") {
-        save(spatialset,mindataset,dataclasses,file=savefile)} 
+        save(spatialsetdataframe,mindataset,dataclasses,file=savefile)} 
       else{
         save(mindataset,dataclasses,file=savefile)
       }
