@@ -79,7 +79,7 @@ load_settings = function(){
     settings$Analyse_Datasets = "-"
     settings$Visuals = "-"
     settings$Results = "-"
-    settings$Testcodes ="C:/Users/michiel.musterd/Documents/Alliander project/TestCodes"
+    settings$Testcodes ="C:/Users/michiel.musterd/Documents/Alliander project/5. TestCodes"
     .libPaths ("C:/Data/R")}
   
   # Desktop Jacco
