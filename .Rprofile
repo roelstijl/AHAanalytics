@@ -140,7 +140,7 @@ load_settings = function(){
     settings$Input_Datasets = "N:/Multivariate Analyse/AHAdata/2. Input Datasets"
     settings$Analyse_Datasets = "N:/Multivariate Analyse/AHAdata/3. Analyse Datasets"
     warning("Computer hostname unknown please check\n")}
-  
+
   # Save settings to global variable space for access later  
   return(settings)
 }

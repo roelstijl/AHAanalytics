@@ -1,3 +1,15 @@
+<<<<<<< HEAD
+proxy_samenv  <- function(){
+  setwd(settings$Analyse_Datasets)
+  proxy_res      <- list() 
+  myFile <- file.choose(); load(myFile);
+  proxy_res$PC   <- assetsltb
+  myFile <- file.choose(); load(myFile);
+  proxy_res$XY   <- assetsltb
+  myFile <- file.choose(); load(myFile);
+  proxy_res$TOPO <- assetsltb
+  rm(assetsltb)
+=======
 proxy_samenv  <- function(global=F){
   if(global){
     if(!(exists("proxy_res"))){
@@ -23,11 +35,16 @@ proxy_samenv  <- function(global=F){
     proxy_res$TOPO <- assetsltb
     rm(assetsltb)
   }
+>>>>>>> 2918abf6cbffe4809c6cb78bdba00b079f679124
   
 # Inladen storingsdata -------
   if(!exists("storingen")){load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"))}
   setkey(storingen$MS,ID_KLAK_Melding)
   
+<<<<<<< HEAD
+  koppellijst =list()
+  
+=======
 # Configuratie-instellingen
 config <- list()
 config$LSkabels$comp <- c("Netkabel (GPLK)","Netkabel (kunststof)")
@@ -47,6 +64,7 @@ proxy_res$TOPO$MSmoffen = proxy_res$PC$MSmoffen[2] #moffen LS nog niet goed geko
   koppellijst =list()  # Aanmaken koppellijst
   
 # for loop over assetklasses
+>>>>>>> 2918abf6cbffe4809c6cb78bdba00b079f679124
   for(klasse in c("LSkabels","LSmoffen","MSmoffen","MSkabels")){
     print(klasse)
     try(koppellijst[[klasse]] <- rbind(cbind(rbindlist(proxy_res$PC[[klasse]][which(ldply(proxy_res$PC[[klasse]],nrow)$V1>0)]),method="PC"),
@@ -66,12 +84,18 @@ proxy_res$TOPO$MSmoffen = proxy_res$PC$MSmoffen[2] #moffen LS nog niet goed geko
     koppellijst[[klasse]]$XY  <- ifelse(koppellijst[[klasse]]$XY=="XY",1,0) #Omzetten naar punten
     koppellijst[[klasse]]$TOPO<- ifelse(koppellijst[[klasse]]$TOPO=="TOPO",5,0) #Omzetten naar punten
     
+<<<<<<< HEAD
+    koppellijst$klasse = rbind(proxy_res$PC$klasse,proxy_res$XY$klasse,proxy_res$TOPO$klasse)
+    
+    print("klaar")
+=======
     koppellijst[[klasse]]$Component            <- ifelse(koppellijst[[klasse]]$Netcomponent %in% config[[klasse]]$comp,2,
                                                          ifelse(koppellijst[[klasse]]$Netcomponent %in% config[[klasse]]$onbk,1,0))
     koppellijst[[klasse]]                      <- koppellijst[[klasse]][(koppellijst[[klasse]][,list(freq=length(unique(ID_unique))), by=ID_KLAK_Melding])][
                                                              ,c(names(koppellijst[[klasse]]),"freq"),with=F]
     koppellijst[[klasse]]$punten               <- rowSums(koppellijst[[klasse]][,c("XY","PC","TOPO","GIS_datum"),with=F],na.rm=T)/
                                                   koppellijst[[klasse]]$freq
+>>>>>>> 2918abf6cbffe4809c6cb78bdba00b079f679124
   }
   
   return(koppellijst)
