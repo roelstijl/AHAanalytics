@@ -8,7 +8,6 @@
 #This function was particularly written for the grondsoorten set, but can be fairly easily adapted to a different set
 
 AHA_MDsysGeo_Conversion = function (){
-  require("stringr")
   
   #Set the savefile location
   savefile=paste0(settings$Ruwe_Datasets,"/23. Grondsoort/Grondsoorten_shp.Rda")
