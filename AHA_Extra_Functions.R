@@ -3,8 +3,11 @@ cNA = function(dataset)
 {
   par(mfrow=c(1, 1), mar=c(2, 10, 0, 2))
   empty = ""
-#   l_ply(names(dataset), function(x) if(is.character(dataset[,x,with=F])) {eval(parse(text=paste0("dataset[",x,"==empty,",x,":=NA]" )))})
-  
+   l_ply(names(dataset), function(x) {
+     if(!is.character(dataset[,x,with=F])) {eval(parse(text=paste0("dataset[,",x,":= as.numeric(",x,")]" )))}
+     
+     })
+
   barplot(t(cbind(sapply(dataset,function(x) sum(x=="",na.rm=T)),
                   sapply(dataset,function(x) sum(is.na(x))),
                   sapply(dataset,function(x) sum(!is.na(x))-sum(x=="",na.rm=T)))), horiz=TRUE,las=1,cex.names=0.7,legend = c("empty","NA","Not NA"))
