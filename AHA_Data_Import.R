@@ -93,7 +93,7 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
                           shp = {spatialset = readShapeSpatial(sourcefile)
                                  spatialsetdataframe = spatialset
                                  mindataset = spatialset@data
-                                 spatialset = SpatialPolygons(spatialset@polygons,proj4string=CRS("+init=epsg:28992"))
+                                 #spatialset = SpatialPolygons(spatialset@polygons,proj4string=CRS("+init=epsg:28992"))
                                  mindataset},
                           
                           dbf = {read.dbf(sourcefile)}
@@ -171,7 +171,7 @@ else if(mode=="load") {
   if (ID_Object) mindataset[,ID_Object:=1:nrow(mindataset)]
   
   if(curdataext=="shp") {
-    save(spatialset,spatialsetdataframe,mindataset,dataclasses,file=savefile)} 
+    save(spatialsetdataframe,mindataset,dataclasses,file=savefile)} 
   else{
     save(mindataset,dataclasses,file=savefile)
   }

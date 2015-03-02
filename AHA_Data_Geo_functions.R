@@ -50,6 +50,8 @@ return(do.call(rbind,mdsysout))
 # Loop over the values in order to prevent memory issues -------------------------------------
 calculatemdsys = function(dataset,cfg=NA) {
   
+ 
+  
   loopy = mean(dataset$loopy)
   mdsys = data.table(dataset)
   setpbarwrapper (cfg$pb, loopy,title = paste0("AHA_Data_BAR_GEOMETRY, loop: ", loopy," of ", cfg$noloops, " n=", length(mdsys)),label = "Splitting strings"); 
@@ -102,7 +104,18 @@ processPC6 = function(file,mode,folder="1. BARlog"){
                                               x="Coo_X_naar",y="Coo_Y_naar",PC="PC_6_naar")
             cat("Coordinates van\n")
             datatable = AHA_Data_Determine_PC(datatable,x="Coo_X_van",y="Coo_Y_van",PC="PC_6_van",extrainfo=TRUE)  
-            mindataset = cbind(mindataset,datatable[,list(PC_6_naar,PC_6_van,Woonplaats,Gemeente,GemeenteCode)])},
+            
+            
+            setkeyv(mindataset,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
+            setkeyv(datatable,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
+            uniDT=unique(datatable)
+            mindataset=uniDT[mindataset]
+            
+            #WARNING: the way of coupling below (row by row) results in errors, this should be
+            #changed into coupling based on keys Coo_X and Coo_Y as done above")
+
+            #mindataset = cbind(mindataset,datatable[,list(PC_6_naar,PC_6_van,Woonplaats,Gemeente,GemeenteCode)])
+            },
           
           punt= {
             load(paste0(settings$Ruwe_Datasets,"/",folder,"/",file,"_XY.Rda"));
