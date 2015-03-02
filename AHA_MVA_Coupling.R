@@ -41,10 +41,11 @@ couplingMVA = function(){
   
   #set the method to couple, 
   #0 is direct comparison, 1 is nearest neighbour, 2 is geoquery on polygon, 3 PC6 (in set 1) to PC4, 4 is geoquery on line
-  couple_method=1
+  couple_method=4
   
   #whether to include the distance to the nearest neighbour (in case of couple_method=1), 1 for yes, 0 for no
-  includeNNdist=1 #Currently not active, waiting for lon/lat to rds conversion script
+  includeNNdist=0 
+  NNdistName="Afstand_Weerstation"
   
   #Set the primary column names to be used as key in set 1 and set 2
   key1_nameA="Coo_X_van"
@@ -57,10 +58,10 @@ couplingMVA = function(){
   #Set the location and names of the input datasets
   #Set1Name=paste0(settings$Testcodes,"/Set1.Rda")
   #Set1Name=paste0(settings$Ruwe_Datasets,"/MS_kabels_BAR_KLAK_Zakking.Rda")
-  Set1Name=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/MVA_sample_CBS_zakking.Rda")
+  Set1Name=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/MVA_sample_CBS_zakking_KNMI_Grondsoort.Rda")
   #Set2Name=paste0(settings$Ruwe_Datasets,"/15. CBS/CBS_Gecombineerd_Gemeente_Wijk_Buurt.Rda")
   #Set2Name=paste0(settings$Ruwe_Datasets,"/16. Zakking/Zakking.Rda")
-  #Set2Name=paste0(settings$Ruwe_Datasets,"/18. KNMI/KNMI_grouped_2007_2014.Rda")
+  #Set2Name=paste0(settings$Ruwe_Datasets,"/18. KNMI/KNMI_grouped_2007_2014_RDS.Rda")
   #Set2Name=paste0(settings$Ruwe_Datasets,"/23. Grondsoort/Grondsoorten_shp.Rda")
   #Set2Name=paste0(settings$Ruwe_Datasets,"/14. Risicokaart/risicokaartXY.Rda")
   Set2Name=paste0(settings$Ruwe_Datasets,"/13. Kadaster_TOP10_NL_Sept/Iso_hoogtelijn.Rda")
@@ -69,7 +70,7 @@ couplingMVA = function(){
   
   
   #Set the location and name of the output dataset
-  outFileName=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/LijnKoppelTrial.Rda")
+  outFileName=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/MVA_sample_CBS_zakking_KNMI_Grondsoort_Risico_Hoogtelijn.Rda")
   
   #############################
   #End of user input section  #
@@ -217,6 +218,12 @@ couplingMVA = function(){
     #Create a new column in Set1 with the merge ID, 
     #also insert a column in uniSet2 with these IDs (essentially row numbers for Set2)
     Set1[,mID:=indexNearest$nn.idx]
+    
+    if (includeNNdist==1){
+      Set1[,NNdist:=indexNearest$nn.dists]
+      setnames(Set1,"NNdist",eval(NNdistName))
+    }
+    
     uniSet2[,mID:=1:nrow(uniSet2)]
     
     #Now the indices have been added to the sets and they are unique in uniSet2 so we can
@@ -267,9 +274,11 @@ couplingMVA = function(){
     ptm=proc.time()
     #this apply returns row by row for SPoints what the distance to the nearest line is
     #if necessary we can also include which.min into this
-    apply( gDistance( SPoints[1:5] , Set2spatial , byid = TRUE ) , 2 , min )
+    
+    
+    temp=gDistance( SPoints[1:20] , Set2spatial , byid = TRUE )
     cat(proc.time()[3]-ptm[3],"\n")
-    return("couple method 4 remains to be completed")
+    return("gDistance( SPoints[1:5] , Set2spatial , byid = TRUE )")
     
   }
   
