@@ -10,7 +10,7 @@
   
   # Install required packages if not .Firinstalled already -------------------------------
   packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash","parallel","doParallel","maptools","RANN",
-               "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2","foreign")
+               "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2","foreign","rgeos","stringr")
   
   for (m in 1:length(packages)){
     # Install if not present
@@ -82,13 +82,25 @@ load_settings = function(){
   
   # Laptop Michiel Musterd BearingPoint Folio 1040
   else if (Sys.info()["nodename"] =="NLAMS4044583A") {
-    settings$Bron_Datasets = "-"
-    settings$Ruwe_Datasets = "C:/Users/michiel.musterd/Documents/Alliander project/1. Alliander/2. Asset health analytics/1. Ruwe Datasets"
-    settings$Input_Datasets = "C:/Users/michiel.musterd/Documents/Alliander project/1. Alliander/2. Asset health analytics/2. Input Datasets"
+    settings$Bron_Datasets = "E:/1. Alliander Datasets/2. Asset health analytics/0. Ongebruikte en brondata"
+    settings$Ruwe_Datasets = "E:/1. Alliander Datasets/2. Asset health analytics/1. Ruwe Datasets"
+    settings$Input_Datasets = "E:/1. Alliander Datasets/2. Asset health analytics/2. Input Datasets"
     settings$Analyse_Datasets = "-"
     settings$Visuals = "-"
     settings$Results = "-"
+    settings$Testcodes ="C:/Users/michiel.musterd/Documents/Alliander project/5. TestCodes"
     .libPaths ("C:/Data/R")}
+  
+  # Laptop Michiel Musterd BearingPoint zBook
+  else if (Sys.info()["nodename"] =="NLAMS4044583X") {
+    settings$Bron_Datasets = "F:/1. Alliander Datasets/2. Asset health analytics/0. Ongebruikte en brondata"
+    settings$Ruwe_Datasets = "F:/1. Alliander Datasets/2. Asset health analytics/1. Ruwe Datasets"
+    settings$Input_Datasets = "F:/1. Alliander Datasets/2. Asset health analytics/2. Input Datasets"
+    settings$Analyse_Datasets = "-"
+    settings$Visuals = "-"
+    settings$Results = "-"
+    settings$Testcodes ="C:/Users/michiel.musterd/Documents/Alliander project/5. TestCodes"
+    .libPaths ("C:/Users/michiel.musterd/Documents/R")}
   
   # R Server
   else if (Sys.info()["nodename"] =="SP0651") {
