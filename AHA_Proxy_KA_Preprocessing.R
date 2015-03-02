@@ -81,16 +81,15 @@ cfg$BadDates$moffen = list(
 
 cfg$BadDates$Verbindingen = as.Date(ymd(c("2007-01-06","2011-08-01","2011-04-06","2012-05-05")))
 
-
 # Laad de assets en converteer de datums als deze verkeerd staan 
 load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_assets.Rda"))
 try(setnames(assets$kabels,"PC_6_naar.y","PC_6_naar"))
 setpbarwrapper(cfg$pb, label = "Calculating NOR data");
 
 # Bereken postcode 4
-assets$moffen[,PC_4:=substr(assets$moffen$PC_6,1,4)]
-assets$kabels[,PC_4_van:=substr(assets$kabels$PC_6_van,1,4)]
-assets$kabels[,PC_4_naar:=substr(assets$kabels$PC_6_naar,1,4)]  
+assets$moffen$PC_4     = substr(assets$moffen$PC_6,1,4)]
+assets$kabels$PC_4_van = substr(assets$kabels$PC_6_van,1,4)]
+assets$kabels$PC_4_naar= substr(assets$kabels$PC_6_naar,1,4)]  
 
 # Gooi alle grote verandering weg
 
@@ -102,7 +101,6 @@ minassets$kabels=assets$kabels[(!is.na(DateAdded)& DateAdded > cfg$firstdate & D
 
 minassets$moffen=assets$moffen[(!is.na(DateAdded)& DateAdded > cfg$firstdate & DateAdded < cfg$lastdate & !(DateAdded %in% cfg$BadDates$moffen$DateAdded)) | 
                                  (!is.na(DateRemoved)& DateRemoved > cfg$firstdate & DateRemoved < cfg$lastdate & !(DateRemoved %in% cfg$BadDates$moffen$DateRemoved))]
-
 
 assets$LSkabels = minassets$kabels[Brontabel == "ls_kabels"]
 assets$MSkabels = minassets$kabels[Brontabel == "ms_kabels"]
