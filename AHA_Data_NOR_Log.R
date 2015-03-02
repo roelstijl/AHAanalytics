@@ -29,7 +29,6 @@ AHA_Data_NOR_Log = function(NORtable, source="file",backups=TRUE){
   # Load from backup functions --------------------------------------------
   if (source == "backup") {
     #   backups = list.files(pattern=paste0("masterdataset_backup",".*\\.Rda"), path=paste0(outputfolder,"/backup"),full.names=TRUE);
-    #   print(backups)
     #   filenumber <- readline(prompt="Select a backup file: ")
     cat("Select backup file to continue from\n")
     bfile = file.choose()  
@@ -60,7 +59,7 @@ AHA_Data_NOR_Log = function(NORtable, source="file",backups=TRUE){
     
     # Define the unique ID composition
     ID_unique = switch (NORtable,
-                        ELCVERBINDINGSDELEN       = mindataset[,ID_unique:=paste0(ID_Kabel,substr(PC_6_van,1,4))],
+                        ELCVERBINDINGSDELEN       = mindataset[,ID_unique:=paste0(ID_Kabel,substr(PC_6_van,1,2))],
                         ELCVERBINDINGEN           = mindataset[,ID_unique:=paste0(ID_Verbinding,ID_Hoofdleiding)],
                         ELCVERBINDINGSKNOOPPUNTEN = mindataset[,ID_unique:=paste0(ID_Bron,PC_6)],
                         cat("Please add headers to compute\n\n"))
