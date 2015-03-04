@@ -63,6 +63,10 @@ AHA_Data_NOR_Log("ELCVERBINDINGEN",backups=F)
 AHA_Data_NOR_Log("ELCVERBINDINGSDELEN",backups=F)
 AHA_Data_NOR_Log("ELCVERBINDINGSKNOOPPUNTEN",backups=F)
 
+# Correct missing PC Naar
+processPC6("masterdataset_ELCVERBINDINGSDELEN","naar",paste0(settings$Input_Datasets,"/6. NOR"))
+processPC6("changes_ELCVERBINDINGSDELEN","naar",paste0(settings$Input_Datasets,"/6. NOR"))
+
 # Post processing
 AHA_Data_NOR_Log_Postprocessing()
 
