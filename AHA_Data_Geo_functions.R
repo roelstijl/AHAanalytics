@@ -182,7 +182,7 @@ processPC6 = function(file,mode,folder="1. BARlog"){
             load(paste0(settings$Ruwe_Datasets,"/",folder,"/",file,"_XY.Rda"));
             cat("Coordinates naar\n")
             datatable = AHA_Data_Determine_PC(mindataset[,list(Coo_X_van,Coo_Y_van,Coo_Y_naar,Coo_X_naar)],
-                                              x="Coo_X_naar",y="Coo_Y_naar",PC="PC_6_naar")
+            x="Coo_X_naar",y="Coo_Y_naar",PC="PC_6_naar")
             cat("Coordinates van\n")
             datatable = AHA_Data_Determine_PC(datatable,x="Coo_X_van",y="Coo_Y_van",PC="PC_6_van",extrainfo=TRUE)  
             
@@ -191,11 +191,6 @@ processPC6 = function(file,mode,folder="1. BARlog"){
             setkeyv(datatable,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
             uniDT=unique(datatable)
             mindataset=uniDT[mindataset]
-            
-            #WARNING: the way of coupling below (row by row) results in errors, this should be
-            #changed into coupling based on keys Coo_X and Coo_Y as done above")
-
-            #mindataset = cbind(mindataset,datatable[,list(PC_6_naar,PC_6_van,Woonplaats,Gemeente,GemeenteCode)])
             },
           
           punt= {
