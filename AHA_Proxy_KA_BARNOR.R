@@ -28,21 +28,6 @@ AHA_Proxy_KA_BAR_NOR =
                           "LS_TN->BL","12->BB","MS->Buiten Bedrijf","MS->NM","LS->BL_TN","LM->BM","8->BB","513->BB",
                           "1025->BB" ,"2048->BB") # De status changes waarbij kabels die in bedrijf zijn uit bedrijf worden genomen
 
-  require(RANN)
-    
-    #developer parameters
-    develop                        <-  list()
-    develop$countremoved$LSkabels  <-  0
-    develop$countremoved$LSmoffen  <-  0
-    develop$countremoved$MSkabels  <-  0
-    develop$countremoved$MSmoffen  <-  0
-    develop                        <<- develop
-    
-    #progress bar
-    pb  <- txtProgressBar()
-    
-    
-
 # Load data if not available -----------------------------
     if (!exists("assets")) {
       cat("Importing data file \n"); tic()
@@ -68,8 +53,8 @@ AHA_Proxy_KA_BAR_NOR =
     storingen$LS$Datum_Verwerking_Gereed <- as.Date(storingen$LS$Datum_Verwerking_Gereed) #converteren tijdstippen naar datumnotatie
     storingen$MS$Datum_Verwerking_Gereed <- as.Date(storingen$MS$Datum_Verwerking_Gereed) #converteren tijdstippen naar datumnotatie
     setkey(storingen$KLAKMelders, ID_KLAK_Melding)
-    storingen$LS$ID_Groep = storingen$KLAKMelders[list(storingen$LS$ID_KLAK_Melding),mult="first"][,c("ID_Groep"),with=F]
-    storingen$MS$ID_Groep = storingen$KLAKMelders[list(storingen$MS$ID_KLAK_Melding),mult="first"][,c("ID_Groep"),with=F]
+    storingen$LS$ID_Groep = storingen$KLAKMelders[list(storingen$LS$ID_KLAK_Melding),mult="first"][,c("ID_Groep"),with=F] #Koppel groepsnummer storing aan Klakmelding
+    storingen$MS$ID_Groep = storingen$KLAKMelders[list(storingen$MS$ID_KLAK_Melding),mult="first"][,c("ID_Groep"),with=F] #Koppel groepsnummer storing aan Klakmelding
     storingen$MS          = storingen$MS[!duplicated(storingen$MS$ID_KLAK_Melding),]
     storingen$LS          = storingen$LS[!duplicated(storingen$LS$ID_KLAK_Melding),]
     try(setnames(storingen$KLAKMelders, "Routenaam", "Routenaam_MS"))
@@ -166,6 +151,9 @@ AHA_Proxy_KA_BAR_NOR =
       if (nr1 <= nr2){
         
         counter    <- 0
+        #progress bar
+        setTkProgressBar(pb, nr1,label = paste("Proxy", voltage,"min=",nr1,",max=",nr2,"nr = ", counter)) ;        
+          
         for(klaknr in klaktabel$ID_KLAK_Melding[nr1:nr2]){
           klak          <- klaktabel[ID_KLAK_Melding==klaknr]
           klakmeldingen <- storingen$KLAKMelders[as.list(klak$ID_Groep)]
@@ -175,10 +163,9 @@ AHA_Proxy_KA_BAR_NOR =
                               TOPO = Proxy_TOPO(klak,klakmeldingen,voltage,assets,assetsltb,config),
                               XY   = Proxy_XY  (klak,klakmeldingen,voltage,assets,assetsltb,config,dummy)
           )
-          counter       <- counter + 1; setTxtProgressBar(pb, counter/nrow(klaktabel),title=titlepb)
+          counter       <- counter + 1; setTkProgressBar(pb, nr1 + counter,label = paste("Proxy", voltage,"min=",nr1,",max=",nr2,"nr=", counter)) ;
           
         }}
-      develop$storingen[voltage] <<- counter
     } 
     #filename=paste0("C:/Data/AHAdata/3. Analyse Datasets","/assetsl_NOR_",method,"_",gsub(":",".",paste0(Sys.time())),".Rda")  # definiëren file van weg te schrijven assets
     filename=paste0(settings$Analyse_Datasets,"/1. KA Proxy/assetsl_",set,"_",method,gsub(":",".",paste0(Sys.time())),".Rda")  # definiëren file van weg te schrijven assets
