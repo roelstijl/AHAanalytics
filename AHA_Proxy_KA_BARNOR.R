@@ -4,9 +4,10 @@ AHA_Proxy_KA_BAR_NOR =
     # Data should be loaded using the AHA_Proxy_Dataset function (global environment)
     # 
     # Input:
-    # Method refers to the proxy method used, GEO, PC, HLD or OLD
-    # Asset refers to the asset type, e.g. moffen, kabels or both
-    # Voltage refers to the voltage to use, can be MS, LS or both
+    # Method refers to the proxy method used, XY, PC, TOPO or TOPOplus (yet to be implemented)
+    # set refers to the asset-data source that has to be used (BAR or NOR)
+    # nr1 refers to the first row of the storingen$LS and storingen$MS set to be used, nr2 to the last line
+    # parallel = T will process outages in parallel (to be implemented)    
     
 # Configuration parameters and settings -------------------------------------------------------------
   config = list()
@@ -19,10 +20,10 @@ AHA_Proxy_KA_BAR_NOR =
   config$szoek$MS     =2000 # Afstand waarover assets gezocht worden bij XY-proxy
   config$set          = set
   switch(set,
-         NOR={config$kabelscol    = c("ID_unique","ID_NAN","Status_ID","is.verv","DateAdded","DateRemoved","DateLength_ch","Status_ch","Date_Status_ch")
-              config$moffencol    = c("ID_unique","ID_NAN","Status_ID","Coo_X","Coo_Y","DateAdded","DateRemoved")},
-         BAR={config$kabelscol    = c("ID_BAR","ID_NAN", "Status_ID","is.verv","DateAdded","DateRemoved","DateLength_ch")
-              config$moffencol    = c("ID_BAR","ID_NAN", "Status_ID","Coo_X","Coo_Y","DateAdded","DateRemoved")})
+         NOR={config$kabelscol    = c("ID_unique","ID_NAN","Status_ID","is.verv","DateAdded","DateRemoved","DateLength_ch","Status_ch","Date_Status_ch") #kolommen die meegenomen worden in de output voor kabels
+              config$moffencol    = c("ID_unique","ID_NAN","Status_ID","Coo_X","Coo_Y","DateAdded","DateRemoved")},                                      #kolommen die meegenomen worden in de output voor moffen
+         BAR={config$kabelscol    = c("ID_BAR","ID_NAN", "Status_ID","is.verv","DateAdded","DateRemoved","DateLength_ch")                                #kolommen die meegenomen worden in de output voor kabels
+              config$moffencol    = c("ID_BAR","ID_NAN", "Status_ID","Coo_X","Coo_Y","DateAdded","DateRemoved")})                                        #kolommen die meegenomen worden in de output voor moffen
   config$Status_ch    = c("In Bedrijf->Buiten Bedrijf","LS->BL","MS->BM", "LS_TNA->BL","LS->NL","1536->BB","3->PG",
                           "LS_TN->BL","12->BB","MS->Buiten Bedrijf","MS->NM","LS->BL_TN","LM->BM","8->BB","513->BB",
                           "1025->BB" ,"2048->BB") # De status changes waarbij kabels die in bedrijf zijn uit bedrijf worden genomen
