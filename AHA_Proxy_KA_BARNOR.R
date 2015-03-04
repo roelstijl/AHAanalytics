@@ -390,7 +390,8 @@ process.table = function(assetstb,klakl,assettype,config){
                           Rdiff = assetstb$DateRemoved - klakl$Tijdstip_begin_storing),
                         kabels = data.table(
                           Adiff = assetstb$DateAdded   - klakl$Tijdstip_begin_storing,
-                          Rdiff = assetstb$DateRemoved - klakl$Tijdstip_begin_storing, # Voor kabels ook lengte
+                          Rdiff = assetstb$DateRemoved - klakl$Tijdstip_begin_storing, 
+                          Sdiff = assetstb$DateRemoved - klakl$Tijdstip_begin_storing,   # Voor kabels ook status
                           Ldiff = assetstb$DateLength_ch - klakl$Tijdstip_begin_storing) # Voor kabels ook lengte
                  )
              }else{                                         #calculate differences between the moment between the changes in the NOR/BARlog and the time that the interruption was processed in NRG
@@ -403,6 +404,7 @@ process.table = function(assetstb,klakl,assettype,config){
                         kabels = data.table(
                           Adiff = assetstb$DateAdded   -   klakl$Datum_Verwerking_Gereed,
                           Rdiff = assetstb$DateRemoved -   klakl$Datum_Verwerking_Gereed, 
+                          Sdiff = assetstb$DateRemoved - klakl$Tijdstip_begin_storing,    # Voor kabels ook status
                           Ldiff = assetstb$DateLength_ch - klakl$Datum_Verwerking_Gereed) # Voor kabels ook lengte
                  )
              }
@@ -413,10 +415,9 @@ process.table = function(assetstb,klakl,assettype,config){
                     kabels = {if ("Netspanning_tpv_storing" %in% names(klakl)){develop$countremoved$MSkabels <<- develop$countremoved$MSkabels + 1} else {develop$countremoved$LSkabels <<- develop$countremoved$LSkabels +1}}
              )
              switch(assettype, 
-                    moffen = {assetstb$in.timediff <- ((assetstb$Adiff > config$timediff$min) & (assetstb$Adiff < config$timediff$max) | 
-                                                         (assetstb$Rdiff > config$timediff$min) & (assetstb$Rdiff < config$timediff$max) );
+                    moffen = {assetstb$in.timediff <- ((assetstb$Rdiff > config$timediff$min) & (assetstb$Rdiff < config$timediff$max) );
                               assetstb$in.timediff <- ifelse(is.na(assetstb$in.timediff),FALSE,assetstb$in.timediff)},
-                    kabels = {assetstb$in.timediff <- ((assetstb$Adiff > config$timediff$min) & (assetstb$Adiff < config$timediff$max) | 
+                    kabels = {assetstb$in.timediff <- ((assetstb$Sdiff > config$timediff$min) & (assetstb$Sdiff < config$timediff$max) | 
                                                          (assetstb$Rdiff > config$timediff$min) & (assetstb$Rdiff < config$timediff$max) |
                                                          (assetstb$Ldiff > config$timediff$min) & (assetstb$Ldiff < config$timediff$max));
                               assetstb$in.timediff <- ifelse(is.na(assetstb$in.timediff),FALSE,assetstb$in.timediff)}
