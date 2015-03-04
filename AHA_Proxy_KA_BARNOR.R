@@ -34,7 +34,7 @@ AHA_Proxy_KA_BAR_NOR =
       switch(config$set,
              NOR=load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_NOR.Rda"),envir = .GlobalEnv),
              BAR=load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_BAR.Rda"),envir = .GlobalEnv))
-      #load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_nettopo.Rda"),envir = .GlobalEnv)
+      #load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_nettopo.Rda"),envir = .GlobalEnv) #nettopologie-data is geïmplementeerd bij storingendata
       load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"),envir = .GlobalEnv)
       toc();
     }; 
@@ -93,10 +93,21 @@ AHA_Proxy_KA_BAR_NOR =
 
 # Bepalen of kabels wel of niet vervangen is, aanmaken lijst met weg te schrijven data  ---------------------------
     #tic()
+    pb  <- tkProgressBar(title = paste("Proxy AHA, method =",method, ", set =",set,as.character(Sys.time())), label = "Bepalen of kabels vervangen zijn (MS)", min = nr1, max = nr2, initial = nr1, width = 800);
     #assets$MSkabels$is.verv <- kabel_verv(assets$MSkabels,config)
+    #setTkProgressBar(pb, (nr1+nr2)/2,label = "Bepalen of kabels vervangen zijn (LS)") ;
     #assets$LSkabels$is.verv <- kabel_verv(assets$LSkabels,config)
     #toc()
 
+    #opslaan save(assets, file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_NOR_kabelsverv.Rda"),compress=F)
+      
+    #Gooi overbodige kabels weg
+    #assets$MSkabels = assets$MSkabels[!(assets$MSkabels$Status_ID=="Status_Change" & (assets$MSkabels$is.verv==F)),] #Gooi ongebruikte status_change weg
+    #assets$MSkabels = assets$MSkabels[!(assets$MSkabels$Status_ID=="Active"),]                                       #Gooi actieve kabels weg
+  
+    #assets$LSkabels = assets$LSkabels[!(assets$LSkabels$Status_ID=="Status_Change" & (assets$LSkabels$is.verv==F)),] #Gooi ongebruikte status_change weg
+    #assets$LSkabels = assets$LSkabels[!(assets$LSkabels$Status_ID=="Active"),]                                       #Gooi actieve kabels weg
+  
     assetsltb <- list()    # aanmaken tabel met gekoppelde assets
     assetsltb$LSkabels        = as.list(storingen$LS$ID_KLAK_Melding[which(complete.cases(storingen$LS$ID_KLAK_Melding[nr1:nr2]))])
     names(assetsltb$LSkabels) = as.list(storingen$LS$ID_KLAK_Melding[which(complete.cases(storingen$LS$ID_KLAK_Melding[nr1:nr2]))])
@@ -145,7 +156,7 @@ AHA_Proxy_KA_BAR_NOR =
 # For-loop over klakmeldingen, aanroepen proxyfunctie,wegschrijven data -----------------------------
     for(voltage in c("LS","MS")){ 
       cat(paste(voltage,nr1))
-      titlepb <- paste("Proxy",method,voltage)
+
       klaktabel    <- storingen[[voltage]]                # aanmaken tabel met klakmeldingen
       if (nr2 > nrow(klaktabel)) { nr2 = nrow(klaktabel)}
       if (nr1 <= nr2){
@@ -297,17 +308,24 @@ Proxy_XY = function(klakl,klakmelders,voltage,assets,assetsl,config,dummy)
              switch(config$set,
                     NOR = {#kabels
                            dummy2=list() 
-                           dummy2$X_van                               <- dummy$LSkabels[J(XRange)];setkey(dummy2$X_van,Coo_Y_van) #Zoeken op Xvan
-                           try(dummy2$Indices_van                     <- dummy2$X_van[J(YRange)])                                  #Zoeken op Yvan
+                           dummy2$X_van                               <- dummy$LSkabels[J(XRange)]; #Zoeken op Xvan
+                           dummy2$X_van                               <- unique(na.omit(dummy2$X_van))
+                           setkey(dummy2$X_van,Coo_Y_van)
+                           dummy2$Indices_van                         <- dummy2$X_van[J(YRange)]   #Zoeken op Yvan
+                           
                            setkey(dummy$LSkabels,Coo_X_naar)
-                           dummy2$X_naar                              <- dummy$LSkabels[J(XRange)];setkey(dummy2$X_naar,Coo_Y_naar)#Zoeken op Xnaar
-                           try(dummy2$Indices                             <- rbind(dummy2$Indices_van,dummy2$X_naar[J(YRange)]))         #Zoeken op Ynaar, combineren
+                           dummy2$X_naar                              <- dummy$LSkabels[J(XRange)] #Zoeken op Xnaar
+                           dummy2$X_naar                              <- unique(na.omit(dummy2$X_naar))
+                           setkey(dummy2$X_naar,Coo_Y_naar)
+                           dummy2$Indices                             <- rbind(dummy2$Indices_van,dummy2$X_naar[J(YRange)])         #Zoeken op Ynaar, combineren
                            dummy2$Indices                             <- unique(dummy2$Indices[!is.na(dummy2$Indices$Index),])      #Uniek en NA's verwijderen
                            assetsl$LSkabels[[klakl$ID_KLAK_Melding]]  <- assets$LSkabels[J(dummy2$Indices$Index)][,config$kabelscol,with=F]
                            
                            #Moffen
-                           dummy2$X                                   <- dummy$LSmoffen[J(XRange)];setkey(dummy2$X,Coo_Y)
-                           try(dummy2$Indices                             <- dummy2$X[J(YRange)])
+                           dummy2$X                                   <- dummy$LSmoffen[J(XRange)];
+                           dummy2$X                                   <- unique(na.omit(dummy2$X))
+                           setkey(dummy2$X,Coo_Y)
+                           dummy2$Indices                             <- dummy2$X[J(YRange)]
                            dummy2$Indices                             <- dummy2$Indices[!is.na(dummy2$Indices$Index),]
                            assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] <- assets$LSmoffen[J(dummy2$Indices$Index)][,config$moffencol,with=F]
                            rm(dummy2)},
