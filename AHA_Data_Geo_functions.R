@@ -155,8 +155,6 @@ for (i in 1:length(geoData)){
 spatialList[removeIDs==1]=NULL
 mindataset=mindataset[!removeIDs,]
 
-
-
 #Merge the list of polygons in SpatialPolygons
 spatialset=SpatialPolygons(spatialList)  
 
@@ -173,38 +171,39 @@ return("Done")
 }
 
 # Function calculates the PC6 of files ---------------------------------
-processPC6 = function(file,mode,folder="1. BARlog"){
+processPC6 = function(file,mode,folder=paste0(settings$Ruwe_Datasets,"/","1. BARlog")){
   cat("starting\n")
   a=1
   
   switch (mode,
+          naar= {
+            load(paste0(folder,"/",file,".Rda"));
+            mindataset=AHA_Data_Determine_PC(mindataset,x="Coo_X_naar",y="Coo_Y_naar",PC="PC_6_naar",extrainfo=TRUE)          
+          },
+            
           van_naar= {
-            load(paste0(settings$Ruwe_Datasets,"/",folder,"/",file,"_XY.Rda"));
-            cat("Coordinates naar\n")
+            load(paste0(folder,"/",file,"_XY.Rda"));
             datatable = AHA_Data_Determine_PC(mindataset[,list(Coo_X_van,Coo_Y_van,Coo_Y_naar,Coo_X_naar)],
             x="Coo_X_naar",y="Coo_Y_naar",PC="PC_6_naar")
-            cat("Coordinates van\n")
             datatable = AHA_Data_Determine_PC(datatable,x="Coo_X_van",y="Coo_Y_van",PC="PC_6_van",extrainfo=TRUE)  
-            
             
             setkeyv(mindataset,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
             setkeyv(datatable,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
-            uniDT=unique(datatable)
-            mindataset=uniDT[mindataset]
+            mindataset=unique(datatable)[mindataset]
             },
           
           punt= {
-            load(paste0(settings$Ruwe_Datasets,"/",folder,"/",file,"_XY.Rda"));
+            load(paste0(folder,"/",file,"_XY.Rda"));
             mindataset=AHA_Data_Determine_PC(mindataset,extrainfo=TRUE)}
   )
-  save(mindataset,file=paste0(settings$Ruwe_Datasets,"/",folder,"/",file,"_XY_PC6.Rda"))
+  save(mindataset,file=paste0(folder,"/",file,"_XY_PC6.Rda"))
 }
 
 # Determines the PC regions corresponding to XY coordinates ---------------------
 AHA_Data_Determine_PC=function(datatable,x="Coo_X",y="Coo_Y",PC="PC_6",extrainfo=FALSE){
   # Function calculated the postal codes for regions that lack this (i.e BAR and NOR sets)
-  #
   # Prepare lines
+  
   cfg=list()
   cfg$pb = pbarwrapper (title = paste0("AHA_Data_Determine_PC, ",as.character(Sys.time())), label = "Preparing lines for comparison to pc6 regions", min = 0, max = 10000, initial = 0, width = 450);
   load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_6_Spatial.Rda"))
@@ -217,7 +216,7 @@ AHA_Data_Determine_PC=function(datatable,x="Coo_X",y="Coo_Y",PC="PC_6",extrainfo
   
   # First check in what PC 4 region the points are
   setpbarwrapper (cfg$pb, 500,label = "Check what PC4 the points are in"); 
-  datatable = datatable[(!is.na(datatable[,x,with=FALSE]))[,1],]
+  datatable = datatable[!is.na(datatable[,x,with=FALSE])[,1],]
   co = data.table(as.character(1:nrow(datatable)))
   datatable[,V1:=co$V1]
   

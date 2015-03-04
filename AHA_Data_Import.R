@@ -25,7 +25,7 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
   # Define the location of your data based on the system used
 
   if (folder == "automatic"){
-    filechooser= (file.choose());
+    filechooser= choose.files(default = paste0(settings$Bron_Datasets,"/*"))
     datafiles  = basename(filechooser)
     folder     = strsplit(tail(strsplit(dirname(filechooser),"/")[[1]],1)," ")[[1]][2]
     curdataname = substring(datafiles[[1]],1,nchar(datafiles[[1]])-4)

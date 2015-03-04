@@ -24,7 +24,7 @@ load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_st
 
 if (cfg$GoogleMaps){
   load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_6_Spatial.Rda"))
-  load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial.Rda"))  
+  load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial.Rda"))
   pc6@data$PC_4 = substr(pc6@data$POSTCODE,1,4)
 }
 

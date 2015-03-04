@@ -1,8 +1,7 @@
-AHA_Data_KA_Proxy_Preprocessing = function(datasets=c("assetsBAR","assetsNOR","nettopo","storingen","validatieset"),
-                                         firstdate="2007-02-01",lastdate="2015-02-01"){
+AHA_Data_KA_Proxy_Preprocessing = function(datasets=c("assetsBAR","assetsNOR","nettopo","storingen","validatieset")){
 # Merges the Delta data into small datasets for analysis
 # Datasets selects only a certain set to process (default = all)
-# cfg$firstdate is the startdate of the data subset
+# cfg$firstdate_NOR is the startdate of the data subset
 # last date is the last date to take
 #
 # Settings  ----------------------
@@ -11,13 +10,11 @@ cfg = list()
 cfg$pb  = pbarwrapper(title = paste0("AHA_Data_KA_Proxy_Preprocessing: ",as.character(Sys.time())), 
                       label = "Start", min = 0, max = 3*length(datasets)+1, initial = 0, width = 450);
 
-firstdate="2007-02-01"
-lastdate="2015-02-01"
-cfg$firstdate = as.Date(firstdate)
-cfg$lastdate  = as.Date(lastdate)
-cfg$NAdate = as.Date("1970-01-01")  
+# Specify the dates from to
+cfg$firstdate_NOR = as.Date("2007-02-01")
+cfg$firstdate_BAR = as.Date("2014-02-14")
+cfg$lastdate      = as.Date("2015-02-01")
 
-cfg$DateBarBegin =as.Date("2014-02-14")
 
 # Choose the correct functions 
 switch (datasets,
@@ -43,17 +40,17 @@ assets$MSHLDROUTE = NULL
 setpbarwrapper(cfg$pb, label = "Calculating BAR data");
 # behoud alleen dat deel van de assets dat binnen de periode veranderd is.
 assets = lapply(assets,function(x)
-{x[!(x$DateAdded == cfg$DateBarBegin & x$Status_ID=="Active")]})
+{x[!(x$DateAdded == cfg$firstdate_BAR & x$Status_ID=="Active")]})
   
-minassets$MSkabels=assets$MSkabels[(!is.na(DateAdded)& DateAdded > cfg$firstdate & DateAdded < cfg$lastdate) | 
-                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate & DateRemoved < cfg$lastdate )]
-minassets$LSkabels=assets$LSkabels[(!is.na(DateAdded)& DateAdded > cfg$firstdate & DateAdded < cfg$lastdate ) | 
-                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate & DateRemoved < cfg$lastdate )]
+minassets$MSkabels=assets$MSkabels[(!is.na(DateAdded)& DateAdded > cfg$firstdate_NOR & DateAdded < cfg$lastdate) | 
+                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_NOR & DateRemoved < cfg$lastdate )]
+minassets$LSkabels=assets$LSkabels[(!is.na(DateAdded)& DateAdded > cfg$firstdate_NOR & DateAdded < cfg$lastdate ) | 
+                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_NOR & DateRemoved < cfg$lastdate )]
 
-minassets$MSmoffen=assets$MSmoffen[(!is.na(DateAdded)& DateAdded > cfg$firstdate & DateAdded < cfg$lastdate) | 
-                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate & DateRemoved < cfg$lastdate)]
-minassets$LSmoffen=assets$LSmoffen[(!is.na(DateAdded)& DateAdded > cfg$firstdate & DateAdded < cfg$lastdate) | 
-                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate & DateRemoved < cfg$lastdate)]
+minassets$MSmoffen=assets$MSmoffen[(!is.na(DateAdded)& DateAdded > cfg$firstdate_NOR & DateAdded < cfg$lastdate) | 
+                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_NOR & DateRemoved < cfg$lastdate)]
+minassets$LSmoffen=assets$LSmoffen[(!is.na(DateAdded)& DateAdded > cfg$firstdate_NOR & DateAdded < cfg$lastdate) | 
+                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_NOR & DateRemoved < cfg$lastdate)]
 
 
 # Opsplitsen in MS en LS, zo zit het in de BARlog ook
@@ -87,20 +84,20 @@ try(setnames(assets$kabels,"PC_6_naar.y","PC_6_naar"))
 setpbarwrapper(cfg$pb, label = "Calculating NOR data");
 
 # Bereken postcode 4
-assets$moffen$PC_4     = substr(assets$moffen$PC_6,1,4)]
-assets$kabels$PC_4_van = substr(assets$kabels$PC_6_van,1,4)]
-assets$kabels$PC_4_naar= substr(assets$kabels$PC_6_naar,1,4)]  
+assets$moffen$PC_4     = substr(assets$moffen$PC_6,1,4)
+assets$kabels$PC_4_van = substr(assets$kabels$PC_6_van,1,4)
+assets$kabels$PC_4_naar= substr(assets$kabels$PC_6_naar,1,4)  
 
 # Gooi alle grote verandering weg
 
 minassets = list()
-minassets$kabels=assets$kabels[(!is.na(DateAdded)& DateAdded > cfg$firstdate & DateAdded < cfg$lastdate & !(DateAdded %in% cfg$BadDates$kabels$DateAdded)) | 
-                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate & DateRemoved < cfg$lastdate & !(DateRemoved %in% cfg$BadDates$kabels$DateRemoved))|
-                                 (!is.na(Date_Status_ch)& Date_Status_ch > cfg$firstdate & Date_Status_ch < cfg$lastdate & !(Date_Status_ch %in% cfg$BadDates$kabels$Date_Status_ch))|
-                                 (!is.na(DateLength_ch)& DateLength_ch > cfg$firstdate & DateLength_ch < cfg$lastdate & !(DateLength_ch %in% cfg$BadDates$kabels$DateLength_ch))]
+minassets$kabels=assets$kabels[(!is.na(DateAdded)& DateAdded > cfg$firstdate_NOR & DateAdded < cfg$lastdate & !(DateAdded %in% cfg$BadDates$kabels$DateAdded)) | 
+                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_NOR & DateRemoved < cfg$lastdate & !(DateRemoved %in% cfg$BadDates$kabels$DateRemoved))|
+                                 (!is.na(Date_Status_ch)& Date_Status_ch > cfg$firstdate_NOR & Date_Status_ch < cfg$lastdate & !(Date_Status_ch %in% cfg$BadDates$kabels$Date_Status_ch))|
+                                 (!is.na(DateLength_ch)& DateLength_ch > cfg$firstdate_NOR & DateLength_ch < cfg$lastdate & !(DateLength_ch %in% cfg$BadDates$kabels$DateLength_ch))]
 
-minassets$moffen=assets$moffen[(!is.na(DateAdded)& DateAdded > cfg$firstdate & DateAdded < cfg$lastdate & !(DateAdded %in% cfg$BadDates$moffen$DateAdded)) | 
-                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate & DateRemoved < cfg$lastdate & !(DateRemoved %in% cfg$BadDates$moffen$DateRemoved))]
+minassets$moffen=assets$moffen[(!is.na(DateAdded)& DateAdded > cfg$firstdate_NOR & DateAdded < cfg$lastdate & !(DateAdded %in% cfg$BadDates$moffen$DateAdded)) | 
+                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_NOR & DateRemoved < cfg$lastdate & !(DateRemoved %in% cfg$BadDates$moffen$DateRemoved))]
 
 assets$LSkabels = minassets$kabels[Brontabel == "ls_kabels"]
 assets$MSkabels = minassets$kabels[Brontabel == "ms_kabels"]
@@ -187,28 +184,18 @@ setpbarwrapper(cfg$pb, label = "Loading KLAK data");
 # Laad de data om adressen te koppelen
 load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_LS.Rda"))
 mindataset[,Datum:=as.Date(mindataset$Datum)]
-storingen$LS= mindataset[(mindataset$Datum > cfg$firstdate & mindataset$Datum < cfg$lastdate)]
+storingen$LS= mindataset[(mindataset$Datum > cfg$firstdate_NOR & mindataset$Datum < cfg$lastdate)]
 storingen$LS[,Brontabel := "LS storingen"]
 
 load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_MS.Rda"))
 mindataset[,Datum:=as.Date(mindataset$Datum)]
-storingen$MS= mindataset[(mindataset$Datum > cfg$firstdate & mindataset$Datum < cfg$lastdate)]
+storingen$MS= mindataset[(mindataset$Datum > cfg$firstdate_NOR & mindataset$Datum < cfg$lastdate)]
 storingen$MS[,Brontabel := "MS storingen"]
 
 load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_KOPPEL_MELDING_GROEP.Rda"))
 storingen$KLAKMelders = (mindataset);
 storingen$KLAKMelders[,Brontabel := "Melder"]
-
-load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_MELDING_XY.Rda"))
-mindataset[ID_Groep=="",ID_Groep:=NA]
-storingen$KLAKMelders[ID_Groep=="",ID_Groep:=NA]
-
-setkey(mindataset,ID_Groep)
-setkey(storingen$KLAKMelders,ID_Groep)
-storingen$KLAKMelders[ ,Coo_X_Melding := unique(storingen$KLAKMelders)[mindataset]]
-storingen$KLAKMelders[ ,Coo_Y_Melding := unique(mindataset)storingen$KLAKMelders]
                                             
-
 load(paste0(settings$Ruwe_Datasets,"/21. GIS-mutaties/GISMUTATIE.Rda"))
 setkey(mindataset,ID_KLAK_Melding)
 gismutaties = mindataset
