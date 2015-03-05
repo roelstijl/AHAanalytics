@@ -15,11 +15,12 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
   # Multiple files is supported, initial input dataname is a partial search
   
   # An attached excel sheet contains all the information for the import, the following date formats are allowed
-  #  "date",        dmy
-  #  "dateymd",     ymd
-  #  "datetime",    my_hms
-  #  "datetimeYDM", ymd_hms
-  #  "datetimeM",   dmy_hm
+  #  "date",         dmy
+  #  "dateymd",      ymd
+  #  "datetime",     my_hms
+  #  "datetimeYDM",  ymd_hms
+  #  "datetimeM",    dmy_hm
+  #  "Hours minuts", hm
   
   # Do all the loading and modifying of files -------------------------------
   # Define the location of your data based on the system used

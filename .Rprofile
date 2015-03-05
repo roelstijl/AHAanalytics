@@ -9,7 +9,7 @@
   settings <<- load_settings()
   
   # Install required packages if not .Firinstalled already -------------------------------
-  packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash","parallel","doParallel","maptools","RANN",
+  packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash","parallel","doParallel","maptools","RANN","proj4",
                "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2","foreign","rgeos","stringr")
   
   for (m in 1:length(packages)){
