@@ -36,7 +36,7 @@ AHA_MVA_Coupling = function(ProxyListFile=paste0(settings$Ruwe_Datasets,"/25. Ko
   #matter for the eventual dataset
   
   #Specify the names of all sets to be coupled
-  Nfiles=9
+  Nfiles=11
   InputFileList=list(as.character(1:Nfiles))
   InputFileList[1]=paste0(settings$Ruwe_Datasets,"/15. CBS/CBS_Gecombineerd_Gemeente_Wijk_Buurt.Rda")
   InputFileList[2]=paste0(settings$Ruwe_Datasets,"/16. Zakking/Zakking.Rda")
@@ -45,8 +45,10 @@ AHA_MVA_Coupling = function(ProxyListFile=paste0(settings$Ruwe_Datasets,"/25. Ko
   InputFileList[5]=paste0(settings$Ruwe_Datasets,"/14. Risicokaart/risicokaartXY.Rda")
   InputFileList[6]=paste0(settings$Ruwe_Datasets,"/13. Kadaster_TOP10_NL_Sept/Iso_hoogtelijn_XY.Rda")
   InputFileList[7]=paste0(settings$Ruwe_Datasets,"/13. Kadaster_TOP10_NL_Sept/spoorbaandeel_lijn_XY.Rda")
-  InputFileList[8]=paste0(settings$Ruwe_Datasets,"/13. Kadaster_TOP10_NL_Sept/inrichtingselement_lijn_XY.Rda")
-  InputFileList[9]=paste0(settings$Ruwe_Datasets,"/13. Kadaster_TOP10_NL_Sept/inrichtingselement_punt_XY.Rda")
+  InputFileList[8]=paste0(settings$Ruwe_Datasets,"/13. Kadaster_TOP10_NL_Sept/inrichtingselement_lijn_XY_boom.Rda")
+  InputFileList[9]=paste0(settings$Ruwe_Datasets,"/13. Kadaster_TOP10_NL_Sept/inrichtingselement_lijn_XY_overig.Rda")
+  InputFileList[10]=paste0(settings$Ruwe_Datasets,"/13. Kadaster_TOP10_NL_Sept/inrichtingselement_punt_XY_boom.Rda")
+  InputFileList[11]=paste0(settings$Ruwe_Datasets,"/13. Kadaster_TOP10_NL_Sept/inrichtingselement_punt_XY_overig.Rda")
   
   #Check existence of each of these files before starting the run  
   existCheck=1:Nfiles
@@ -116,8 +118,8 @@ AHA_MVA_Coupling = function(ProxyListFile=paste0(settings$Ruwe_Datasets,"/25. Ko
   currentInFile=currentOutFile
   currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
   coupling(no_of_keys=2,couple_method=1,key1_nameA="Coo_X_van",key1_nameB="Coo_Y_van",
-           key2_nameA="Coo_X",key2_nameB="Coo_Y",includeNNamount=1,amountRad=100,
-           includeNNdist=1,NNdistName="Afstand_Isolijn",
+           key2_nameA="Coo_X",key2_nameB="Coo_Y",includeNNamount=1,amountRad=100,amountIDname="Isolijn_ID",
+           amountName="Aantal_Isolijn",includeNNdist=1,NNdistName="Afstand_Isolijn",
            outFileName=currentOutFile, Set1Name=currentInFile,Set2Name=InputFileList[[SetNo]])
   
   #Spoorbaan - XY (preprocessed lines into x,y point sets)
@@ -129,36 +131,53 @@ AHA_MVA_Coupling = function(ProxyListFile=paste0(settings$Ruwe_Datasets,"/25. Ko
            includeNNdist=1,NNdistName="Afstand_Spoorbaan",
            outFileName=currentOutFile, Set1Name=currentInFile,Set2Name=InputFileList[[SetNo]])
   
-  #Inrichtingselementen lijn - XY (preprocessed lines into x,y point sets)
+  #Inrichtingselementen lijn, boom - XY (preprocessed lines into x,y point sets)
   SetNo=8
   currentInFile=currentOutFile
   currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
   coupling(no_of_keys=2,couple_method=1,key1_nameA="Coo_X_van",key1_nameB="Coo_Y_van",
            key2_nameA="Coo_X",key2_nameB="Coo_Y",
-           includeNNdist=2,NNdistName="Afstand_Boomrij",NNdistName2="Afstand_Overige_Lijn_Inrichtingselement",
+           includeNNdist=1,NNdistName="Afstand_Boomrij",
            outFileName=currentOutFile, Set1Name=currentInFile,Set2Name=InputFileList[[SetNo]])
   
-  #Inrichtingselementen punt - XY (NOTE: last set so different outfilename!)
+  #Inrichtingselementen lijn, overig - XY (preprocessed lines into x,y point sets)
   SetNo=9
   currentInFile=currentOutFile
   currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
   coupling(no_of_keys=2,couple_method=1,key1_nameA="Coo_X_van",key1_nameB="Coo_Y_van",
            key2_nameA="Coo_X",key2_nameB="Coo_Y",
-           includeNNdist=2,NNdistName="Afstand_Boom",NNdistName2="Afstand_Overige_Punt_Inrichtingselement",
+           includeNNdist=1,NNdistName="Afstand_Overige_Lijn_Inrichtingselement",
+           outFileName=currentOutFile, Set1Name=currentInFile,Set2Name=InputFileList[[SetNo]])
+  
+  #Inrichtingselementen punt, boom - XY (NOTE: last set so different outfilename!)
+  SetNo=10
+  currentInFile=currentOutFile
+  currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
+  coupling(no_of_keys=2,couple_method=1,key1_nameA="Coo_X_van",key1_nameB="Coo_Y_van",
+           key2_nameA="Coo_X",key2_nameB="Coo_Y",
+           includeNNdist=1,NNdistName="Afstand_Boom",
+           outFileName=finalSetOutFileName, Set1Name=currentInFile,Set2Name=InputFileList[[SetNo]])
+  
+  #Inrichtingselementen punt, overig - XY (NOTE: last set so different outfilename!)
+  SetNo=11
+  currentInFile=currentOutFile
+  currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
+  coupling(no_of_keys=2,couple_method=1,key1_nameA="Coo_X_van",key1_nameB="Coo_Y_van",
+           key2_nameA="Coo_X",key2_nameB="Coo_Y",
+           includeNNdist=2,NNdistName="Afstand_Overige_Punt_Inrichtingselement",
            outFileName=finalSetOutFileName, Set1Name=currentInFile,Set2Name=InputFileList[[SetNo]])
  
 
 }
 
 
-coupling = function(no_of_keys=2,couple_method=1,includeNNdist=0,NNdistName="-",NNdistName2="-",
-                    includeNNamount=0,amountRad=100,key1_nameA="Coo_X_van",key1_nameB="Coo_Y_van",
-                    key2_nameA="Coo_X",key2_nameB="Coo_Y",
+coupling = function(no_of_keys=2,couple_method=1,includeNNdist=0,NNdistName="-",
+                    includeNNamount=0,amountRad=100,key1_nameA="Coo_X_van",amountIDname="-",amountName="-",
+                    key1_nameB="Coo_Y_van",key2_nameA="Coo_X",key2_nameB="Coo_Y",
                     outFileName=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/KoppelOutput.Rda"),
                     Set1Name,Set2Name){
   
-  #TODO: change this into a function that takes input through its function arguments instead of through
-  #      the input section below
+
   
   
 #   #############################
@@ -326,6 +345,8 @@ coupling = function(no_of_keys=2,couple_method=1,includeNNdist=0,NNdistName="-",
     #Select only x and y columns from both sets and work with that for the neighbour ID
     Set1Sub=Set1[,c(eval(key1_nameA),eval(key1_nameB)),with=F]
     Set2Sub=uniSet2[,c(eval(key2_nameA),eval(key2_nameB)),with=F]
+
+    
     
     #identify the rows with NA in X or Y in both sets
     S1X_NA_IDs=which(is.na(Set1Sub[,get(key1_nameA)]))
@@ -342,27 +363,54 @@ coupling = function(no_of_keys=2,couple_method=1,includeNNdist=0,NNdistName="-",
     cat("Starting nearest neighbour identification \n")
     
     #find the nearest neighbour indices using nn2 from the RANN package
-    indexNearest=nn2(Set2Sub,Set1Sub,k=1)
     
-    cat("Nearest neighours identified, proceed to coupling \n")
+    if (includeNNamount==1){
+      #important note: this approach assumes that there are never more than 1000 
+      #neighbour POINTS within amountRad
+      indexNearest=nn2(Set2Sub,Set1Sub,k=100)
+      
+      #identify the points within the desired radius
+      withinRad=indexNearest$nn.dists<amountRad
     
-    #Correcting the identified neighbours which were actually NAs
-    indexNearest$nn.idx[S1X_NA_IDs]=0
-    indexNearest$nn.idx[S1Y_NA_IDs]=0
+      nnWithRad=(1:size(withinRad,1))*0
+      for (i in 1:size(withinRad,1)){
+        #extract the IDs within the radius
+        IDswithinRad=indexNearest$nn.idx[i,withinRad[i,]]
+        
+        #count the number of unique elements within the radius
+        nnWithRad[i]=length(unique(uniSet2[IDswithinRad,get(amountIDname)]))
+      }
+      
+      #add this column in Set1
+      Set1[,NNamount:=nnWithRad]
+      setnames(Set1,"NNamount",eval(amountName))
     
-    #Create a new column in Set1 with the merge ID, 
-    #also insert a column in uniSet2 with these IDs (essentially row numbers for Set2)
-    Set1[,mID:=indexNearest$nn.idx]
-    
-    if (includeNNdist==1){
-      Set1[,NNdist:=indexNearest$nn.dists]
-      setnames(Set1,"NNdist",eval(NNdistName))
     }
     
-    uniSet2[,mID:=1:nrow(uniSet2)]
+      indexNearest=nn2(Set2Sub,Set1Sub,k=1)
+    
+      cat("Nearest neighours identified, proceed to coupling \n")
+      
+      #Correcting the identified neighbours which were actually NAs
+      indexNearest$nn.idx[S1X_NA_IDs]=0
+      indexNearest$nn.idx[S1Y_NA_IDs]=0
+      
+      #Create a new column in Set1 with the merge ID, 
+      #also insert a column in uniSet2 with these IDs (essentially row numbers for Set2)
+      Set1[,mID:=indexNearest$nn.idx]
+      
+      if (includeNNdist==1){
+        Set1[,NNdist:=indexNearest$nn.dists]
+        setnames(Set1,"NNdist",eval(NNdistName))
+      }
+        
+      uniSet2[,mID:=1:nrow(uniSet2)]
+    
     
     #Now the indices have been added to the sets and they are unique in uniSet2 so we can
     #do the coupling if we set the key to only mID
+    
+
   }
   
   #coupling based on polygon (i.e. geoquery type)
