@@ -83,6 +83,11 @@ saveObj <- function(object, file.name){
   close(outfile)
 }
 
+savewrapper = function(..., file, compress=F)
+{
+  save()
+}
+
 # Used for the progressbar
 pbarwrapper = function(title="PlaceHolder", label = "Starting...", max = 1,min = 0,initial = 0,width = 450)
 {

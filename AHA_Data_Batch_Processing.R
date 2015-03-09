@@ -41,13 +41,7 @@ processPC6("MH_NRG_MS_KABELS","van_naar")
 processPC6("MH_NRG_MS_MOFFEN","punt")
 processPC6("MH_NRG_LS_MOFFEN","punt")
 
-# Add the XY coordinates in a spatial file
-processXY("MH_NRG_LS_KABELS","lines",,veld="Ligging")
-processXY("MH_NRG_MS_KABELS","lines",,veld="Ligging")
-
-# Create the tableau output for the visuals
-Tableau_Create_Polygons(fileout="MH_NRG_MS_KABELS_Geospatial_Tableau",sources="spd",combine = FALSE)
-Tableau_Create_Polygons(fileout="MH_NRG_LS_KABELS_Geospatial_Tableau",sources="spd",combine = FALSE)
+# Create a set for the NOR coupling later
 
 # Add the dates etc
 AHA_Data_BAR_Log()
@@ -72,5 +66,25 @@ AHA_Data_NOR_Log_Postprocessing()
 
 # Preprocessing for Proxi
 AHA_Data_KA_Proxy_Preprocessing("assetsBAR","assetsNOR")
+
+# Tableau output ---------------------------
+# Add the XY coordinates in a spatial file
+processXY("MH_NRG_LS_KABELS","lines",,veld="Ligging")
+processXY("MH_NRG_MS_KABELS","lines",,veld="Ligging")
+
+# Create the tableau output for the visuals
+Tableau_Create_Polygons(fileout="MH_NRG_MS_KABELS_Geospatial_Tableau",sources="spd",combine = FALSE)
+Tableau_Create_Polygons(fileout="MH_NRG_LS_KABELS_Geospatial_Tableau",sources="spd",combine = FALSE)
 }
 
+BAR_HLD_Subset= function(){
+  load(paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_LS_KABELS_XY_PC6.Rda"))
+  try(setnames(mindataset,"Ls_Verbinding","ID_Verbinding"))
+  BAR_LS_HLD = mindataset[,list(ID_NAN,ID_Hoofdleiding,ID_Verbinding)]
+  
+  load(paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_MS_KABELS_XY_PC6.Rda"))
+  try(setnames(mindataset,"ID_MS_HLD","ID_Verbinding"))
+  BAR_MS_HLD = mindataset[,list(ID_NAN,ID_Hoofdleiding,ID_Verbinding)]
+  
+  save(BAR_LS_HLD,BAR_MS_HLD,file=paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_KABELS_HLD_Sample.Rda"))
+}

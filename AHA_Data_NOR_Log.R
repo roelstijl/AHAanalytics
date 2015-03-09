@@ -16,20 +16,19 @@ AHA_Data_NOR_Log = function(NORtable, source="file",backups=TRUE){
   files=files[!grepl("masterdataset_backup",filesshort)]
   filesshort=filesshort[!grepl("masterdataset_backup",filesshort)]
   
-  pb = pbarwrapper(title = "AHA_Data_NOR_Log start", label = "Start", min = 0, max = length(filesshort)*3+1+backups*length(filesshort)/3, initial = 0, width = 450); pc=0;
+  pb = pbarwrapper(title = "AHA_Data_NOR_Log start", label = "Start", max = length(filesshort)*3+1+backups*length(filesshort)/3);
   
   # Select which collumns to compare
-  comparecols = switch (NORtable,ELCVERBINDINGSKNOOPPUNTEN=c("ID_unique","ID_NAN","Bronsysteem","Spanningsniveau","Beheerder", "Soort",  "Constructie",  "Isolatiemedium",	"Fabrikant","Coo_X","Coo_Y"),
-                        ELCVERBINDINGSDELEN=c("ID_unique","Lengte","Bronsysteem","ID_NAN","Status","Beheerder","Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar","Spanningsniveau","Diameter","Netverbinding"),
-                        ELCVERBINDINGEN=c("ID_unique","Lengte", "Bronsysteem",	"SpanningsNiveau","Beheerder",	"Soort",	"Soortnet"),
+    
+  comparecols = switch (NORtable,ELCVERBINDINGSKNOOPPUNTEN=c("ID_unique", "PC_6","ID_NAN","Bronsysteem","Spanningsniveau","Beheerder", "Soort",  "Constructie",  "Isolatiemedium",	"Fabrikant","Coo_X","Coo_Y"),
+                        ELCVERBINDINGSDELEN=c("ID_unique","Lengte","PC_6_van","Bronsysteem","ID_NAN","Status","Beheerder","Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar","Spanningsniveau","Diameter","Netverbinding"),
+                        ELCVERBINDINGEN=c("ID_unique","Lengte","Bronsysteem",	"SpanningsNiveau","Beheerder",	"Soort",	"Soortnet"),
                         cat("Please add headers to compute\n\n"))
   # Plot to check for anomolies in file sizes
   plot(file.info(files)$size)
   
   # Load from backup functions --------------------------------------------
   if (source == "backup") {
-    #   backups = list.files(pattern=paste0("masterdataset_backup",".*\\.Rda"), path=paste0(outputfolder,"/backup"),full.names=TRUE);
-    #   filenumber <- readline(prompt="Select a backup file: ")
     cat("Select backup file to continue from\n")
     bfile = file.choose()  
     cat("Select file to start import from\n")
@@ -57,11 +56,15 @@ AHA_Data_NOR_Log = function(NORtable, source="file",backups=TRUE){
     {cat("Correcting character lengths \n")
      mindataset$Lengte = as.numeric(sapply(mindataset$Lengte,fixnumber))}
     
+    switch (NORtable,
+          ELCVERBINDINGSKNOOPPUNTEN = {mindataset[,PC_2:=substr(PC_6,1,2)]},
+          ELCVERBINDINGSDELEN       = {mindataset[,PC_2:=substr(PC_6_van,1,2)]})    
+    
     # Define the unique ID composition
     ID_unique = switch (NORtable,
-                        ELCVERBINDINGSDELEN       = mindataset[,ID_unique:=paste0(ID_Kabel,substr(PC_6_van,1,2))],
+                        ELCVERBINDINGSDELEN       = mindataset[,ID_unique:=paste0(ID_Kabel,PC_2)],
                         ELCVERBINDINGEN           = mindataset[,ID_unique:=paste0(ID_Verbinding,ID_Hoofdleiding)],
-                        ELCVERBINDINGSKNOOPPUNTEN = mindataset[,ID_unique:=paste0(ID_Bron,PC_6)],
+                        ELCVERBINDINGSKNOOPPUNTEN = mindataset[,ID_unique:=paste0(ID_Bron,PC_2)],
                         cat("Please add headers to compute\n\n"))
     setkey(mindataset,ID_unique) 
     
@@ -148,6 +151,7 @@ AHA_Data_NOR_Log = function(NORtable, source="file",backups=TRUE){
   
   save(changes,file=paste0(outputfolder,"/changes_",NORtable,".Rda"),compress=F)   
   save(masterdataset,file=paste0(outputfolder,"/masterdataset_",NORtable,".Rda"),compress=F)   
+    
   try({barplot(rbind(table(masterdataset$DateRemoved)[2:n],table(masterdataset$DateAdded)[2:n]),beside=TRUE);  
        barplot(table(changes$Date))})
 }
@@ -180,22 +184,11 @@ vb = masterdataset
 
 # Load kabels  
 setpbarwrapper(pb,label = "Loading verbindingsdelen"); 
-load(paste0(settings$Input_Datasets,"/6. NOR/masterdataset_ELCVERBINDINGSDELEN.Rda"))
+load(paste0(settings$Input_Datasets,"/6. NOR/masterdataset_ELCVERBINDINGSDELEN_XY_PC.Rda"))
 masterdataset[,ID_Object := (1:nrow(masterdataset))]
 setorder(masterdataset, -DateAdded, na.last=TRUE)
 setkey(masterdataset,ID_Object)
 assets$kabels = masterdataset;
-
-# Generate a file for missing PC6_naar in NOR. Has to be run once on a new load!!
-setpbarwrapper(pb,label = paste0("Loading XY in PC, recalculate = ",cfg$recalculate_PC6_naar))
-if(cfg$recalculate_PC6_naar)
-{XYinPC = AHA_Data_Determine_PC(assets$kabels[,c("Coo_X_naar","Coo_Y_naar","ID_unique"),with=FALSE],"Coo_X_naar","Coo_Y_naar","PC_6_naar")
- save(XYinPC,file=paste0(settings$Input_Datasets,"/6. NOR/XYinPC.Rda"),compress=F)}else{
-   load(paste0(settings$Input_Datasets,"/6. NOR/XYinPC.Rda"))}
-
-setkeyv(XYinPC,c("Coo_X_naar","Coo_Y_naar")); 
-setkeyv(assets$kabels,c("Coo_X_naar","Coo_Y_naar")); 
-assets$kabels= merge(assets$kabels,unique(XYinPC)[,list(PC_6_naar,Coo_X_naar,Coo_Y_naar)]);
 
 # Load moffen
 setpbarwrapper(pb, label = "Loading assets moffen"); 
@@ -275,7 +268,7 @@ setnames(achanges$kabels$ID_NAN,"Date","Date_NAN_Change")
 setorder(achanges$kabels$ID_NAN,-Date_NAN_Change)
 setkey(achanges$kabels$ID_NAN,ID_unique)
 allXY = unique(achanges$kabels$ID_NAN[,list(ID_unique,Date_NAN_Change)])[allXY]
-allXY[!is.na(ID_NAN)&is.na(Date_NAN_Change),Date_NAN_Change:=as.Date("01-01-2014")]
+allXY[!is.na(ID_NAN)&is.na(Date_NAN_Change)]
 allXY[,Date_Last:=pmax(DateAdded,Date_NAN_Change,Date_Length_Change, na.rm = T)]
 
 # Transform the integer coordinates into 1 vector
@@ -318,16 +311,10 @@ assets$kabels = rbind(assets$kabels,mergeset,fill=TRUE)
 
 # Add the HLD to kabels ---------------------------
 setpbarwrapper(pb, label = "Add the HLD and MSRings to kabels"); 
-vb[,ID_Verbinding_present:=ID_Verbinding]
-
-# First merge on verbinding and Beheerder
-setkey(assets$kabels,ID_Verbinding_present,Beheerder); setkey(vb,ID_Verbinding_present,Beheerder)
-assets$kabels[,ID_Hoofdleiding_present := unique(vb)[assets$kabels,ID_Hoofdleiding]]
-
-# Next merge just on verbindingen
-setkey(assets$kabels,ID_Verbinding_present);setkey(vb,ID_Verbinding_present)
-assets$kabels[is.na(assets$kabels$ID_Hoofdleiding_present),
-              ID_Hoofdleiding_present:= unique(vb)[assets$kabels,ID_Hoofdleiding][is.na(assets$kabels$ID_Hoofdleiding_present)]]
+load(paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_KABELS_HLD_Sample.Rda"))
+BAR_HLD = rbind(BAR_LS_HLD,BAR_MS_HLD)
+setnames(BAR_HLD,"ID_NAN","ID_NAN_present")
+setkey(BAR_HLD,ID_NAN_present)
 
 # Add the MSRing ----------------------------------------------------------
 setpbarwrapper(pb, label = "Adding MSRing to Kabels");

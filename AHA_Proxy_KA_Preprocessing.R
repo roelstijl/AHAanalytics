@@ -5,16 +5,13 @@ AHA_Data_KA_Proxy_Preprocessing = function(datasets=c("assetsBAR","assetsNOR","n
 # last date is the last date to take
 #
 # Settings  ----------------------
-cat("Starting\n")
 cfg = list()
-cfg$pb  = pbarwrapper(title = paste0("AHA_Data_KA_Proxy_Preprocessing: ",as.character(Sys.time())), 
-                      label = "Start", min = 0, max = 3*length(datasets)+1, initial = 0, width = 450);
+cfg$pb  = pbarwrapper(title = paste0("AHA_Data_KA_Proxy_Preprocessing: ",as.character(Sys.time())),label = "Start", min = 0, max = 3*length(datasets)+1);
 
 # Specify the dates from to
 cfg$firstdate_NOR = as.Date("2007-02-01")
 cfg$firstdate_BAR = as.Date("2014-02-14")
 cfg$lastdate      = as.Date("2015-02-01")
-
 
 # Choose the correct functions 
 switch (datasets,
