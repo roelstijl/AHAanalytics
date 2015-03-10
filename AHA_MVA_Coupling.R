@@ -74,10 +74,17 @@ AHA_MVA_Coupling = function(ProxyListFile=paste0(settings$Ruwe_Datasets,"/25. Ko
   genericOutFileName=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/KoppelOutput")
   finalSetOutFileName=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/MVA_Coupled_AnalysisSet.Rda")
   
+  #First we process the fabrikanttype column into more useful data about the cable
+  SetName=load(ProxyListFile)
+  Set=get(SetName)
+  mindataset=AHA_MVA_ExtractCableData(Set)
+  save(mindataset,file=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/ProxylistRich.Rda"))
+  
+  
   #CBS - PC4 coupling
   SetNo=1
   cat("Starting ",SetNo," coupling \n")
-  currentInFile=ProxyListFile
+  currentInFile=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/ProxylistRich.Rda")
   currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
   coupling(no_of_keys=1,couple_method=3,key1_nameA="PC_6_van",key2_nameA="PC_4",
            outFileName=currentOutFile, Set1Name=currentInFile,Set2Name=InputFileList[[SetNo]])
