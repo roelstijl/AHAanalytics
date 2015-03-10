@@ -36,6 +36,7 @@ AHA_MVA_Coupling = function(ProxyListFile=paste0(settings$Ruwe_Datasets,"/25. Ko
   #matter for the eventual dataset
   
   #Specify the names of all sets to be coupled
+  Settype="LSkabels"
   Nfiles=12
   InputFileList=list(as.character(1:Nfiles))
   InputFileList[1]=paste0(settings$Ruwe_Datasets,"/15. CBS/CBS_Gecombineerd_Gemeente_Wijk_Buurt.Rda")
@@ -75,10 +76,16 @@ AHA_MVA_Coupling = function(ProxyListFile=paste0(settings$Ruwe_Datasets,"/25. Ko
   finalSetOutFileName=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/MVA_Coupled_AnalysisSet.Rda")
   
   #First we process the fabrikanttype column into more useful data about the cable
+  if (Settype=="LSkabels" | Settype=="MSkabels"){
   SetName=load(ProxyListFile)
   Set=get(SetName)
   mindataset=AHA_MVA_ExtractCableData(Set)
   save(mindataset,file=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/ProxylistRich.Rda"))
+  }else if (Settype=="LSmoffen" | Settype=="MSmoffen"){
+    
+  }else{
+    stop("Unknown settype, abort coupling")
+  }
   
   
   #CBS - PC4 coupling
