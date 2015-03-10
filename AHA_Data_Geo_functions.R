@@ -1,4 +1,44 @@
 # Contains all the geographical functions used in the project
+# Asset Health Analytics, Roel Stijl, 2014-2015
+
+AHA_RDCtoGPS = function(coordinates)
+  # Converts for RDS to GPS coordinates
+  # Created by R Stijl, Bearingpoint
+  # ! legacy
+{
+  Convert_Coordinate_System (data.table( x = coordinates[,1,with=FALSE],y= coordinates[,2,with=FALSE])
+                             ,from = "RDS", to = "lonlat",
+                             xcol ="x",ycol="y", plotgooglemaps=F)[,list(Coo_X,Coo_Y)]
+}
+
+Convert_Coordinate_System = function(mindataset,from = "lonlat", to = "RDS",xcol ="LOC_X_COORDINAAT",ycol="LOC_Y_COORDINAAT", plotgooglemaps=F){
+  # Function converts from coordinate system to other system and has the option to plot it
+  # Takes the entire dataset, but could be faster if the input data is smaller or just xy
+  # Expects a data table as entry and outputs a data table with coordinates added
+  fromcrs = switch(from,lonlat = "+init=epsg:4326",RDS = "+init=epsg:28992",error("not supported, add CRS system"))
+  tocrs   = switch(to,lonlat = "+init=epsg:4326",RDS = "+init=epsg:28992",error("not supported, add CRS system"))
+  
+  # Fix some issues with characters if present
+  if(is.character(mindataset[[x]]))
+  {
+    mindataset[,lon:=as.numeric(strrep(mindataset[[xcol]],",","."))]
+    mindataset[,lat:=as.numeric(strrep(mindataset[[ycol]],",","."))]
+  }
+  
+  # Convert to desired coordinate system
+  nona = (mindataset[[xcol]]!="")&(mindataset[[ycol]]!="")
+  co    = mindataset[nona,]
+  coordinates(co) = mindataset[nona ,list(lon,lat)]
+  proj4string(co) <- CRS(fromcrs)
+  
+  # Plotting is required
+  if(plotgooglemaps) plotGoogleMaps(co[1:min(ncol(co@data),15),2000])
+  
+  coo = coordinates(spTransform(co,CRS(tocrs)))
+  mindataset[nona,Coo_X:=coo[,1]]
+  mindataset[nona,Coo_Y:=coo[,2]]
+  return(mindataset)
+}
 
 # Wrapper for the covnersion of MDSYS files to usable coordinates--------------------
 processXY = function(file,mode,veld="Ligging",folder="1. BARlog"){
@@ -155,8 +195,6 @@ for (i in 1:length(geoData)){
 spatialList[removeIDs==1]=NULL
 mindataset=mindataset[!removeIDs,]
 
-
-
 #Merge the list of polygons in SpatialPolygons
 spatialset=SpatialPolygons(spatialList)  
 
@@ -173,40 +211,55 @@ return("Done")
 }
 
 # Function calculates the PC6 of files ---------------------------------
-processPC6 = function(file,mode,folder="1. BARlog"){
+processPC6 = function(file,mode,folder=paste0(settings$Ruwe_Datasets,"/","1. BARlog"),returndata=F){
   cat("starting\n")
   a=1
   
   switch (mode,
-          van_naar= {
-            load(paste0(settings$Ruwe_Datasets,"/",folder,"/",file,"_XY.Rda"));
-            cat("Coordinates naar\n")
-            datatable = AHA_Data_Determine_PC(mindataset[,list(Coo_X_van,Coo_Y_van,Coo_Y_naar,Coo_X_naar)],
-            x="Coo_X_naar",y="Coo_Y_naar",PC="PC_6_naar")
-            cat("Coordinates van\n")
+          naar= {
+            load(paste0(folder,"/",file,".Rda"))
+            setkeyv(masterdataset,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
+            datatable = AHA_Data_Determine_PC(unique(masterdataset[,list(Coo_X_van,Coo_Y_van,Coo_Y_naar,Coo_X_naar)]),x="Coo_X_naar",y="Coo_Y_naar",PC="PC_6_naar")
             datatable = AHA_Data_Determine_PC(datatable,x="Coo_X_van",y="Coo_Y_van",PC="PC_6_van",extrainfo=TRUE)  
             
+            setkeyv(masterdataset,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
+            setkeyv(datatable,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
+            mindataset=unique(datatable)[masterdataset]
+            },
+            
+          van_naar= {
+            load(paste0(folder,"/",file,"_XY.Rda"))
+            datatable = AHA_Data_Determine_PC(mindataset[,list(Coo_X_van,Coo_Y_van,Coo_Y_naar,Coo_X_naar)],
+            x="Coo_X_naar",y="Coo_Y_naar",PC="PC_6_naar")
+            datatable = AHA_Data_Determine_PC(datatable,x="Coo_X_van",y="Coo_Y_van",PC="PC_6_van",extrainfo=TRUE)
             
             setkeyv(mindataset,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
             setkeyv(datatable,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
-            uniDT=unique(datatable)
-            mindataset=uniDT[mindataset]
+            mindataset=unique(datatable)[mindataset]
             },
           
           punt= {
-            load(paste0(settings$Ruwe_Datasets,"/",folder,"/",file,"_XY.Rda"));
+            load(paste0(folder,"/",file,"_XY.Rda"));
             mindataset=AHA_Data_Determine_PC(mindataset,extrainfo=TRUE)}
   )
-  save(mindataset,file=paste0(settings$Ruwe_Datasets,"/",folder,"/",file,"_XY_PC6.Rda"))
+  if (returndata){
+    save(mindataset,file=paste0(folder,"/",file,"_XY_PC6.Rda"),compress=F)
+    return(mindataset)
+  }else{
+    save(mindataset,file=paste0(folder,"/",file,"_XY_PC6.Rda"),compress=F)
+  }
 }
 
 # Determines the PC regions corresponding to XY coordinates ---------------------
 AHA_Data_Determine_PC=function(datatable,x="Coo_X",y="Coo_Y",PC="PC_6",extrainfo=FALSE){
   # Function calculated the postal codes for regions that lack this (i.e BAR and NOR sets)
-  #
   # Prepare lines
+  
   cfg=list()
   cfg$pb = pbarwrapper (title = paste0("AHA_Data_Determine_PC, ",as.character(Sys.time())), label = "Preparing lines for comparison to pc6 regions", min = 0, max = 10000, initial = 0, width = 450);
+  try({datatable[[PC]] = NULL})
+  
+  # Load the datasets
   load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_6_Spatial.Rda"))
   load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial.Rda"))
   pc6$PC_4=substring(pc6$POSTCODE,1,4)
@@ -217,11 +270,11 @@ AHA_Data_Determine_PC=function(datatable,x="Coo_X",y="Coo_Y",PC="PC_6",extrainfo
   
   # First check in what PC 4 region the points are
   setpbarwrapper (cfg$pb, 500,label = "Check what PC4 the points are in"); 
-  datatable = datatable[(!is.na(datatable[,x,with=FALSE]))[,1],]
-  co = data.table(as.character(1:nrow(datatable)))
-  datatable[,V1:=co$V1]
+  datatable = datatable[!is.na(datatable[,x,with=F])[,1],]
   
   # Set the coordinates
+  co = data.table(as.character(1:nrow(datatable)))
+  datatable[,V1:=co$V1]
   coordinates(co) = datatable[,c(x,y),with=FALSE]
   proj4string(co) <- CRS("+init=epsg:28992")
   
@@ -231,8 +284,8 @@ AHA_Data_Determine_PC=function(datatable,x="Coo_X",y="Coo_Y",PC="PC_6",extrainfo
   datatable[,PC_4 := as.character(ret$PC4CODE)]
   
   if(extrainfo){
-    datatable[,Woonplaats := as.character(ret$PC4NAAM)]
-    datatable[,Gemeente   := as.character(ret$GEMNAAM)]
+    datatable[,Woonplaats     := as.character(ret$PC4NAAM)]
+    datatable[,Gemeente       := as.character(ret$GEMNAAM)]
     datatable[,GemeenteCode   := as.character(ret$GEMCODE)]
   }
   
