@@ -52,7 +52,7 @@ AHA_MVA_LineToPointSet = function (){
     
   }else{
     #save the output set to 1 file
-    save(mindataset,file=paste0(filename_no_ext,"_XY.Rda"))
+    save(mindataset,file=paste0(filename_no_ext,"_XYtrial.Rda"))
   }
   
 
@@ -100,16 +100,20 @@ sample.line = function(x, sdist=100)
   #tempresults <- SpatialPointsDataFrame(lsamp, data=data.frame(ID=rep(rownames(x@data[1,]),ns))) 
   
   #repeat above procedure for each row
-  Nstep=500 #number of steps before adding the current data to the results list, improves speed significantly
+  Nstep=2000 #number of steps before adding the current data to the results list, improves speed significantly
    for (i in 1:dim(x)[1] ) 
    {    
      ns <- round( (lgth[i] / sdist), digits=0)
      
      if (ns==0) {ns=1}
-     cat(i," of ",dim(x)[1], ", Number of points in line: ",ns,", ")
      lsamp <- spsample(x[i,], n=ns, type="regular", offset=c(0.5,0.5))
-     cat(length(lsamp)[1],"\n")
-     lsamp <- SpatialPointsDataFrame(lsamp, data=data.frame(ID=rep(rownames(x@data[i,]),ns)))     
+     
+     if(i %% 10000==1){
+     cat(i," of ",dim(x)[1], ", Number of points in line: ",ns,", ",length(lsamp)[1],"\n")
+     }
+     
+     ns2=length(lsamp)[1]
+     lsamp <- SpatialPointsDataFrame(lsamp, data=data.frame(ID=rep(rownames(x@data[i,]),ns2)))     
      if (i==dim(x)[1]){
        if (i %% Nstep==1){
          tempresults=lsamp
