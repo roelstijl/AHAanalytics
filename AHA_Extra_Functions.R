@@ -2,15 +2,38 @@
 cNA = function(dataset)
 {
   par(mfrow=c(1, 1), mar=c(2, 10, 0, 2))
-  empty = ""
-   l_ply(names(dataset), function(x) {
-     if(!is.character(dataset[,x,with=F])) {eval(parse(text=paste0("dataset[,",x,":= as.numeric(",x,")]" )))}
-     
-     })
+  
+#   for (x in which(!laply(dataset,is.character))){
+#     suppressMessages( set(dataset,i=NULL,j=x,as.character(dataset[,x,with=F])))
+#   }
+  setcolorder(dataset, cn(dataset))
 
-  barplot(t(cbind(sapply(dataset,function(x) sum(x=="",na.rm=T)),
+  barplot(t(cbind(sapply(dataset,function(x) sum(as.character(x)=="",na.rm=T)),
                   sapply(dataset,function(x) sum(is.na(x))),
-                  sapply(dataset,function(x) sum(!is.na(x))-sum(x=="",na.rm=T)))), horiz=TRUE,las=1,cex.names=0.7,legend = c("empty","NA","Not NA"))
+                  sapply(dataset,function(x) sum(!is.na(x))-sum(as.character(x)=="",na.rm=T)))), horiz=TRUE,las=1,cex.names=0.7,legend = c("empty","NA","Not NA"))
+}
+
+vector_in_DT = function(vector,DT){
+  # Compares all values in the seperate DT cols and returns number of matches without NA
+  # Removed cases spaces e.d. for fuzzier comparison
+  toremove = " |,|-|\\.|\\'"
+  vector2   = na.omit(gsub(toremove,"",tolower(vector)))
+  
+  a=data.table(laply(names(DT),function(x) 
+    cbind(x,sum((vector2  %in% na.omit(gsub(toremove,"",tolower(DT[[x]])))))))); 
+  
+  setnames(a,c("Name","Matches"))
+  a$Matches = as.numeric(a$Matches)
+  setorder(a,Matches);
+  cat(paste0("Results\nMaximum: ", length(vector), ", with NAs: ", 
+             sum(is.na(vector)),", best match: ",max(a$Matches,na.rm = T)," = ",
+             round(max(a$Matches,na.rm = T)/length(vector2)*100),"% (",
+             round(max(a$Matches,na.rm = T)/length(vector)*100),"% w NA)", "\n\n"))
+  return(a)
+}
+
+substrRight <- function(x, n){
+  substr(x, nchar(x)-n+1, nchar(x))
 }
 
 riverplot = function(){
@@ -91,17 +114,22 @@ savewrapper = function(..., file, compress=F)
 # Used for the progressbar
 pbarwrapper = function(title="PlaceHolder", label = "Starting...", max = 1,min = 0,initial = 0,width = 450)
 {
+  cat("\n")
   gltitle <<- title
   label     = paste0(title, ": ",label)
   pb        = txtProgressBar2(title = title, label = label, min = 0, max = max, initial = 0, style = 3)
   glpc    <<-  0
+  glpb    <<- pb
   return(pb)
 }
 
 # Used for the progressbar
-setpbarwrapper = function(pb,index=-1,label="title",title=""){
+setpbarwrapper = function(pb=T,index=-1,label="title",title=""){
   if (title!=""){
     gltitle <<-title
+  }
+  if (is.logical(pb)){
+    pb=glpb
   }
   if (index==-1){
     glpc <<- glpc+1; 

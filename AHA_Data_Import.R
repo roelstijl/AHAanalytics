@@ -24,16 +24,20 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
   
   # Do all the loading and modifying of files -------------------------------
   # Define the location of your data based on the system used
+  cfg           = list()
+  cfg$compress  = F
+  cfg$started   = Sys.time()
+  shinyfolder   = "Shiny"
+  pb = pbarwrapper (title = "Import", label = "Starting...", min = 0, max = length(datafiles)*3, initial = 0, width = 450); pc=0;
+  
 
   if (folder == "automatic"){
     filechooser= choose.files(default = paste0(settings$Bron_Datasets,"/*"))
     datafiles  = basename(filechooser)
     folder     = strsplit(tail(strsplit(dirname(filechooser),"/")[[1]],1)," ")[[1]][2]
-    curdataname = substring(datafiles[[1]],1,nchar(datafiles[[1]])-4)
+    curdataname = file_path_sans_ext(datafiles[[1]])
     setfolder  = tail(strsplit(dirname(filechooser),"/")[[1]],1)
-    headerfile = paste0(settings$Ruwe_Datasets,"/",
-                        setfolder,"/",
-                        substring(datafiles[[1]],1,nchar(datafiles[[1]])-4),"_headers.xlsx")
+    headerfile = paste0(settings$Ruwe_Datasets,"/",setfolder,"/",curdataname,"_headers.xlsx")
   } 
   else{
     setfolder     = list.files(settings$Bron_Datasets,pattern=folder)[1]; 
@@ -51,20 +55,14 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
   if(isempty(datafiles)){warning("File not found! \n")}
   if(isempty(setfolder)){warning("Source folder not found! \n")}
   
-  
   dir.create(paste0(settings$Ruwe_Datasets,"/",setfolder), showWarnings = FALSE)
-  
-  cfg           = list()
-  cfg$started   = Sys.time()
-  shinyfolder   = "Shiny"
-  pb = pbarwrapper (title = "Import", label = "Starting...", min = 0, max = length(datafiles)*3, initial = 0, width = 450); pc=0;
   
   # Import data and rename cols
   for (filenumber in 1:length(datafiles))
   {
-    sourcefile  = paste0(settings$Bron_Datasets,"/",setfolder,"/",datafiles[filenumber])   
-    curdataname = substring(datafiles[filenumber],1,nchar(datafiles[filenumber])-4);
-    curdataext  = substring(datafiles[filenumber],nchar(datafiles[filenumber])-2,nchar(datafiles[filenumber]));
+    sourcefile  = paste0(settings$Bron_Datasets,"/",setfolder,"/",datafiles[filenumber])
+    curdataname = file_path_sans_ext(datafiles[[filenumber]])
+    curdataext  = file_ext(datafiles[[filenumber]])
     
     setpbarwrapper (pb, title = paste0("AHA_Data_Import, Started:",cfg$started," ,file: ",datafiles[filenumber]), label = "Starting import"); 
     
@@ -128,8 +126,8 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
     
 # Set colclasses to the desired (excel sheet)
 for(i in header[header[,5]=="numeric",1]) {mindataset[,i] = as.numeric(gsub(",",".",mindataset[,i]))}
-for(i in header[header[,5]=="integer",1]) {mindataset[,i] = as.integer(mindataset[,i])}
-for(i in header[header[,5]=="logical",1]) {mindataset[,i] = as.logical(mindataset[,i])}
+for(i in header[header[,5]=="integer",1]) {mindataset[,i] = as.integer(gsub(",",".",mindataset[,i]))}
+for(i in header[header[,5]=="logical",1]) {mindataset[,i] = as.logical(gsub(",",".",mindataset[,i]))}
 
 # The different date formats
 for(i in header[header[,5]=="date"|header[,5]=="dmy",1])           {mindataset[,i] = as.Date(dmy(mindataset[,i]))} #Timezone note taken into account for perforamnce
@@ -172,9 +170,9 @@ else if(mode=="load") {
   if (ID_Object) mindataset[,ID_Object:=1:nrow(mindataset)]
   
   if(curdataext=="shp") {
-    save(spatialsetdataframe,mindataset,dataclasses,file=savefile)} 
+    save(spatialsetdataframe,mindataset,dataclasses,file=savefile,compress=cfg$compress)} 
   else{
-    save(mindataset,dataclasses,file=savefile)
+    save(mindataset,dataclasses,file=savefile,compress=cfg$compress)
   }
   
   setpbarwrapper (pb, title = paste0("AHA_Data_Import,file: ",datafiles[filenumber]), label = "Done!");

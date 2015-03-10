@@ -26,3 +26,5 @@ AHAanalytics.Rproj
 AHA_GeoQuery_GridMerge.R
 AHA_KNMIconvert.R
 AHA_UniformizationCableTypes.R
+*.csv
+*.xlsx
