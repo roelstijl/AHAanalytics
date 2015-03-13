@@ -96,3 +96,21 @@ mindataset[DateRemoved>"2090-01-01",DateRemoved:=NA]
 mindataset[!is.na(DateRemoved),Status_ID:="Removed"]
 
 return(mindataset)}
+
+#Functie om kabels aan moffen te koppelen
+nnsearch_kabel_mof = function(kabelsset,moffenset,variable){
+  # Third use NN for Routenaam
+  nearest = nn2(kabelsset[!is.na(Coo_X_naar) & !is.na(kabelsset[[variable]]),list(Coo_X_naar,Coo_Y_naar)],moffenset[!is.na(Coo_X)&is.na(moffenset[[variable]]),list(Coo_X,Coo_Y)],k=1)
+  nearest2= nn2(kabelsset[!is.na(Coo_X_naar) & !is.na(kabelsset[[variable]]),list(Coo_X_van,Coo_Y_van)],moffenset[!is.na(Coo_X)&is.na(moffenset[[variable]]),list(Coo_X,Coo_Y)],k=1)
+  nnd = (nearest$nn.dists[,1]>=nearest2$nn.dists[,1])
+  nni = nearest$nn.idx[,1]; nni[nnd] = nearest2$nn.idx[nnd,1]
+  nni[!is.na(moffenset$Coo_X)&is.na(moffenset[[variable]])] = nni
+  
+  # output = rep(NA, nrow(moffenset))
+  
+  # output[is.na(kabelsset[[variable]])&!is.na(nni)] =
+  
+  output = kabelsset[[variable]][!is.na(kabelsset$Coo_X_naar)&!is.na(kabelsset[[variable]])][nni[!is.na(nni) & is.na(moffenset[[variable]])]]
+  
+  return(output)
+}
