@@ -54,11 +54,12 @@ if(temp){assets = list();
   
   setkey(assets$MSkabels,ID_BAR)
   assets$MSmoffen[,Routenaam_MS  := assets$MSkabels[list(assets$MSmoffen$MSkabel_ID_BAR)][,c("Routenaam_MS"),with=F]] #Koppel MS Routenaam aan MS mof
+  assets$MSmoffen[,ID_Hoofdleiding  := assets$MSkabels[list(assets$MSmoffen$MSkabel_ID_BAR)][,c("ID_Hoofdleiding"),with=F]] #Koppel MS Routenaam aan MS mof
   #sum(assets$MSmoffen$Routenaam_MS=="",na.rm=T)
   rm(MSkabels_allXY,mindataset)
   print(object.size(assets))
 }
-  load(file=paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_BAR_assets_temp.Rda"))
+  #load(file=paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_BAR_assets_temp.Rda"))
   
   #koppel LS moffen aan LS kabels
   LSkabels_allXY  =  assets$LSkabels[, c("ID_BAR","Coo_X_van","Coo_Y_van"),with=F]
@@ -68,8 +69,9 @@ if(temp){assets = list();
   moffen_NN       =  nn2(LSkabels_allXY[,c("Coo_X","Coo_Y"),with=F],assets$LSmoffen[,c("Coo_X","Coo_Y"),with=F],k=1)
   assets$LSmoffen$LSkabel_ID_BAR <-  LSkabels_allXY$ID_BAR[moffen_NN$nn.idx]
   setkey(assets$LSkabels,ID_BAR)
-  assets$LSmoffen[,ID_Hoofdleiding  := assets$LSkabels[list(assets$LSmoffen$LSkabel_ID_BAR)][,c("ID_Hoofdleiding","LS_HLD_ID"),with=F]] #Koppel LS hoofdleiding aan LS mof
-  
+  assets$LSmoffen$ID_Hoofdleiding  <- assets$LSkabels[list(assets$LSmoffen$LSkabel_ID_BAR)][,c("ID_Hoofdleiding"),with=F] #Koppel LS hoofdleiding aan LS mof
+  assets$LSmoffen$LS_HLD_ID  <- assets$LSkabels[list(assets$LSmoffen$LSkabel_ID_BAR)][,c("LS_HLD_ID"),with=F] #Koppel LS hoofdleiding aan LS mof  
+
   #s1 = sum(assets$LSmoffen$ID_Hoofdleiding=="",na.rm=T)
   #s2 = sum(is.na(assets$LSmoffen$ID_Hoofdleiding),na.rm=T)
   

@@ -42,14 +42,14 @@ setpbarwrapper(cfg$pb, label = "Calculating BAR data");
 assets = lapply(assets,function(x)
 {x[!(x$DateAdded == cfg$firstdate_BAR & x$Status_ID=="Active")]})
   
-minassets$MSkabels=assets$MSkabels[(!is.na(DateAdded)& DateAdded > cfg$firstdate_NOR & DateAdded < cfg$lastdate) | 
+assets$MSkabels=assets$MSkabels[(!is.na(DateAdded)& DateAdded > cfg$firstdate_NOR & DateAdded < cfg$lastdate) | 
                                  (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_NOR & DateRemoved < cfg$lastdate )]
-minassets$LSkabels=assets$LSkabels[(!is.na(DateAdded)& DateAdded > cfg$firstdate_NOR & DateAdded < cfg$lastdate ) | 
+assets$LSkabels=assets$LSkabels[(!is.na(DateAdded)& DateAdded > cfg$firstdate_NOR & DateAdded < cfg$lastdate ) | 
                                  (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_NOR & DateRemoved < cfg$lastdate )]
 
-minassets$MSmoffen=assets$MSmoffen[(!is.na(DateAdded)& DateAdded > cfg$firstdate_NOR & DateAdded < cfg$lastdate) | 
+assets$MSmoffen=assets$MSmoffen[(!is.na(DateAdded)& DateAdded > cfg$firstdate_NOR & DateAdded < cfg$lastdate) | 
                                  (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_NOR & DateRemoved < cfg$lastdate)]
-minassets$LSmoffen=assets$LSmoffen[(!is.na(DateAdded)& DateAdded > cfg$firstdate_NOR & DateAdded < cfg$lastdate) | 
+assets$LSmoffen=assets$LSmoffen[(!is.na(DateAdded)& DateAdded > cfg$firstdate_NOR & DateAdded < cfg$lastdate) | 
                                  (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_NOR & DateRemoved < cfg$lastdate)]
 
 

@@ -27,6 +27,7 @@ AHA_Proxy_KA_BAR_NOR =
   config$Status_ch    = c("In Bedrijf->Buiten Bedrijf","LS->BL","MS->BM", "LS_TNA->BL","LS->NL","1536->BB","3->PG",
                           "LS_TN->BL","12->BB","MS->Buiten Bedrijf","MS->NM","LS->BL_TN","LM->BM","8->BB","513->BB",
                           "1025->BB" ,"2048->BB") # De status changes waarbij kabels die in bedrijf zijn uit bedrijf worden genomen
+  develop <<- list()
 
 # Load data if not available -----------------------------
     if (!exists("assets")) {
@@ -84,6 +85,10 @@ AHA_Proxy_KA_BAR_NOR =
                 l_ply(assets[1:4],function(x) try(setnames(x,"ID_LS_Hoofdleiding","ID_Hoofdleiding_2"),silent=T))
                 l_ply(assets[1:4],function(x) try(setnames(x,"ID_MS_Hoofdleiding","ID_Hoofdleiding_2"),silent=T))
                 l_ply(assets[1:4],function(x) try(setnames(x,"Bouwejaar","Bouwjaar"),silent=T))
+                assets$LSkabels$Index = assets$LSkabels$ID_BAR
+                assets$MSkabels$Index = assets$MSkabels$ID_BAR
+                assets$LSmoffen$Index = assets$LSmoffen$ID_BAR
+                assets$MSmoffen$Index = assets$MSmoffen$ID_BAR
                 assets$MSkabels$PC_4_van  <- substr(assets$MSkabels$PC_6_van,1,4)
                 assets$MSkabels$PC_4_naar <- substr(assets$MSkabels$PC_6_naar,1,4)}
     )
@@ -92,14 +97,14 @@ AHA_Proxy_KA_BAR_NOR =
     
 
 # Bepalen of kabels wel of niet vervangen is, aanmaken lijst met weg te schrijven data  ---------------------------
-    #tic()
-    pb  <- tkProgressBar(title = paste("Proxy AHA, method =",method, ", set =",set,as.character(Sys.time())), label = "Bepalen of kabels vervangen zijn (MS)", min = nr1, max = nr2, initial = nr1, width = 800);
-    #assets$MSkabels$is.verv <- kabel_verv(assets$MSkabels,config)
-    #setTkProgressBar(pb, (nr1+nr2)/2,label = "Bepalen of kabels vervangen zijn (LS)") ;
-    #assets$LSkabels$is.verv <- kabel_verv(assets$LSkabels,config)
-    #toc()
+#     tic()
+#     pb  <- tkProgressBar(title = paste("Proxy AHA, method =",method, ", set =",set,as.character(Sys.time())), label = "Bepalen of kabels vervangen zijn (MS)", min = nr1, max = nr2, initial = nr1, width = 800);
+#     assets$MSkabels$is.verv <- kabel_verv(assets$MSkabels,config)
+#     setTkProgressBar(pb, (nr1+nr2)/2,label = "Bepalen of kabels vervangen zijn (LS)") ;
+#     assets$LSkabels$is.verv <- kabel_verv(assets$LSkabels,config)
+#     toc()
 
-    #opslaan save(assets, file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_NOR_kabelsverv.Rda"),compress=F)
+    #save(assets, file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_BAR_kabelsverv.Rda"),compress=F)
       
     #Gooi overbodige kabels weg
     #assets$MSkabels = assets$MSkabels[!(assets$MSkabels$Status_ID=="Status_Change" & (assets$MSkabels$is.verv==F)),] #Gooi ongebruikte status_change weg
@@ -152,11 +157,10 @@ AHA_Proxy_KA_BAR_NOR =
     setkey(storingen$KLAKMelders,ID_Groep)
     
     
-
 # For-loop over klakmeldingen, aanroepen proxyfunctie,wegschrijven data -----------------------------
     for(voltage in c("LS","MS")){ 
       cat(paste(voltage,nr1))
-
+      
       klaktabel    <- storingen[[voltage]]                # aanmaken tabel met klakmeldingen
       if (nr2 > nrow(klaktabel)) { nr2 = nrow(klaktabel)}
       if (nr1 <= nr2){
@@ -166,6 +170,7 @@ AHA_Proxy_KA_BAR_NOR =
         setTkProgressBar(pb, nr1,label = paste("Proxy", voltage,"min=",nr1,",max=",nr2,"nr = ", counter)) ;        
           
         for(klaknr in klaktabel$ID_KLAK_Melding[nr1:nr2]){
+          print(klaknr,)
           klak          <- klaktabel[ID_KLAK_Melding==klaknr]
           klakmeldingen <- storingen$KLAKMelders[as.list(klak$ID_Groep)]
           
@@ -251,11 +256,12 @@ Proxy_TOPO = function(klakl,klakmelders,voltage,assets,assetsl,config)
              assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[0,]
              assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[0,]
            }else{
-             assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[HLDs,config$kabelscol,with=F]                                              # Zoeken op Postcode 6
+             
+             assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[HLDs,config$kabelscol,with=F]                                  # Zoeken op hoofdleiding
              if(nrow(assetsl$LSkabels[[klakl$ID_KLAK_Melding]] )>500){(paste(klakl$ID_KLAK_Melding, nrow(assetsl$LSkabels[[klakl$ID_KLAK_Melding]] )))}
              assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels",config)  # Aanroepen functie om tijdsverschillen e.d. te berekenen
              
-             assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[HLDs,config$moffencol,with=F]                                               # Zoeken op Postcode 6
+             assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[HLDs,config$moffencol,with=F]                                               # Zoeken op MS Route
              if(nrow(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] )>500){print(paste(klakl$ID_KLAK_Melding, nrow(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] )))}
              assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen",config)  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
            }
