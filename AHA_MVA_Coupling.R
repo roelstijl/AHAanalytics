@@ -36,6 +36,7 @@ AHA_MVA_Coupling = function(ProxyListFile=paste0(settings$Ruwe_Datasets,"/25. Ko
   #matter for the eventual dataset
   
   #Specify the names of all sets to be coupled
+  Settype="LSkabels"
   Nfiles=12
   InputFileList=list(as.character(1:Nfiles))
   InputFileList[1]=paste0(settings$Ruwe_Datasets,"/15. CBS/CBS_Gecombineerd_Gemeente_Wijk_Buurt.Rda")
@@ -74,10 +75,24 @@ AHA_MVA_Coupling = function(ProxyListFile=paste0(settings$Ruwe_Datasets,"/25. Ko
   genericOutFileName=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/KoppelOutput")
   finalSetOutFileName=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/MVA_Coupled_AnalysisSet.Rda")
   
+  #First we process the fabrikanttype column into more useful data about the cable
+  if (Settype=="LSkabels" | Settype=="MSkabels"){
+  SetName=load(ProxyListFile)
+  Set=get(SetName)
+  mindataset=AHA_MVA_ExtractCableData(Set)
+  save(mindataset,file=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/ProxylistRich.Rda"),compress=F)
+  }else if (Settype=="LSmoffen" | Settype=="MSmoffen"){
+    
+  }else{
+    stop("Unknown settype, abort coupling")
+  }
+  
+  
+  
   #CBS - PC4 coupling
   SetNo=1
   cat("Starting ",SetNo," coupling \n")
-  currentInFile=ProxyListFile
+  currentInFile=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/ProxylistRich.Rda")
   currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
   coupling(no_of_keys=1,couple_method=3,key1_nameA="PC_6_van",key2_nameA="PC_4",
            outFileName=currentOutFile, Set1Name=currentInFile,Set2Name=InputFileList[[SetNo]])
@@ -205,7 +220,7 @@ AHA_MVA_Coupling = function(ProxyListFile=paste0(settings$Ruwe_Datasets,"/25. Ko
  
   #save the final file with a more descriptive name
   load(currentOutFile)
-  save(mindataset,file=finalSetOutFileName)
+  save(mindataset,file=finalSetOutFileName,compress=F)
 
 }
 
@@ -567,7 +582,7 @@ coupling = function(no_of_keys=2,couple_method=1,includeNNdist=0,NNdistName="-",
   mindataset=coupledSet
   
   cat("Saving coupled set \n")
-  save(mindataset,file=outFileName)
+  save(mindataset,file=outFileName,compress=F)
   
   cat("Freeing memory \n")
   gc()
