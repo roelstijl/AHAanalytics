@@ -80,12 +80,13 @@ AHA_MVA_Coupling = function(ProxyListFile=paste0(settings$Ruwe_Datasets,"/25. Ko
   SetName=load(ProxyListFile)
   Set=get(SetName)
   mindataset=AHA_MVA_ExtractCableData(Set)
-  save(mindataset,file=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/ProxylistRich.Rda"))
+  save(mindataset,file=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/ProxylistRich.Rda"),compress=F)
   }else if (Settype=="LSmoffen" | Settype=="MSmoffen"){
     
   }else{
     stop("Unknown settype, abort coupling")
   }
+  
   
   
   #CBS - PC4 coupling
@@ -219,7 +220,7 @@ AHA_MVA_Coupling = function(ProxyListFile=paste0(settings$Ruwe_Datasets,"/25. Ko
  
   #save the final file with a more descriptive name
   load(currentOutFile)
-  save(mindataset,file=finalSetOutFileName)
+  save(mindataset,file=finalSetOutFileName,compress=F)
 
 }
 
@@ -581,7 +582,7 @@ coupling = function(no_of_keys=2,couple_method=1,includeNNdist=0,NNdistName="-",
   mindataset=coupledSet
   
   cat("Saving coupled set \n")
-  save(mindataset,file=outFileName)
+  save(mindataset,file=outFileName,compress=F)
   
   cat("Freeing memory \n")
   gc()
