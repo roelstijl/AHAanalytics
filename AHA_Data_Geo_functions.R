@@ -1,17 +1,16 @@
 # Contains all the geographical functions used in the project
 # Asset Health Analytics, Roel Stijl, 2014-2015
 
-AHA_RDCtoGPS = function(coordinates)
+AHA_RDCtoGPS = function(coordinates){  
   # Converts for RDS to GPS coordinates
   # Created by R Stijl, Bearingpoint
   # ! legacy
-{
   Convert_Coordinate_System (data.table( x = coordinates[,1,with=FALSE],y= coordinates[,2,with=FALSE])
                              ,from = "RDS", to = "lonlat",
                              xcol ="x",ycol="y", plotgooglemaps=F)[,list(Coo_X,Coo_Y)]
 }
 
-Convert_Coordinate_System = function(mindataset,from = "lonlat", to = "RDS",xcol ="LOC_X_COORDINAAT",ycol="LOC_Y_COORDINAAT", plotgooglemaps=F){
+Convert_Coordinate_System = function(mindataset,from = "lonlat", to = "RDS",xcol ="LOC_X_COORDINAAT",ycol="LOC_Y_COORDINAAT",xcolout ="Coo_X",ycolout ="Coo_Y", plotgooglemaps=F){
   # Function converts from coordinate system to other system and has the option to plot it
   # Takes the entire dataset, but could be faster if the input data is smaller or just xy
   # Expects a data table as entry and outputs a data table with coordinates added
@@ -19,29 +18,33 @@ Convert_Coordinate_System = function(mindataset,from = "lonlat", to = "RDS",xcol
   tocrs   = switch(to,lonlat = "+init=epsg:4326",RDS = "+init=epsg:28992",error("not supported, add CRS system"))
   
   # Fix some issues with characters if present
-  if(is.character(mindataset[[x]]))
+  if(is.character(mindataset[[xcol]]))
   {
-    mindataset[,lon:=as.numeric(strrep(mindataset[[xcol]],",","."))]
-    mindataset[,lat:=as.numeric(strrep(mindataset[[ycol]],",","."))]
+    eval(parse(text=paste0("mindataset[,",xcol,":=as.numeric(strrep(mindataset[[xcol]],\",\",\".\"))]")))
+    eval(parse(text=paste0("mindataset[,",ycol,":=as.numeric(strrep(mindataset[[ycol]],\",\",\".\"))]")))
   }
   
   # Convert to desired coordinate system
   nona = (mindataset[[xcol]]!="")&(mindataset[[ycol]]!="")
   co    = mindataset[nona,]
-  coordinates(co) = mindataset[nona ,list(lon,lat)]
+  eval(parse(text=paste0("coordinates(co) = mindataset[nona ,list(",xcol,",",ycol,")]")))
   proj4string(co) <- CRS(fromcrs)
   
   # Plotting is required
   if(plotgooglemaps) plotGoogleMaps(co[1:min(ncol(co@data),15),2000])
   
   coo = coordinates(spTransform(co,CRS(tocrs)))
-  mindataset[nona,Coo_X:=coo[,1]]
-  mindataset[nona,Coo_Y:=coo[,2]]
+  eval(parse(text=paste0("mindataset[nona,",xcolout,":=coo[,1]]")))
+  eval(parse(text=paste0("mindataset[nona,",ycolout,":=coo[,2]]")))
   return(mindataset)
 }
 
-# Wrapper for the covnersion of MDSYS files to usable coordinates--------------------
 processXY = function(file,mode,veld="Ligging",folder="1. BARlog"){
+  # Wrapper for the covnersion of MDSYS files to usable coordinates
+  # Can calculate beginning and end of lines
+  # Can convert points into XY
+  # Has a function to convert oracle geospatial into R geospatial lines (lines)
+  
   load(paste0(settings$Ruwe_Datasets,"/",folder,"/",file,".Rda"));
 
   setnames(mindataset,veld,"veld")
@@ -49,17 +52,18 @@ processXY = function(file,mode,veld="Ligging",folder="1. BARlog"){
   
   if (mode == "lines"){
     mindataset = AHA_Data_BAR_Geometry(mindataset[,list(ID_Object,veld)],mode,atype)
-    save(mindataset,file=paste0(settings$Ruwe_Datasets,"/",folder,"/",file,"_Geospatial.Rda"))}
-  else{
+    save(mindataset,file=paste0(settings$Ruwe_Datasets,"/",folder,"/",file,"_Geospatial.Rda"),compress = F)
+  } else{
     mindataset = cbind(mindataset[,notveld,with=F],AHA_Data_BAR_Geometry(mindataset[,list(ID_Object,veld)],mode,atype))
-    save(mindataset,file=paste0(settings$Ruwe_Datasets,"/",folder,"/",file,"_XY.Rda"))}
+    save(mindataset,file=paste0(settings$Ruwe_Datasets,"/",folder,"/",file,"_XY.Rda"),compress = F)
+  }
 }
 
-# Converts the BAR geoinfo to something usefull -----------------------------
 AHA_Data_BAR_Geometry = function(dataset,mode="lines",atype="kabels",DT = "none"){
-# MDsys is the collumn with the GEO-information ()
+# Converts the BAR geoinfo to something usefull
+
 # Converts the following "MDSYS.SDO_GEOMETRY(2001,28992,MDSYS.SDO_POINT_TYPE(185462.693,436911.424,NULL),NULL,NULL)"
-# cfg$modes: 
+# modes
 # lines (export plotable lines)
 # beginend (export the beginning and end of each polygon)
 # position (export the avg location of the polygon)
@@ -67,68 +71,38 @@ AHA_Data_BAR_Geometry = function(dataset,mode="lines",atype="kabels",DT = "none"
 # Settings
 cfg = list();
 cfg$mode      = mode
-cfg$noloops   = 20
-cfg$pb        = pbarwrapper (title = paste0("AHA_Data_BAR_Geometry ",Sys.time()), label = "Starting...", max = cfg$noloops+1); pc=0;
+cfg$pb        = pbarwrapper(title = paste0("AHA_Data_BAR_Geometry ",Sys.time()), label = "Starting...", max = 5);
 cfg$atype     = ifelse(cfg$mode=="position","moffen","kabels") # Legacy
-
-# cut the data into blocks, prevents memory issues
-dataset[,loopy:=(ceil(seq(0.000000001,cfg$noloops,length.out=nrow(dataset))))]
-
-# The magic
-mdsysout =  dlply(dataset,
-                  .(loopy),
-                  calculatemdsys,
-                   cfg = cfg,
-                  .parallel  = settings$parallel)
    
-setpbarwrapper (cfg$pb, cfg$noloops +1,label = "Done");
+# Extract the coordinated from the character array
+setpbarwrapper (cfg$pb, label = "Converting to data tables in list");
 
-#   map= plotGoogleMaps(finaloutput,legend=FALSE,strokeColor = "Blue",strokeWeight = 100)
-return(do.call(rbind,mdsysout))
-}
-
-# Loop over the values in order to prevent memory issues -------------------------------------
-calculatemdsys = function(dataset,cfg=NA) {
-  
- 
-  
-  loopy = mean(dataset$loopy)
-  mdsys = data.table(dataset)
-  setpbarwrapper (cfg$pb, loopy,title = paste0("AHA_Data_BAR_GEOMETRY, loop: ", loopy," of ", cfg$noloops, " n=", length(mdsys)),label = "Splitting strings"); 
-  mdsys = dataset$veld[!is.na(dataset$veld)]
-  mdsys = strsplit(mdsys, "\\(|\\)"); 
-  setpbarwrapper (cfg$pb, loopy,label = "Converting to data tables in list");
-  
-  # Extract the coordinated from the character array
-  mdsys=switch(cfg$atype,
-               kabels = {temp = llply(mdsys,function(x) t(matrix(as.numeric(do.call(rbind, strsplit(x[7],","))),2,)))
-                         names(temp) = as.character(1:length(temp))
-                         temp[which(!laply(temp,function(x) any(is.na(x))))]},
-               
-               moffen = laply(mdsys,function(x) t(matrix(as.numeric(strsplit(x[3],",")[[1]][1:2],2)))));   
-  setpbarwrapper (cfg$pb, loopy,label = "Converting to selected output"); 
+dataset[!is.na(veld),mdsys := strsplit(veld[!is.na(veld)], "\\(|\\)")]
+switch(cfg$atype,
+           kabels = {dataset[!is.na(veld),Coo := llply(mdsys,function(x) t(matrix(as.numeric(do.call(rbind, strsplit(x[7],","))),2,)))]},
+           moffen = {dataset[!is.na(veld),Coo := laply(mdsys,function(x) t(matrix(as.numeric(strsplit(x[3],",")[[1]][1:2],2))))]}
+           );   
   
   # Preprocess the geospatial data
-  mdsys= switch(cfg$mode,
-                lines = llply(1:length(mdsys),
+  setpbarwrapper (cfg$pb, label = "Converting to selected output"); 
+  switch(cfg$mode,
+                lines = return(SpatialLines(llply(1:length(mdsys),
                               function(x) 
-                              {return(Lines(list(Line(mdsys[x])),dataset[x,ID_Object]))}),
+                                {return(Lines(list(Line(dataset$mdsys[x])),dataset[x,ID_Object]))}),
+                              proj4string=CRS("+init=epsg:28992"))),
                 
-                beginend = llply(mdsys,function(x) cbind(x[1,],x[nrow(x),])),
-                position = mdsys,
-                points   = mdsys)
-  
-# Convert it to geospatial data
-setpbarwrapper (cfg$pb, loopy,label = "Converting to geospatial output");
-mdsys = switch(cfg$mode,
-  lines = SpatialLines(mdsys,proj4string=CRS("+init=epsg:28992")),
-  beginend = data.table(t(matrix(unlist(mdsys),4,length(mdsys)))),
-  position = data.table(mdsys))
-
-a  =  switch(cfg$mode,
-             beginend = {setnames(mdsys,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))},
-             position = {setnames(mdsys,c("Coo_X","Coo_Y"))})
-return(mdsys)
+                beginend = {dataset[,Coo_X_van :=laply(Coo,function(x) x[1,1])];       dataset[,Coo_Y_van :=laply(Coo,function(x) x[1,2])]
+                            dataset[,Coo_X_naar:=laply(Coo,function(x) x[nrow(x),1])]; dataset[,Coo_Y_naar:=laply(Coo,function(x) x[nrow(x),2])]},
+                position = {dataset[,Coo_X:=laply(Coo,function(x) x[1,1])]; dataset[,Coo_Y:=laply(Coo,function(x) x[1,2])]},
+                points   = {dataset[,Coo_X:=laply(Coo,function(x) x[1,1])]; dataset[,Coo_Y:=laply(Coo,function(x) x[1,2])]})
+         
+setpbarwrapper(cfg$pb,label = "Done");
+return(
+  switch(cfg$mode,
+         beginend = dataset[,list(Coo_X_van,Coo_Y_van,Coo_X_naar,Coo_Y_naar)],
+         position = dataset[,list(Coo_X,Coo_Y)],
+         points   = dataset[,list(Coo_X,Coo_Y)])
+  )
 }
 
 AHA_MDsysGeo_Conversion = function (){
@@ -210,14 +184,14 @@ save(spatialset,spatialsetdataframe,mindataset,dataclasses,file=savefile)
 return("Done") 
 }
 
-# Function calculates the PC6 of files ---------------------------------
 processPC6 = function(file,mode,folder=paste0(settings$Ruwe_Datasets,"/","1. BARlog"),returndata=F){
-  cat("starting\n")
-  a=1
+  # Function calculates the PC6 of files
   
+  a=1  
   switch (mode,
-          naar= {
+          van_naar_NOR= {
             load(paste0(folder,"/",file,".Rda"))
+            masterdataset$PC_6_van_original = masterdataset$PC_6_van
             setkeyv(masterdataset,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
             datatable = AHA_Data_Determine_PC(unique(masterdataset[,list(Coo_X_van,Coo_Y_van,Coo_Y_naar,Coo_X_naar)]),x="Coo_X_naar",y="Coo_Y_naar",PC="PC_6_naar")
             datatable = AHA_Data_Determine_PC(datatable,x="Coo_X_van",y="Coo_Y_van",PC="PC_6_van",extrainfo=TRUE)  
@@ -226,6 +200,11 @@ processPC6 = function(file,mode,folder=paste0(settings$Ruwe_Datasets,"/","1. BAR
             setkeyv(datatable,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
             mindataset=unique(datatable)[masterdataset]
             },
+          
+          punt_NOR= {
+            load(paste0(folder,"/",file,".Rda"));
+            masterdataset[,PC_6_original := PC_6]
+            mindataset=AHA_Data_Determine_PC(masterdataset,x="Coo_X",y="Coo_Y",PC="PC_6",extrainfo=TRUE)},
             
           van_naar= {
             load(paste0(folder,"/",file,"_XY.Rda"))
@@ -240,7 +219,8 @@ processPC6 = function(file,mode,folder=paste0(settings$Ruwe_Datasets,"/","1. BAR
           
           punt= {
             load(paste0(folder,"/",file,"_XY.Rda"));
-            mindataset=AHA_Data_Determine_PC(mindataset,extrainfo=TRUE)}
+            mindataset=AHA_Data_Determine_PC(mindataset,extrainfo=TRUE)},
+          warning("Not a valid mode\n")
   )
   if (returndata){
     save(mindataset,file=paste0(folder,"/",file,"_XY_PC6.Rda"),compress=F)
@@ -262,8 +242,8 @@ AHA_Data_Determine_PC=function(datatable,x="Coo_X",y="Coo_Y",PC="PC_6",extrainfo
   # Load the datasets
   load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_6_Spatial.Rda"))
   load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial.Rda"))
-  pc6$PC_4=substring(pc6$POSTCODE,1,4)
-  pc6$POSTCODE=as.character(pc6$POSTCODE)
+  pc6@data$PC_4=substring(pc6@data$POSTCODE,1,4)
+  pc6@data$POSTCODE=as.character(pc6@data$POSTCODE)
   
   proj4string(pc6) <- CRS("+init=epsg:28992")
   proj4string(pc4) <- CRS("+init=epsg:28992")
@@ -280,7 +260,7 @@ AHA_Data_Determine_PC=function(datatable,x="Coo_X",y="Coo_Y",PC="PC_6",extrainfo
   
   # Extract PC4
   ret = data.table(co %over% pc4)
-  co$PC_4 = as.character(ret$PC4CODE)
+  co@data$PC_4 = as.character(ret[,PC4CODE])
   datatable[,PC_4 := as.character(ret$PC4CODE)]
   
   if(extrainfo){
@@ -290,8 +270,8 @@ AHA_Data_Determine_PC=function(datatable,x="Coo_X",y="Coo_Y",PC="PC_6",extrainfo
   }
   
   # Next repeat proces with the PC 6 regions
-  postcodes = sort(unique(datatable[datatable$PC_4 %in% pc6$PC_4,PC_4]))
-  co        = co[!is.na(co$PC_4)&datatable$PC_4 %in% pc6$PC_4,]
+  postcodes = sort(unique(datatable[datatable$PC_4 %in% pc6@data$PC_4,PC_4]))
+  co        = co[!is.na(co@data$PC_4) & datatable$PC_4 %in% pc6@data$PC_4,]
   
   # The magic function, wont work with alply :-(
   ret = data.table(matrix(as.numeric(NA),nrow(co),8))

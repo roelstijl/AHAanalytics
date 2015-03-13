@@ -15,7 +15,9 @@ processPC6("EAN_LS_Aansluitingen_XY","punt",folder="11. Nettopologie")
 # Processing of registered NAN-KLAK---------------
 AHA_Data_Import("Validatie_data","Koppeling KLAK-NRG","Koppeling KLAK-NRG","save")
 
-# KLAK/GISmutaties processing ----------------
+# KLAK processing ----------------
+KLAK_MS_fix_CooXY()
+
 AHA_Data_Import("KLAK","KLAK_KOPPEL_MELDING_GROEP","KLAK_KOPPEL_MELDING_GROEP","save")
 AHA_Data_Import("KLAK","KLAK_LS","KLAK_LS","save","yes")
 AHA_Data_Import("KLAK","KLAK_MS","KLAK_MS","save","yes")
@@ -41,8 +43,6 @@ processPC6("MH_NRG_MS_KABELS","van_naar")
 processPC6("MH_NRG_MS_MOFFEN","punt")
 processPC6("MH_NRG_LS_MOFFEN","punt")
 
-# Create a set for the NOR coupling later
-
 # Add the dates etc
 AHA_Data_BAR_Log()
   
@@ -58,8 +58,8 @@ AHA_Data_NOR_Log("ELCVERBINDINGSDELEN",backups=F)
 AHA_Data_NOR_Log("ELCVERBINDINGSKNOOPPUNTEN",backups=F)
 
 # Correct missing PC Naar
-processPC6("masterdataset_ELCVERBINDINGSDELEN","naar",paste0(settings$Input_Datasets,"/6. NOR"))
-processPC6("changes_ELCVERBINDINGSDELEN","naar",paste0(settings$Input_Datasets,"/6. NOR"))
+processPC6("masterdataset_ELCVERBINDINGSDELEN","van_naar_NOR",paste0(settings$Input_Datasets,"/6. NOR"))
+processPC6("masterdataset_ELCVERBINDINGSKNOOPPUNTEN","punt_NOR",paste0(settings$Input_Datasets,"/6. NOR"))
 
 # Post processing
 AHA_Data_NOR_Log_Postprocessing()
@@ -87,4 +87,11 @@ BAR_HLD_Subset= function(){
   BAR_MS_HLD = mindataset[,list(ID_NAN,ID_Hoofdleiding,ID_Verbinding)]
   
   save(BAR_LS_HLD,BAR_MS_HLD,file=paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_KABELS_HLD_Sample.Rda"))
+}
+
+KLAK_MS_fix_CooXY = function(){
+# Converts the coordinates from lon lat to RDS
+load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK MS en klant melding.Rda"))
+Convert_Coordinate_System(mindataset)
+save(mindataset,file=paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK MS en klant melding_XY.Rda"))
 }

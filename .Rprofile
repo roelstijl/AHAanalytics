@@ -9,7 +9,7 @@
   settings <<- load_settings()
   
   # Install required packages if not .Firinstalled already -------------------------------
-  packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash","parallel","doParallel","maptools","RANN","proj4",
+  packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash","parallel","doParallel","maptools","RANN","proj4","tools",
                "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2","foreign","rgeos","stringr")
   
   for (m in 1:length(packages)){
@@ -28,9 +28,10 @@
   }
   
   # Source some functions --------------------------------
-  sourcefiles = c("AHA_Visual_RDS_to_GPS.R","AHA_Data_Import.R","AHA_Data_Batch_Processing.R",
+  sourcefiles = c("AHA_Data_Import.R","AHA_Data_Batch_Processing.R",
                   "AHA_Data_NOR_Log.R", 'AHA_Data_Geo_Functions.R', "AHA_Proxy_KA_Preprocessing.R",
-                  "AHA_Data_BAR_Log.R","AHA_Proxy_KA_Postprocessing.R","AHA_Extra_Functions.R")
+                  "AHA_Data_BAR_Log.R","AHA_Proxy_KA_Postprocessing.R","AHA_Extra_Functions.R",
+                  "AHA_MVA_Coupling.R","AHA_MVA_ExtractCableData.R")
   l_ply(sourcefiles,function(x) try(source(x)))
   
   # l_ply(ffiles,source)
@@ -107,7 +108,7 @@ load_settings = function(){
     settings$Bron_Datasets = "E:/1. Programmeerwerk/Multivariate Analyse/AHAdata/0. Ongebruikte en brondata"
     settings$Ruwe_Datasets = "E:/1. Programmeerwerk/Multivariate Analyse/AHAdata/1. Ruwe Datasets"
     settings$Input_Datasets = "E:/1. Programmeerwerk/Multivariate Analyse/AHAdata/2. Input Datasets"
-    settings$Analyse_Datasets = "E:/1. Programmeerwerk/Multivariate Analyse/AHAdata/AHAdata/3. Analyse Datasets"
+    settings$Analyse_Datasets = "E:/1. Programmeerwerk/Multivariate Analyse/AHAdata/3. Analyse Datasets"
     settings$Visuals = "E:/1. Programmeerwerk/Multivariate Analyse/AHAdata/5. Visuals and Tableau workbooks"
     settings$Results = "E:/1. Programmeerwerk/Multivariate Analyse/AHAdata/6. Results"
     .libPaths ("E:/1. Programmeerwerk/R packages")}
