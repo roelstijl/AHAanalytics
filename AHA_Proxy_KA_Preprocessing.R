@@ -41,17 +41,22 @@ minassets = list();
 minassets$LSkabels=assets$LSkabels[(!is.na(DateAdded)& DateAdded > cfg$firstdate_BAR & DateAdded < cfg$lastdate) | 
                                  (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_BAR & DateRemoved < cfg$lastdate)|
                                  (!is.na(DateStatus_ch)& DateStatus_ch > cfg$firstdate_BAR & DateStatus_ch < cfg$lastdate & substrRight(Status_ch,11)=="Uit Bedrijf")|
-                                 (!is.na(DateLength_ch)& DateLength_ch > cfg$firstdate_BAR & DateLength_ch < cfg$lastdate)]
+                                 (!is.na(DateLength_ch)& DateLength_ch > cfg$firstdate_BAR & DateLength_ch < cfg$lastdate)|
+                                   Date_Last_Modified!=as.Date("2014-05-18")]
 
 minassets$MSkabels=assets$MSkabels[(!is.na(DateAdded)& DateAdded > cfg$firstdate_BAR & DateAdded < cfg$lastdate) | 
                                      (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_BAR & DateRemoved < cfg$lastdate)|
                                      (!is.na(DateStatus_ch)& DateStatus_ch > cfg$firstdate_BAR & DateStatus_ch < cfg$lastdate & substrRight(Status_ch,11)=="Uit Bedrijf")|
-                                     (!is.na(DateLength_ch)& DateLength_ch > cfg$firstdate_BAR & DateLength_ch < cfg$lastdate)]
+                                     (!is.na(DateLength_ch)& DateLength_ch > cfg$firstdate_BAR & DateLength_ch < cfg$lastdate)|
+                                     Date_Last_Modified!=as.Date("2014-05-18")]
 
 minassets$MSmoffen=assets$MSmoffen[(!is.na(DateAdded)& DateAdded > cfg$firstdate_BAR & DateAdded < cfg$lastdate) | 
-                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_BAR & DateRemoved < cfg$lastdate)]
-minassets$LSmoffen=assets$LSmoffen[(!is.na(DateAdded)& DateAdded > cfg$firstdate_BAR & DateAdded < cfg$lastdate) | 
-                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_BAR & DateRemoved < cfg$lastdate)]
+                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_BAR & DateRemoved < cfg$lastdate)|
+                                   Date_Last_Modified!=as.Date("2014-05-18")]
+
+minassets$LSmoffen=assets$LSmoffen[((!is.na(DateAdded)& DateAdded > cfg$firstdate_BAR & DateAdded < cfg$lastdate) | 
+                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_BAR & DateRemoved < cfg$lastdate))|
+                                   Date_Last_Modified!=as.Date("2014-05-18")]
 
 assets = minassets
 
@@ -68,14 +73,16 @@ setpbarwrapper(cfg$pb, label = "Loading NOR data");
 # Set what dates unexplainable bumps in the data occured, NOR
 cfg$BadDates = list()
 cfg$BadDates$kabels = list(
-  DateAdded   = as.Date(c("2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05")),
-  DateRemoved = as.Date(c("1970-01-01","2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05")),
-  Date_Status_ch = as.Date(c("1970-01-01","2012-12-08")),
-  DateLength_ch = as.Date("1970-01-01","2015-01-03","2012-12-08","2007-11-03","2011-02-05","2007-09-08"))
+  DateAdded   = as.Date(c("2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05","2010-04-03","2012-12-08")),
+  DateRemoved = as.Date(c("2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05","2010-07-03")),
+  Date_Status_ch = as.Date(c("2012-12-08")),
+  DateLength_ch = as.Date(c("2015-01-03","2012-12-08","2007-11-03","2011-02-05","2007-09-08"))
+)
 
 cfg$BadDates$moffen = list(
-  DateAdded   = as.Date(c("2007-01-06","2011-06-04","2011-02-05","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05")),
-  DateRemoved = as.Date(c("1970-01-01","2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05","2011-08-06")))
+  DateAdded   = as.Date(c("2007-01-06","2011-06-04","2011-02-05","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05","2012-12-08","2010-04-03"),
+  DateRemoved = as.Date(c("2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05","2011-08-06","2010-07-03","2010-04-03")))
+)
 
 # Laad de assets en converteer de datums als deze verkeerd staan 
 load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_assets.Rda"))

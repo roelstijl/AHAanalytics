@@ -49,6 +49,26 @@ assets$MSkabels = assets$MSkabels[,Brontabel := "ms_kabels"]
 assets$LSmoffen = assets$LSmoffen[,Brontabel := "ls_moffen"]
 assets$MSmoffen = assets$MSmoffen[,Brontabel := "ms_moffen"]
 
+# Make sure we don't have any out of bound XY
+Assets$LSmoffen[Coo_X<60000 | Coo_X>260000 |Coo_Y<400000|Coo_Y>650000, Coo_X:=NA]
+Assets$LSmoffen[Coo_X<60000 | Coo_X>260000 |Coo_Y<400000|Coo_Y>650000, Coo_Y:=NA]
+Assets$LSkabels[Coo_X_van<60000 | Coo_X_van>260000 |Coo_Y_van<400000|Coo_Y_van>650000, Coo_X_van:=NA]
+Assets$LSkabels[Coo_X_van<60000 | Coo_X_van>260000 |Coo_Y_van<400000|Coo_Y_van>650000, Coo_Y_van:=NA]
+Assets$LSkabels[Coo_X_naar<60000 | Coo_X_naar>260000 |Coo_Y_naar<400000|Coo_Y_naar>650000, Coo_X_naar:=NA]
+Assets$LSkabels[Coo_X_naar<60000 | Coo_X_naar>260000 |Coo_Y_naar<400000|Coo_Y_naar>650000, Coo_Y_naar:=NA]
+Assets$MSmoffen[Coo_X<60000 | Coo_X>260000 |Coo_Y<400000|Coo_Y>650000, Coo_X:=NA]
+Assets$MSmoffen[Coo_X<60000 | Coo_X>260000 |Coo_Y<400000|Coo_Y>650000, Coo_Y:=NA]
+Assets$MSkabels[Coo_X_van<60000 | Coo_X_van>260000 |Coo_Y_van<400000|Coo_Y_van>650000, Coo_X_van:=NA]
+Assets$MSkabels[Coo_X_van<60000 | Coo_X_van>260000 |Coo_Y_van<400000|Coo_Y_van>650000, Coo_Y_van:=NA]
+Assets$MSkabels[Coo_X_naar<60000 | Coo_X_naar>260000 |Coo_Y_naar<400000|Coo_Y_naar>650000, Coo_X_naar:=NA]
+Assets$MSkabels[Coo_X_naar<60000 | Coo_X_naar>260000 |Coo_Y_naar<400000|Coo_Y_naar>650000, Coo_Y_naar:=NA]
+
+# Change some names mostly from tableau insights
+try(setnames(assets$MSmoffen,"Wijziging_Naam","Naam_Wijziging"))
+assets$LSmoffen[Datum_Eind=="2099-12-31",Datum_Eind:=NA]
+assets$MSmoffen[Datum_Eind=="2099-12-31",Datum_Eind:=NA]
+
+
 # Save
 setpbarwrapper(pb, 6,label = "Saving to file")
 save(assets,file=paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_BAR_assets.Rda"))
@@ -94,5 +114,6 @@ if (assettype == "kabels")
 mindataset[,DateRemoved:=(max(Datum_Eind)),by=ID_NAN]
 mindataset[DateRemoved>"2090-01-01",DateRemoved:=NA]
 mindataset[!is.na(DateRemoved),Status_ID:="Removed"]
+mindataset[Datum_Eind>"2090-01-01",Datum_Eind:=NA]
 
 return(mindataset)}

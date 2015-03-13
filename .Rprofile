@@ -28,7 +28,7 @@
   }
   
   # Source some functions --------------------------------
-  sourcefiles = c("AHA_Data_Import.R","AHA_Data_Batch_Processing.R",
+  sourcefiles = c("AHA_Data_Import.R","AHA_Data_Batch_Processing.R","Tableau_Functions.R",
                   "AHA_Data_NOR_Log.R", 'AHA_Data_Geo_Functions.R', "AHA_Proxy_KA_Preprocessing.R",
                   "AHA_Data_BAR_Log.R","AHA_Proxy_KA_Postprocessing.R","AHA_Extra_Functions.R")
   l_ply(sourcefiles,function(x) try(source(x)))
