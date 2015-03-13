@@ -27,7 +27,8 @@ AHA_Proxy_KA_BAR_NOR =
   config$Status_ch    = c("In Bedrijf->Buiten Bedrijf","LS->BL","MS->BM", "LS_TNA->BL","LS->NL","1536->BB","3->PG",
                           "LS_TN->BL","12->BB","MS->Buiten Bedrijf","MS->NM","LS->BL_TN","LM->BM","8->BB","513->BB",
                           "1025->BB" ,"2048->BB") # De status changes waarbij kabels die in bedrijf zijn uit bedrijf worden genomen
-  develop <<- list()
+
+ develop <<- list()
 
 # Load data if not available -----------------------------
     if (!exists("assets")) {
@@ -85,10 +86,6 @@ AHA_Proxy_KA_BAR_NOR =
                 l_ply(assets[1:4],function(x) try(setnames(x,"ID_LS_Hoofdleiding","ID_Hoofdleiding_2"),silent=T))
                 l_ply(assets[1:4],function(x) try(setnames(x,"ID_MS_Hoofdleiding","ID_Hoofdleiding_2"),silent=T))
                 l_ply(assets[1:4],function(x) try(setnames(x,"Bouwejaar","Bouwjaar"),silent=T))
-                assets$LSkabels$Index = assets$LSkabels$ID_BAR
-                assets$MSkabels$Index = assets$MSkabels$ID_BAR
-                assets$LSmoffen$Index = assets$LSmoffen$ID_BAR
-                assets$MSmoffen$Index = assets$MSmoffen$ID_BAR
                 assets$MSkabels$PC_4_van  <- substr(assets$MSkabels$PC_6_van,1,4)
                 assets$MSkabels$PC_4_naar <- substr(assets$MSkabels$PC_6_naar,1,4)}
     )
@@ -97,14 +94,14 @@ AHA_Proxy_KA_BAR_NOR =
     
 
 # Bepalen of kabels wel of niet vervangen is, aanmaken lijst met weg te schrijven data  ---------------------------
-#     tic()
-#     pb  <- tkProgressBar(title = paste("Proxy AHA, method =",method, ", set =",set,as.character(Sys.time())), label = "Bepalen of kabels vervangen zijn (MS)", min = nr1, max = nr2, initial = nr1, width = 800);
-#     assets$MSkabels$is.verv <- kabel_verv(assets$MSkabels,config)
-#     setTkProgressBar(pb, (nr1+nr2)/2,label = "Bepalen of kabels vervangen zijn (LS)") ;
-#     assets$LSkabels$is.verv <- kabel_verv(assets$LSkabels,config)
-#     toc()
+    #tic()
+    pb  <- tkProgressBar(title = paste("Proxy AHA, method =",method, ", set =",set,as.character(Sys.time())), label = "Bepalen of kabels vervangen zijn (MS)", min = nr1, max = nr2, initial = nr1, width = 800);
+    #assets$MSkabels$is.verv <- kabel_verv(assets$MSkabels,config)
+    #setTkProgressBar(pb, (nr1+nr2)/2,label = "Bepalen of kabels vervangen zijn (LS)") ;
+    #assets$LSkabels$is.verv <- kabel_verv(assets$LSkabels,config)
+    #toc()
 
-    #save(assets, file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_BAR_kabelsverv.Rda"),compress=F)
+    #opslaan save(assets, file=paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_NOR_kabelsverv.Rda"),compress=F)
       
     #Gooi overbodige kabels weg
     #assets$MSkabels = assets$MSkabels[!(assets$MSkabels$Status_ID=="Status_Change" & (assets$MSkabels$is.verv==F)),] #Gooi ongebruikte status_change weg
@@ -138,6 +135,8 @@ AHA_Proxy_KA_BAR_NOR =
              dummy$LSkabels_van  = assets$LSkabels[,c("Index","PC_6_van"),with=F];setkey(dummy$LSkabels_van,PC_6_van)
              dummy$LSkabels_naar = assets$LSkabels[,c("Index","PC_6_naar"),with=F];setkey(dummy$LSkabels_naar,PC_6_naar)
              setkey(assets$MSkabels,Index);
+            
+             
              dummy$MSkabels_van  = assets$MSkabels[,c("Index","PC_4_van"),with=F];setkey(dummy$MSkabels_van,PC_4_van)
              dummy$MSkabels_naar = assets$MSkabels[,c("Index","PC_4_naar"),with=F];setkey(dummy$MSkabels_naar,PC_4_naar)
            },
@@ -157,10 +156,11 @@ AHA_Proxy_KA_BAR_NOR =
     setkey(storingen$KLAKMelders,ID_Groep)
     
     
+
 # For-loop over klakmeldingen, aanroepen proxyfunctie,wegschrijven data -----------------------------
     for(voltage in c("LS","MS")){ 
       cat(paste(voltage,nr1))
-      
+
       klaktabel    <- storingen[[voltage]]                # aanmaken tabel met klakmeldingen
       if (nr2 > nrow(klaktabel)) { nr2 = nrow(klaktabel)}
       if (nr1 <= nr2){
@@ -170,15 +170,15 @@ AHA_Proxy_KA_BAR_NOR =
         setTkProgressBar(pb, nr1,label = paste("Proxy", voltage,"min=",nr1,",max=",nr2,"nr = ", counter)) ;        
           
         for(klaknr in klaktabel$ID_KLAK_Melding[nr1:nr2]){
-          print(klaknr,)
+          print(paste(counter,klaknr,Sys.time()))
           klak          <- klaktabel[ID_KLAK_Melding==klaknr]
           klakmeldingen <- storingen$KLAKMelders[as.list(klak$ID_Groep)]
-          
+          try(
           assetsltb <- switch(method,
                               PC   = Proxy_PC_6(klak,klakmeldingen,voltage,assets,assetsltb,config,dummy),
                               TOPO = Proxy_TOPO(klak,klakmeldingen,voltage,assets,assetsltb,config),
                               XY   = Proxy_XY  (klak,klakmeldingen,voltage,assets,assetsltb,config,dummy)
-          )
+          ))
           counter       <- counter + 1; setTkProgressBar(pb, nr1 + counter,label = paste("Proxy", voltage,"min=",nr1,",max=",nr2,"nr=", counter)) ;
           
         }}
@@ -200,7 +200,7 @@ Proxy_PC_6 = function(klakl,klakmelders,voltage,assets,assetsl,config,dummy)
   switch(voltage,
          LS={
            PClijst = unique(c(klakl$PC_6,klakmelders$PC_6))
-           PClijst = PClijst[!is.na(PClijst)]
+           PClijst = na.omit(PClijst[(PClijst!="")])
            PCdt    = data.table(PC_6_naar=PClijst)
            
            
@@ -256,12 +256,11 @@ Proxy_TOPO = function(klakl,klakmelders,voltage,assets,assetsl,config)
              assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[0,]
              assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[0,]
            }else{
-             
-             assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[HLDs,config$kabelscol,with=F]                                  # Zoeken op hoofdleiding
+             assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[HLDs,config$kabelscol,with=F]                                              # Zoeken op Postcode 6
              if(nrow(assetsl$LSkabels[[klakl$ID_KLAK_Melding]] )>500){(paste(klakl$ID_KLAK_Melding, nrow(assetsl$LSkabels[[klakl$ID_KLAK_Melding]] )))}
              assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels",config)  # Aanroepen functie om tijdsverschillen e.d. te berekenen
              
-             assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[HLDs,config$moffencol,with=F]                                               # Zoeken op MS Route
+             assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = assets$LSmoffen[HLDs,config$moffencol,with=F]                                               # Zoeken op Postcode 6
              if(nrow(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] )>500){print(paste(klakl$ID_KLAK_Melding, nrow(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] )))}
              assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen",config)  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
            }
@@ -313,26 +312,27 @@ Proxy_XY = function(klakl,klakmelders,voltage,assets,assetsl,config,dummy)
              
              switch(config$set,
                     NOR = {#kabels
-                           dummy2=list() 
+                           dummy2=list()
+                           setkey(dummy$LSkabels,Coo_X_van)
                            dummy2$X_van                               <- dummy$LSkabels[J(XRange)]; #Zoeken op Xvan
-                           dummy2$X_van                               <- unique(na.omit(dummy2$X_van))
+                           dummy2$X_van                               <- unique(na.omit(dummy2$X_van),by=NULL)
                            setkey(dummy2$X_van,Coo_Y_van)
-                           dummy2$Indices_van                         <- dummy2$X_van[J(YRange)]   #Zoeken op Yvan
+                           dummy2$Indices_van                         <- dummy2$X_van[J(YRange),allow.cartesian=TRUE]   #Zoeken op Yvan
                            
                            setkey(dummy$LSkabels,Coo_X_naar)
                            dummy2$X_naar                              <- dummy$LSkabels[J(XRange)] #Zoeken op Xnaar
-                           dummy2$X_naar                              <- unique(na.omit(dummy2$X_naar))
+                           dummy2$X_naar                              <- unique(na.omit(dummy2$X_naar),by=NULL)
                            setkey(dummy2$X_naar,Coo_Y_naar)
-                           dummy2$Indices                             <- rbind(dummy2$Indices_van,dummy2$X_naar[J(YRange)])         #Zoeken op Ynaar, combineren
-                           dummy2$Indices                             <- unique(dummy2$Indices[!is.na(dummy2$Indices$Index),])      #Uniek en NA's verwijderen
+                           dummy2$Indices                             <- rbind(dummy2$Indices_van,dummy2$X_naar[J(YRange),allow.cartesian=TRUE])             #Zoeken op Ynaar, combineren
+                           dummy2$Indices                             <- unique(dummy2$Indices[!is.na(dummy2$Indices$Index),],by=NULL)  #Uniek en NA's verwijderen
                            assetsl$LSkabels[[klakl$ID_KLAK_Melding]]  <- assets$LSkabels[J(dummy2$Indices$Index)][,config$kabelscol,with=F]
                            
                            #Moffen
                            dummy2$X                                   <- dummy$LSmoffen[J(XRange)];
-                           dummy2$X                                   <- unique(na.omit(dummy2$X))
+                           dummy2$X                                   <- unique(na.omit(dummy2$X),by=NULL)
                            setkey(dummy2$X,Coo_Y)
-                           dummy2$Indices                             <- dummy2$X[J(YRange)]
-                           dummy2$Indices                             <- dummy2$Indices[!is.na(dummy2$Indices$Index),]
+                           dummy2$Indices                             <- dummy2$X[J(YRange),allow.cartesian=TRUE]
+                           dummy2$Indices                             <- unique(dummy2$Indices[!is.na(dummy2$Indices$Index),],by=NULL)
                            assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] <- assets$LSmoffen[J(dummy2$Indices$Index)][,config$moffencol,with=F]
                            rm(dummy2)},
                     BAR = {assetsl$LSkabels[[klakl$ID_KLAK_Melding]] <- assets$LSkabels[((Coo_X_van < Xmax & Coo_X_van > Xmin) & (Coo_Y_van < Ymax & Coo_Y_van > Ymin))|((Coo_X_naar < Xmax ) & (Coo_X_naar > Xmin ) &(Coo_Y_naar < Ymax) &(Coo_Y_naar > Ymin))][,config$kabelscol,with=F]               
@@ -351,26 +351,27 @@ Proxy_XY = function(klakl,klakmelders,voltage,assets,assetsl,config,dummy)
          },
          MS={
            #Bepaal ranges van X en Y
-           Xmin   = floor(klakl$Coo_X   - config$szoek$MS)
-           Xmax   = ceiling(klakl$Coo_X + config$szoek$MS)
-           Ymin   = floor(klakl$Coo_Y   - config$szoek$MS)
-           Ymax   = ceiling(klakl$Coo_Y + config$szoek$MS)
-           
+           Xmin   = floor(  min(klakl$Coo_X,klakmelders$Coo_X,na.rm=T) - config$szoek$MS)
+           Xmax   = ceiling(max(klakl$Coo_X,klakmelders$Coo_X,na.rm=T) + config$szoek$MS)
+           Ymin   = floor(  min(klakl$Coo_Y,klakmelders$Coo_Y,na.rm=T) - config$szoek$MS)
+           Ymax   = ceiling(max(klakl$Coo_Y,klakmelders$Coo_Y,na.rm=T) + config$szoek$MS)
+           warnings()
            if(!is.na(Xmin+Xmax+Ymin+Ymax)){
              XRange = c(Xmin:Xmax)
              YRange = c(Ymin:Ymax)
+             
+             #Zoeken op XY
+             switch(config$set,
+                    NOR = {assetsl$MSkabels[[klakl$ID_KLAK_Melding]] <- assets$MSkabels[((Coo_X_van %in% XRange) & (Coo_Y_van %in% YRange))|((Coo_X_naar %in% XRange)&(Coo_Y_naar %in% YRange)),config$kabelscol,with=F]                # Zoeken op XY
+                           assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] <- assets$MSmoffen[(Coo_X %in% XRange) & (Coo_Y %in% YRange),config$moffencol,with=F]},                                                                             # Zoeken op XY
+                    BAR = {assetsl$MSkabels[[klakl$ID_KLAK_Melding]] <- assets$MSkabels[((Coo_X_van < Xmax & Coo_X_van > Xmin) & (Coo_Y_van < Ymax & Coo_Y_van > Ymin))|((Coo_X_naar < Xmax ) & (Coo_X_naar > Xmin ) &(Coo_Y_naar < Ymax) &(Coo_Y_naar > Ymin)),config$kabelscol,with=F]               
+                           assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] <- assets$MSmoffen[((Coo_X < Xmax & Coo_X > Xmin) & (Coo_Y < Ymax & Coo_Y > Ymin)),config$moffencol,with=F]               
+                    })
            }
            else {
-             XRange = c(0)
-             YRange = c(0)
+             assetsl$MSkabels[[klakl$ID_KLAK_Melding]] <- assets$MSkabels[0,][,config$kabelscol,with=F]                # Lege tabel
+             assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] <- assets$MSkabels[0,][,config$kabelscol,with=F]                # Lege tabel
            }
-           #Zoeken op XY
-           switch(config$set,
-                  NOR = {assetsl$MSkabels[[klakl$ID_KLAK_Melding]] <- assets$MSkabels[((Coo_X_van %in% XRange) & (Coo_Y_van %in% YRange))|((Coo_X_naar %in% XRange)&(Coo_Y_naar %in% YRange)),config$kabelscol,with=F]                # Zoeken op XY
-                         assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] <- assets$MSmoffen[(Coo_X %in% XRange) & (Coo_Y %in% YRange),config$moffencol,with=F]},                                                                             # Zoeken op XY
-                  BAR = {assetsl$MSkabels[[klakl$ID_KLAK_Melding]] <- assets$MSkabels[((Coo_X_van < Xmax & Coo_X_van > Xmin) & (Coo_Y_van < Ymax & Coo_Y_van > Ymin))|((Coo_X_naar < Xmax ) & (Coo_X_naar > Xmin ) &(Coo_Y_naar < Ymax) &(Coo_Y_naar > Ymin)),config$kabelscol,with=F]               
-                         assetsl$MSmoffen[[klakl$ID_KLAK_Melding]] <- assets$MSmoffen[((Coo_X < Xmax & Coo_X > Xmin) & (Coo_Y < Ymax & Coo_Y > Ymin)),config$moffencol,with=F]               
-                  })
            
            
            assetsl$MSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$MSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels",config)  # Aanroepen functie om tijdsverschillen e.d. te berekenen
@@ -531,20 +532,6 @@ kabel_verv =  function(kabelset,config){
          })
   
   
-}
-
-# Filteren resultaten ----------------------------------------------
-Proxy_filter = function()
-{
-  #Selecteer alleen LS kabels
-  kabelsklak        <- kabelsklak[which(kabelsklak$Voltage %in% c("400V","Onbekend")),]
-  
-  #Selecteer verwijderde moffen die in de rondom de storing vervangen zijn
-  LSkabelsklakhld <- kabelsklak[which((kabelsklak$Rdiffc==1 & kabelsklak$vervc ==1)|kabelsklak$Ldiffc ==1),]
-  LSkabelsklakhld <- transform(LSkabelsklakhld, freq.KLAKmelding=ave(seq(nrow(LSkabelsklakhld)),ID_KLAK_Melding,FUN=length))
-  LSkabelsklakhld <- LSkabelsklakhld[which(LSkabelsklakhld$freq.KLAKmelding<6),]
-  table(table(LSkabelsklakhld$ID_KLAK_Melding))
-  table(LSkabelsklakhld$Netcomponent)
 }
 
 # Functie om alle proxymethoden te runnen -------------------------------------------------------

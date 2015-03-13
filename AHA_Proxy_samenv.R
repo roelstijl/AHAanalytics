@@ -31,16 +31,15 @@ proxy_samenv  <- function(global=F){
   }
 
   
-# Inladen storingsdata -------
+# Inladen storingsdata -------------------------------------
   if(!exists("storingen")){load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"))}
   storingen <- lapply(storingen, unique)
-  setkey(storingen$MS,ID_KLAK_Melding)
+  setkey(storingen$MS,ID_KLAK_Melding);setkey(storingen$LS,ID_KLAK_Melding);
   
-
   koppellijst = list()
   freqtabel   = data.frame(method=c("PC","TOPO","XY"))
   
-# Configuratie-instellingen
+# Configuratie-instellingen--------------------------------------------------
 config <- list()
 config$LSkabels$comp <- c("Netkabel (GPLK)","Netkabel (kunststof)")
 config$LSkabels$onbk <- c("","Anders, toelichten bij opm.")
@@ -79,7 +78,7 @@ koppellijst =list()  # Aanmaken koppellijst
     koppellijst[[klasse]]     <- dcast.data.table(koppellijst[[klasse]],formula = formpaste,value.var="method")  #Converteer koppelmethode van long naar wide
     setkey(koppellijst[[klasse]],ID_KLAK_Melding)
     
-    koppellijst[[klasse]]     <- storingen$MS[koppellijst[[klasse]],c("ID_KLAK_Melding","Datum_Verwerking_Gereed","Netcomponent",
+    koppellijst[[klasse]]     <- storingen[[voltage]][koppellijst[[klasse]],c("ID_KLAK_Melding","Datum_Verwerking_Gereed","Netcomponent",
                                                                       names(koppellijst[[klasse]])),with=F]
     koppellijst[[klasse]]$GIS_datum            <- ifelse(is.na(koppellijst[[klasse]]$Datum_Verwerking_Gereed),0,1)
 
