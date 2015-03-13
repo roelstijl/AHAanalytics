@@ -35,6 +35,24 @@ setkey(assets$MSkabels,ID_Hoofdleiding)
 setkey(MSHLDRoute,ID_Hoofdleiding)
 assets$MSkabels = unique(MSHLDRoute[,list(Routenaam,ID_Hoofdleiding)])[assets$MSkabels]
 
+#koppelen van kabelgegevens aan bijbehorende mof
+assets$MSmoffen$Routenaam        = NA
+assets$MSmoffen$ID_Hoofdleiding  = NA
+assets$MSmoffen$Datum_Bouwjaar   = NA
+assets$MSmoffen$Routenaam        = nnsearch_kabel_mof(assets$MSkabels,assets$MSmoffen, "Routenaam")
+assets$MSmoffen$ID_Hoofdleiding  = nnsearch_kabel_mof(assets$MSkabels,assets$MSmoffen, "ID_Hoofdleiding")
+assets$MSmoffen$Datum_Bouwjaar   = nnsearch_kabel_mof(assets$MSkabels,assets$MSmoffen, "Datum_Bouwjaar")
+
+assets$LSmoffen$ID_Verbinding    = NA
+assets$LSmoffen$ID_Hoofdleiding  = NA
+assets$LSmoffen$Datum_Bouwjaar   = NA
+assets$LSmoffen$ID_Verbinding    = nnsearch_kabel_mof(assets$LSkabels,assets$LSmoffen, "ID_Verbinding")
+assets$LSmoffen$ID_Hoofdleiding  = nnsearch_kabel_mof(assets$LSkabels,assets$LSmoffen, "ID_Hoofdleiding")
+assets$LSmoffen$Datum_Bouwjaar   = nnsearch_kabel_mof(assets$LSkabels,assets$LSmoffen, "Datum_Bouwjaar")
+
+assets <- lapply(assets,function(x){x$Datum_Bouwjaar[which(x$Datum_Bouwjaar > as.Date("2015-03-13"))] =
+  x$Datum_Bouwjaar[which(x$Datum_Bouwjaar>as.Date("2015-03-13"))]- years(100);return(x)})
+
 # Bereken postcode 4
 assets$LSmoffen[,PC_4:=substr(assets$LSmoffen$PC_6,1,4)]
 assets$LSkabels[,PC_4_van:=substr(assets$LSkabels$PC_6_van,1,4)]
