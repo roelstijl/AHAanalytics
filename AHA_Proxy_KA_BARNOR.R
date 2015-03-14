@@ -60,6 +60,9 @@ AHA_Proxy_KA_BAR_NOR =
     storingen$MS          = storingen$MS[!duplicated(storingen$MS$ID_KLAK_Melding),]
     storingen$LS          = storingen$LS[!duplicated(storingen$LS$ID_KLAK_Melding),]
     try(setnames(storingen$KLAKMelders, "Routenaam", "Routenaam_MS"))
+    #Weggoien HS assets
+    assets <- lapply(assets, function(ascomp){ascomp <- ascomp[!(ascomp$Netvlak=="HS"),]})
+  
     #PC_4 Toevoegen
     assets$MSmoffen$PC_4 = substr(assets$MSmoffen$PC_6,1,4)
     assets$LSmoffen$PC_4 = substr(assets$LSmoffen$PC_6,1,4)
@@ -91,7 +94,32 @@ AHA_Proxy_KA_BAR_NOR =
     )
     
     #nettopo$EAN_koppel$ID_Hoofdleiding_LS <- as.character(nettopo$EAN_koppel$ID_Hoofdleiding_LS) #zorgen dat hoofdleidingen characters zijn
+
+#Preprocess melders, gooi melders weg die te ver weg van de rest zitten-----------------------------
+if(meldersproc=T){
+    storingen$KLAKMelders = ddply(storingen$KLAKMelders,.(ID_KLAK_Melding),transform,
+                                  med_X=apply(as.matrix(dist(Coo_X,diag = T, upper = T)),1,median,na.rm=T),
+                                  med_Y=apply(as.matrix(dist(Coo_Y,diag = T, upper = T)),1,median,na.rm=T))
+    storingen$KLAKMelders$med_X[is.na(storingen$KLAKMelders$Coo_X)] = NA
+    storingen$KLAKMelders$med_Y[is.na(storingen$KLAKMelders$Coo_Y)] = NA
+    storingen$KLAKMelders$med_diff = sqrt(klakmelderssamp$med_X^2+storingen$KLAKMelders$med_Y^2)
+    storingen$KLAKMelders$koppeljanee = ((storingen$KLAKMelders$SubKlacht=="LS storing/schade" & storingen$KLAKMelders$med_diff<700 )|
+                                           (klakmelderssamp$SubKlacht=="MS storing/schade" & storingen$KLAKMelders$med_diff<7000))
+    storingen$KLAKMelders$koppeljanee
+}
+if(meldersproc=T){
+storingen$KLAKMelders = ddply(storingen$KLAKMelders,.(ID_KLAK_Melding),transform,
+                              med_X=apply(as.matrix(dist(Coo_X,diag = T, upper = T)),1,median,na.rm=T),
+                              med_Y=apply(as.matrix(dist(Coo_Y,diag = T, upper = T)),1,median,na.rm=T))
+storingen$KLAKMelders$med_X[is.na(storingen$KLAKMelders$Coo_X)] = NA
+storingen$KLAKMelders$med_Y[is.na(storingen$KLAKMelders$Coo_Y)] = NA
+storingen$KLAKMelders$med_diff = sqrt(klakmelderssamp$med_X^2+storingen$KLAKMelders$med_Y^2)
+storingen$KLAKMelders$koppeljanee = ((storingen$KLAKMelders$SubKlacht=="LS storing/schade" & storingen$KLAKMelders$med_diff<700 )|
+                                       (klakmelderssamp$SubKlacht=="MS storing/schade" & storingen$KLAKMelders$med_diff<7000))
+storingen$KLAKMelders$koppeljanee
+}
     
+
 
 # Bepalen of kabels wel of niet vervangen is, aanmaken lijst met weg te schrijven data  ---------------------------
     #tic()
@@ -208,11 +236,7 @@ Proxy_PC_6 = function(klakl,klakmelders,voltage,assets,assetsl,config,dummy)
            Indices = rbind(dummy$LSkabels_van[J(PClijst)][,c("Index"),with=F],dummy$LSkabels_naar[J(PClijst)][,c("Index"),with=F])
            Indices = unique(Indices$Index[!is.na(Indices$Index)])
            assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = assets$LSkabels[J(Indices),config$kabelscol,with=F]
-           if( nrow(assetsl$LSkabels[[klakl$ID_KLAK_Melding]])>80000){ 
-             Sys.sleep(1)
-             paste(paste(PClijst,Indices))
-             Sys.sleep(1)
-           }
+
            rm(Indices)
            #if(nrow(assetsl$LSkabels[[klakl$ID_KLAK_Melding]])>200){assetsl$LSkabels[[klakl$ID_KLAK_Melding]]=assetsl$LSkabels[[klakl$ID_KLAK_Melding]][,1:100]}
            assetsl$LSkabels[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSkabels[[klakl$ID_KLAK_Melding]],klakl,"kabels",config)  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
@@ -221,7 +245,9 @@ Proxy_PC_6 = function(klakl,klakmelders,voltage,assets,assetsl,config,dummy)
            assetsl$LSmoffen[[klakl$ID_KLAK_Melding]] = process.table(assetsl$LSmoffen[[klakl$ID_KLAK_Melding]],klakl,"moffen",config)  # Bereken, als er verwijderde of veranderde assets zijn, de datumverschillen
          },
          MS={
-           PClijst = list(unique(c(klakl$PC_4,substr(klakmelders$PC_4,1,4))))
+           PClijst = unique(c(klakl$PC_4,klakmelders$PC_4))
+           PClijst = PClijst[(PClijst!="")&(!is.na(PClijst))]
+           
            
            Indices = rbind(dummy$MSkabels_van[PClijst][,c("Index"),with=F],dummy$MSkabels_naar[PClijst][,c("Index"),with=F]) #Zoeken op PC4
            Indices = unique(Indices$Index[!is.na(Indices$Index)])

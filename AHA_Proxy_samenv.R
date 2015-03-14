@@ -35,6 +35,9 @@ proxy_samenv  <- function(global=F){
   if(!exists("storingen")){load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"))}
   storingen <- lapply(storingen, unique)
   setkey(storingen$MS,ID_KLAK_Melding);setkey(storingen$LS,ID_KLAK_Melding);
+  storingen$MS <- unique(storingen$MS)
+  setkey(storingen$LS,ID_KLAK_Melding);setkey(storingen$LS,ID_KLAK_Melding);  
+  storingen$LS <- unique(storingen$LS)
   
   koppellijst = list()
   freqtabel   = data.frame(method=c("PC","TOPO","XY"))
@@ -52,9 +55,9 @@ config$MSmoffen$comp <- c("Mof (kunststof)","Mof (massa)"," Mof (olie)","Overgan
 config$MSmoffen$onbk <- c("","Anders, toelichten bij opm.","Geen","Nog meten")
 
 #Quick-fix------------------------------------
-proxy_res$XY$MSkabels = proxy_res$TOPO$MSkabels[10071] #moffen LS nog niet goed gekoppeld in proxy-methode
-proxy_res$XY$MSmoffen = proxy_res$TOPO$MSmoffen[9963] #moffen LS nog niet goed gekoppeld in proxy-methode
-proxy_res$PC$MSkabels = proxy_res$TOPO$MSkabels[10071] #moffen LS nog niet goed gekoppeld in proxy-methode
+#proxy_res$XY$MSkabels = proxy_res$TOPO$MSkabels[10071] #moffen LS nog niet goed gekoppeld in proxy-methode
+#proxy_res$XY$MSmoffen = proxy_res$TOPO$MSmoffen[9963] #moffen LS nog niet goed gekoppeld in proxy-methode
+#proxy_res$PC$MSkabels = proxy_res$TOPO$MSkabels[10071] #moffen LS nog niet goed gekoppeld in proxy-methode
 
 koppellijst =list()  # Aanmaken koppellijst
   
