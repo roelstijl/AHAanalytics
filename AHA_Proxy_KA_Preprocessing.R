@@ -73,15 +73,15 @@ setpbarwrapper(cfg$pb, label = "Loading NOR data");
 # Set what dates unexplainable bumps in the data occured, NOR
 cfg$BadDates = list()
 cfg$BadDates$kabels = list(
-  DateAdded   = as.Date(c("2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05","2010-04-03","2012-12-08")),
-  DateRemoved = as.Date(c("2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05","2010-07-03")),
-  Date_Status_ch = as.Date(c("2012-12-08")),
-  DateLength_ch = as.Date(c("2015-01-03","2012-12-08","2007-11-03","2011-02-05","2007-09-08"))
+  DateAdded   = as.Date(c("2010-04-03", "2011-06-04", "2010-07-03", "2007-01-06" )),
+  DateRemoved = as.Date(c("2010-07-03", "2011-06-04")),
+  Date_Status_ch = as.Date(c("2000-01-01")),
+  DateLength_ch = as.Date(c("2009-05-09"))
 )
 
 cfg$BadDates$moffen = list(
-  DateAdded   = as.Date(c("2007-01-06","2011-06-04","2011-02-05","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05","2012-12-08","2010-04-03"),
-  DateRemoved = as.Date(c("2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05","2011-08-06","2010-07-03","2010-04-03")))
+  DateAdded   = as.Date(c(" 2011-06-04", "2010-07-03", "2007-01-06"),
+  DateRemoved = as.Date(c("2011-08-06", "2010-07-03", "2011-09-03")))
 )
 
 # Laad de assets en converteer de datums als deze verkeerd staan 

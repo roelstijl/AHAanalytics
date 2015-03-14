@@ -468,7 +468,6 @@ setkeyv(allXY,byvars)
 allXY = unique(newXY)[allXY[,names(allXY)[!(names(allXY) %in% c("ID_unique_present","ID_NAN_present","ID_Verbinding_present","Date_Last"))],with=F],allow.cartesian=T]
 cat(paste0("is NOT NA: NAN, ",sum(!is.na(allXY$ID_NAN_present))," of ",nrow(allXY)," = ",round(sum(!is.na(allXY$ID_NAN_present))/nrow(allXY)*100)," %\n"))
 
-# If nothing found try using the nearest neighbours
 nearest2 = nn2(
 allXY[!is.na(ID_NAN_present),byvars[1:2],with=F],          
 allXY[is.na(ID_NAN_present),byvars[1:2],with=F],
@@ -509,17 +508,18 @@ return(dataset)
 
 nnsearch_kabel_mof = function(kabelsset,moffenset,variable){
 # Third use NN for Routenaam
+if(!any(names(moffenset)==variable)) 
+  eval(parse(text=paste0( "moffenset[,",variable, ":= as.",
+       class(kabelsset[[variable]])
+       ,"(NA)]")))
 nearest = nn2(kabelsset[!is.na(Coo_X_naar) & !is.na(kabelsset[[variable]]),list(Coo_X_naar,Coo_Y_naar)],moffenset[!is.na(Coo_X)&is.na(moffenset[[variable]]),list(Coo_X,Coo_Y)],k=1)
 nearest2= nn2(kabelsset[!is.na(Coo_X_naar) & !is.na(kabelsset[[variable]]),list(Coo_X_van,Coo_Y_van)],moffenset[!is.na(Coo_X)&is.na(moffenset[[variable]]),list(Coo_X,Coo_Y)],k=1)
 nnd = (nearest$nn.dists[,1]>=nearest2$nn.dists[,1])
 nni = nearest$nn.idx[,1]; nni[nnd] = nearest2$nn.idx[nnd,1]
 nni[!is.na(moffenset$Coo_X)&is.na(moffenset[[variable]])] = nni
 
-# output = rep(NA, nrow(moffenset))
+output = kabelsset[[variable]][!is.na(kabelsset$Coo_X_naar)&!is.na(kabelsset[[variable]])][nni[!is.na(nni) & is.na(moffenset[[variable]])]]
 
-# output[is.na(kabelsset[[variable]])&!is.na(nni)] =
-  
-  output = kabelsset[[variable]][!is.na(kabelsset$Coo_X_naar)&!is.na(kabelsset[[variable]])][nni[!is.na(nni) & is.na(moffenset[[variable]])]]
 
 return(output)
 }
