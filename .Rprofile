@@ -94,9 +94,9 @@ load_settings = function(){
   
   # Laptop Michiel Musterd BearingPoint zBook
   else if (Sys.info()["nodename"] =="NLAMS4044583X") {
-    settings$Bron_Datasets = "F:/1. Alliander Datasets/2. Asset health analytics/0. Ongebruikte en brondata"
-    settings$Ruwe_Datasets = "F:/1. Alliander Datasets/2. Asset health analytics/1. Ruwe Datasets"
-    settings$Input_Datasets = "F:/1. Alliander Datasets/2. Asset health analytics/2. Input Datasets"
+    settings$Bron_Datasets = "D:/1. Alliander Datasets/2. Asset health analytics/0. Ongebruikte en brondata"
+    settings$Ruwe_Datasets = "D:/1. Alliander Datasets/2. Asset health analytics/1. Ruwe Datasets"
+    settings$Input_Datasets = "D:/1. Alliander Datasets/2. Asset health analytics/2. Input Datasets"
     settings$Analyse_Datasets = "-"
     settings$Visuals = "-"
     settings$Results = "-"
