@@ -31,7 +31,7 @@
   sourcefiles = c("AHA_Data_Import.R","AHA_Data_Batch_Processing.R",
                   "AHA_Data_NOR_Log.R", 'AHA_Data_Geo_Functions.R', "AHA_Proxy_KA_Preprocessing.R",
                   "AHA_Data_BAR_Log.R","AHA_Proxy_KA_Postprocessing.R","AHA_Extra_Functions.R",
-                  "AHA_MVA_Coupling.R","AHA_MVA_ExtractCableData.R")
+                  "AHA_MVA_Coupling.R","AHA_MVA_ExtractCableData.R", "AHA_Proxy_KA_BARNOR.R","AHA_Proxy_samenv.R")
   l_ply(sourcefiles,function(x) try(source(x)))
   
   # l_ply(ffiles,source)

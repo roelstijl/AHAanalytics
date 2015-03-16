@@ -74,11 +74,11 @@ cfg$BadDates$kabels = list(
   DateLength_ch = as.Date("1970-01-01","2015-01-03","2012-12-08","2007-11-03","2011-02-05","2007-09-08"))
 
 cfg$BadDates$moffen = list(
-  DateAdded   = as.Date(c("2007-01-06","2011-06-04","2011-02-05","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05")),
-  DateRemoved = as.Date(c("1970-01-01","2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05","2011-08-06")))
+  DateAdded   = as.Date(c("2007-01-06","2011-06-04","2010-03-04","2011-02-05","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05")),
+  DateRemoved = as.Date(c("1970-01-01","2007-01-06","2010-03-04","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05","2011-08-06")))
 
 # Laad de assets en converteer de datums als deze verkeerd staan 
-load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_assets.Rda"))
+#load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_assets.Rda"))
 try(setnames(assets$kabels,"PC_6_naar.y","PC_6_naar"))
 setpbarwrapper(cfg$pb, label = "Calculating NOR data");
 
