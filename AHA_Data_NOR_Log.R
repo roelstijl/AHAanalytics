@@ -1,159 +1,152 @@
 # Used to derive the monthly change version of the NOR using first month as a basis
-# Source can be backup or file, backups will be created every 6 months unless backup=FALSE
+# Source can be backup or file, cfg$backups will be created every 6 months unless backup=FALSE
 
-AHA_Data_NOR_Log = function(NORtable, source="file",backups=F){
+AHA_Data_NOR_Log = function(NORtable, datasource="file",backups=F){
 # Load functions and settings ----------------------------------------
-#   source = "file"
-#   NORtable = "ELCVERBINDINGSDELEN"
-datafolder    = paste0(settings$Ruwe_Datasets ,"/6. NOR");
-outputfolder  = paste0(settings$Input_Datasets,"/6. NOR");
-firstfile = 1
-
-# File settings ----------------------------------------------------------------
 par(mfrow=c(1,1))
-files = list.files(pattern=paste0(NORtable,".*\\.Rda"), path=datafolder,full.names=TRUE)
-filesshort = list.files(pattern=paste0(NORtable,".*\\.Rda"), path=datafolder)
-files=files[!grepl("masterdataset_backup",filesshort)]
-filesshort=filesshort[!grepl("masterdataset_backup",filesshort)]
 
-pb = pbarwrapper(title = "AHA_Data_NOR_Log start", label = "Start", max = length(filesshort)*3+1+backups*length(filesshort)/3);
+cfg = list()
+cfg$NORtable      = NORtable
+cfg$datafolder    = paste0(settings$Ruwe_Datasets ,"/6. NOR");
+cfg$outputfolder  = paste0(settings$Input_Datasets,"/6. NOR");
+cfg$datasource    = datasource
+cfg$backups       = backups 
+cfg$firstfile = 1
 
-# Select which collumns to compare
+cfg$files = list.files(pattern=paste0(cfg$NORtable,".*\\.Rda"), path=cfg$datafolder,full.names=TRUE)
+cfg$filesshort  = list.files(pattern=paste0(cfg$NORtable,".*\\.Rda"), path=cfg$datafolder)
+cfg$files=cfg$files[!grepl("masterdataset_backup",cfg$filesshort )]
+cfg$filesshort =cfg$filesshort [!grepl("masterdataset_backup",cfg$filesshort )]
+cfg$curdate = llply(cfg$filesshort,function(x) firstFri(gsub("[^0-9]","",x)))
 
-comparecols = switch (NORtable,ELCVERBINDINGSKNOOPPUNTEN=c("ID_unique", "ID_NAN","Bronsysteem","Spanningsniveau","Beheerder", "Soort",  "Constructie","Uitvoering","Isolatiemedium",  "Fabrikant","Coo_X","Coo_Y"),
-            ELCVERBINDINGSDELEN=c("ID_unique","Lengte","Bronsysteem","ID_NAN","Status","Beheerder","Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar","Fabrikanttype","Spanningsniveau","Diameter","Netverbinding"),
-            ELCVERBINDINGEN=c("ID_unique","Lengte","Bronsysteem",	"SpanningsNiveau","Beheerder",	"Soort",	"Soortnet"),
-            cat("Please add headers to compute\n\n"))
+cfg$pb = pbarwrapper(title = "AHA_Data_NOR_Log start", label = "Start", max = length(cfg$filesshort )*3+1+cfg$backups*length(cfg$filesshort )/3);
+
+cfg$comparecols = switch (cfg$NORtable,
+    ELCVERBINDINGSKNOOPPUNTEN=c("ID_unique", "ID_NAN","Bronsysteem","SpanningsNiveau","Beheerder", "Soort",  "Constructie","Fabrikanttype","Isolatiemedium",  "Fabrikant","Coo_X","Coo_Y"),
+    ELCVERBINDINGSDELEN=c("ID_unique","Lengte","Bronsysteem","ID_NAN","Status","Beheerder","Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar","Fabrikanttype","SpanningsNiveau"),
+    ELCVERBINDINGEN=c("ID_unique","Lengte","Bronsysteem",	"SpanningsNiveau","Beheerder",	"Soort",	"Soortnet"))
+
 # Plot to check for anomolies in file sizes
-plot(file.info(files)$size)
+plot(file.info(cfg$files)$size)
 
-# Load from backup functions --------------------------------------------
-if (source == "backup") {
-cat("Select backup file to continue from\n")
-bfile = file.choose()  
-cat("Select file to start import from\n")
-ffile = file.choose()  
-firstfile = which(filesshort==basename(ffile))
+# Load from backup functions
+if (cfg$datasource == "backup") load(AHA_NOR_Load_Backup(cfg))
 
-ifelse (length(firstfile)==1,
-load(bfile),
-error("Wrong file selected"))
-
-};
-
-# Loop over the files to be imported importing them one at a time --------------------------
-for (n in firstfile:length(files))
+for (n in cfg$firstfile:length(cfg$files))
 {
-# Determine date at which the file was created
-curdate = firstFri(gsub("[^0-9]","",filesshort[n]));
-setpbarwrapper(pb,  title = paste0("AHA_Data_NOR_Log, file: ",filesshort[n]), label = "Starting import"); 
+# Loop over the cfg$files to be imported importing them one at a time --------------------------
+if (n<=cfg$firstfile & cfg$datasource=="file") {
 
-# Load some data 
-load(files[n]) 
+masterdataset = AHA_NOR_Load_File(cfg,n)
 
-# Prepare the data set
-if(NORtable == "ELCVERBINDINGSDELEN" & class(mindataset$Lengte)=="character")  
-{cat("Correcting character lengths \n")
-mindataset$Lengte = as.numeric(sapply(mindataset$Lengte,fixnumber))}
-
-switch (NORtable,
-ELCVERBINDINGSKNOOPPUNTEN = {mindataset[,PC_2:=substr(PC_6,1,2)]},
-ELCVERBINDINGSDELEN       = {mindataset[,PC_2:=substr(PC_6_van,1,2)]})    
-
-# Define the unique ID composition
-ID_unique = switch (NORtable,
-            ELCVERBINDINGSDELEN       = mindataset[,ID_unique:=paste0(ID_Kabel,PC_2)],
-            ELCVERBINDINGEN           = mindataset[,ID_unique:=paste0(ID_Verbinding,ID_Hoofdleiding)],
-            ELCVERBINDINGSKNOOPPUNTEN = mindataset[,ID_unique:=paste0(ID_Bron,PC_2)],
-            cat("Please add headers to compute\n\n"))
-setkey(mindataset,ID_unique) 
-
-mindataset = unique(mindataset)
-
-mindataset$file         = n;  
-mindataset$DateAdded    = curdate; 
-mindataset$DateRemoved  = as.Date(NA); 
-mindataset$Status_ID    = "Active"
-
-if(n!=1) {if(any(!(colnames(masterdataset) %in% colnames(mindataset))))
-{set(mindataset,,colnames(masterdataset)[!(colnames(masterdataset) %in% colnames(mindataset))],(NA))}}
-
-# Create the NAN number or Verbindingen if not present already
-if(!any(colnames(mindataset)=="ID_NAN")){mindataset$ID_NAN=as.character(NA)}
-if(!any(colnames(mindataset)=="Bronsysteem")){mindataset$Bronsysteem=as.character(NA)}
-
-if(!any(colnames(mindataset)=="ID_Verbinding")) 
-{switch (NORtable,
- ELCVERBINDINGSKNOOPPUNTEN={mindataset$ID_Verbinding=as.character(NA)}
-)}
-
-# Create the master dataset from the first file ---------------------------
-if (n<=firstfile){
-if (source=="file"){                  
-# Load some variables for later
-masterdataset = mindataset}
-par(mfrow=c(2,1))  # For double plotting
-}
-# Calculate the difference between the master dataset and each file -----------
-if(n>firstfile){
-# Convert to data table for speed
-mindataset = mindataset[,colnames(masterdataset),with=FALSE]
+} else {
+mindataset = AHA_NOR_Load_File(cfg,n,masterdataset)
 
 # Check which IDs have been removed and which added
-setpbarwrapper(pb,  label = "Checking Added Removed"); 
+setpbarwrapper(cfg$pb,  label = "Checking unique IDs that have been added or removed"); 
+masterdataset[!(ID_unique %in% mindataset$ID_unique) & Status_ID != "Removed",DateRemoved := cfg$curdate[[n]]]
+masterdataset[!(ID_unique %in% mindataset$ID_unique) & Status_ID != "Removed",Status_ID   := "Removed"]
+masterdataset[(ID_unique %in% mindataset$ID_unique), Status_ID   := "Active"]
 
-Added    = !(mindataset$ID_unique %in% masterdataset$ID_unique)
-Removed  = !(masterdataset$ID_unique %in% mindataset$ID_unique)
+masterdataset = rbind(masterdataset,mindataset[!(mindataset$ID_unique %in% masterdataset$ID_unique )])
 
-# Merge the old and new IDs for comparison    
-combinedset  = rbind(masterdataset[which(!Removed),comparecols,with=FALSE],mindataset[which(!Added),comparecols,with=FALSE])
-differences = !(duplicated(combinedset,by=comparecols) | duplicated(combinedset,by=comparecols,fromLast=TRUE))
+setpbarwrapper(cfg$pb,  label = "Logging changes in select cols"); 
+cfg$relcompcols = cfg$comparecols[which(laply(cfg$comparecols,function(x) sum(is.na(mindataset[[x]]))/length(mindataset[[x]]))<1)]
 
-# Collect the changes in a data table
-if (!exists("changes")){
-changes = combinedset[differences];  
-changes[,Date:=curdate]
-} else {
-temp    = combinedset[differences]
-temp[,Date:=curdate]
-changes = rbind(changes, temp)
-}
+combinedset = rbind(
+  masterdataset[Status_ID == "Active",c(cfg$comparecols,"file"),with=F],
+  mindataset[,c(cfg$comparecols,"file"),with=F])
 
-# Write the result in a changelog    
-setpbarwrapper(pb, label = "Writing added removed");
-updatedmstr = logical(nrow(masterdataset));
-updatedmstr[!Removed]= differences[1:sum(!Removed)];
-updatedmind = logical(nrow(mindataset)); 
-updatedmind[!Added]  = differences[(sum(!Removed)+1):(sum(!Removed)+sum(!Added))]
+setkeyv(combinedset,cfg$relcompcols); 
+doubles = combinedset[((!duplicated(combinedset,fromLast=F) & !duplicated(combinedset,fromLast=T)))]
+doubles[,Date:=cfg$curdate[[n]]]
+ 
+# Collect changes and write them back to the masterdataset if needed
+ifelse(!exists("changes"),{changes = doubles},{changes = rbind(changes, doubles)})
 
-set(masterdataset,which(updatedmstr),comparecols,mindataset[updatedmind,comparecols,with=FALSE])   
+cfg$notcomparecols = c(names(masterdataset)[!names(masterdataset) %in% cfg$comparecols],"ID_unique")
 
-# Apply the removed sets
-set(masterdataset,which(Removed & is.na(masterdataset$DateRemoved)),"DateRemoved",curdate)
-set(masterdataset,which(Removed),"Status_ID","Removed")
-masterdataset = rbind(masterdataset,mindataset[which(Added),])
+setkey(masterdataset,ID_unique)
+setkey(mindataset,ID_unique)
+mindataset[,Date_Last_Change:=cfg$curdate[[n]]]
+masterdataset = rbind(masterdataset[!(masterdataset$ID_unique %in% doubles[file==n,ID_unique])],
+                          mindataset[doubles[file==n,ID_unique],cfg$comparecols,with=F][masterdataset[doubles[file==n,ID_unique],cfg$notcomparecols,with=F]]
+                      ,fill=T)
 
-# Save backups every 6 cycles if on
-if (n%%6 == 0 & backups) {
-setpbarwrapper(pb,  label = "Saving backup");
-save(changes,dataclasses,file=paste0(outputfolder,"/backup/masterdataset_backup_changes_",filesshort[n]));   
-save(masterdataset,file=paste0(outputfolder,"/backup/masterdataset_backup_masterdataset_",filesshort[n]));   
+# Save cfg$backups every 6 cycles if on
+if (n%%6 == 0 & cfg$backups) {
+setpbarwrapper(cfg$pb,  label = "Saving backup");
+save(changes,file=paste0(cfg$outputfolder,"/backup/masterdataset_backup_changes_",cfg$filesshort [n]));   
+save(masterdataset,file=paste0(cfg$outputfolder,"/backup/masterdataset_backup_masterdataset_",cfg$filesshort [n]));   
 
-setpbarwrapper(pb,  label = "Plotting");
+setpbarwrapper(cfg$pb,  label = "Plotting");
 try({barplot(rbind(table(masterdataset$DateRemoved)[2:n],table(masterdataset$DateAdded)[2:n]),beside=TRUE);  
  barplot(table(changes$Date))}
 )}
-}
-}
+}}
 
 # Save to file ----------------------------------
-setpbarwrapper(pb,  label = "Finished!! Saving to file");
+setpbarwrapper(cfg$pb,  label = "Saving to file");
 
-save(changes,file=paste0(outputfolder,"/changes_",NORtable,".Rda"),compress=F)   
-save(masterdataset,file=paste0(outputfolder,"/masterdataset_",NORtable,".Rda"),compress=F)   
+save(changes,file=paste0(cfg$outputfolder,"/changes_",cfg$NORtable,".Rda"),compress=F)   
+save(masterdataset,file=paste0(cfg$outputfolder,"/masterdataset_",cfg$NORtable,".Rda"),compress=F)   
 
 try({barplot(rbind(table(masterdataset$DateRemoved)[2:n],table(masterdataset$DateAdded)[2:n]),beside=TRUE);  
 barplot(table(changes$Date))})
+setpbarwrapper(cfg$pb,  label = "Done");
+
+}
+
+AHA_NOR_Load_Backup=function (cfg){
+# Loads the backups if requested
+  setpbarwrapper("Select backup file to continue from")
+  cfg$bfile = file.choose()  
+  setpbarwrapper("Select file to start import from")
+  cfg$ffile = file.choose()
+  cfg$firstfile = which(cfg$filesshort ==basename(cfg$ffile))
+  
+  ifelse (length(cfg$firstfile)==1,
+          return(cfg$bfile),
+          error("Wrong file selected"))
+
+}
+
+AHA_NOR_Load_File = function(cfg,n,masterdataset=NULL){
+  # Determine date at which the file was created
+  setpbarwrapper(cfg$pb,  title = paste0("AHA_Data_NOR_Log, file: ",cfg$filesshort[n]), label = "Starting import"); 
+  par(mfrow=c(2,1))
+  load(cfg$files[n])
+  
+  # Prepare the data set
+  if(class(mindataset$Lengte)=="character") mindataset$Lengte = as.numeric(gsub(",",".",mindataset$Lengte))
+  switch (cfg$NORtable,ELCVERBINDINGSKNOOPPUNTEN = {mindataset[,PC_2:=substr(PC_6,1,2)]},
+          ELCVERBINDINGSDELEN       = {mindataset[,PC_2:=substr(PC_6_van,1,2)]})    
+  
+  # Define the unique ID composition
+  ID_unique = switch (cfg$NORtable,
+                      ELCVERBINDINGSDELEN       = mindataset[,ID_unique:=paste0(ID_Kabel,PC_2)],
+                      ELCVERBINDINGEN           = mindataset[,ID_unique:=paste0(ID_Verbinding,ID_Hoofdleiding)],
+                      ELCVERBINDINGSKNOOPPUNTEN = mindataset[,ID_unique:=paste0(ID_Bron,PC_2)])
+  
+  setkey(mindataset,ID_unique) 
+  mindataset = unique(mindataset)
+  
+  mindataset[,file         := n]
+  mindataset[,DateAdded    := cfg$curdate[n]]
+  mindataset[,DateRemoved  := as.Date(NA)]
+  mindataset[,Status_ID    := "Active"]
+  
+  if(n!=1 & any(!(colnames(masterdataset) %in% colnames(mindataset))))
+  {set(mindataset,,colnames(masterdataset)[!(colnames(masterdataset) %in% colnames(mindataset))],(NA))}
+  
+  # Create the NAN number or Verbindingen if not present already
+  if(!any(colnames(mindataset)=="ID_NAN")){mindataset$ID_NAN=as.character(NA)}
+  if(!any(colnames(mindataset)=="Bronsysteem")){mindataset$Bronsysteem=as.character(NA)}
+  if(!any(colnames(mindataset)=="ID_Verbinding"))
+  {switch (cfg$NORtable, ELCVERBINDINGSKNOOPPUNTEN={mindataset$ID_Verbinding=as.character(NA)})}
+  ifelse(n==1,
+         return(mindataset),
+         return(mindataset[,colnames(masterdataset),with=FALSE]))
 }
 
 AHA_Data_NOR_Log_Postprocessing  = function(){
@@ -164,7 +157,7 @@ assets = list();
 achanges = list();
 cfg$recalculate_PC6_naar = F
 
-pb = pbarwrapper(title = paste0("AHA_Data_NOR_Log_Postprocessing, ",as.character(Sys.time())), label = "Start", min = 0, max = 15, initial = 0, width = 450);
+cfg$pb = pbarwrapper(title = paste0("AHA_Data_NOR_Log_Postprocessing, ",as.character(Sys.time())), label = "Start", min = 0, max = 15, initial = 0, width = 450);
 
 # Load the data --------------------------
 
@@ -183,7 +176,7 @@ load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/MS_Stations.Rda"))
 MS_Stations       = mindataset
 
 # Load hoofdleidingen
-setpbarwrapper(pb, label = "Loading verbindingen"); 
+setpbarwrapper(cfg$pb, label = "Loading verbindingen"); 
 load(paste0(settings$Input_Datasets,"/6. NOR/masterdataset_ELCVERBINDINGEN.Rda"))
 masterdataset[,ID_Object := (1:nrow(masterdataset))]
 setorder(masterdataset, -DateAdded, na.last=TRUE)
@@ -192,7 +185,7 @@ masterdataset[ID_Verbinding=="",ID_Verbinding:=NA]
 vb = masterdataset
 
 # Load kabels  
-setpbarwrapper(pb,label = "Loading verbindingsdelen"); 
+setpbarwrapper(cfg$pb,label = "Loading verbindingsdelen"); 
 load(paste0(settings$Input_Datasets,"/6. NOR/masterdataset_ELCVERBINDINGSDELEN_XY_PC6.Rda"))
 mindataset = Add_Status_Voltage (mindataset,Conversion_of_voltages,Status_tabel)
 mindataset[,ID_Object := (1:nrow(mindataset))]
@@ -202,7 +195,7 @@ setkey(mindataset,ID_Object)
 assets$kabels = mindataset;
 
 # Load moffen
-setpbarwrapper(pb, label = "Loading assets moffen"); 
+setpbarwrapper(cfg$pb, label = "Loading assets moffen"); 
 load(paste0(settings$Input_Datasets,"/6. NOR/masterdataset_ELCVERBINDINGSKNOOPPUNTEN_XY_PC6.Rda"))
 mindataset = Add_Status_Voltage (mindataset,Conversion_of_voltages,Status_tabel)
 
@@ -212,41 +205,31 @@ setkey(mindataset,ID_Object)
 assets$moffen = mindataset;
 
 # Load moffen changes
-setpbarwrapper(pb,label = "Loading verbindingsknooppunten changes"); 
+
+setpbarwrapper(cfg$pb,label = "Loading verbindingsknooppunten changes"); 
 load(paste0(settings$Input_Datasets,"/6. NOR/changes_ELCVERBINDINGSKNOOPPUNTEN.Rda"))
+
 changes = Add_Status_Voltage (changes,Conversion_of_voltages,Status_tabel)
 
-setkey(assets$moffen,Coo_X,Coo_Y); setkey(changes,Coo_X,Coo_Y);
-setnames(changes,"PC_6","i.PC_6")
-changes[,PC_6:=unique(assets$moffen)[changes,PC_6]]
-
 changes[,ID_Object := (1:nrow(changes))]
-setorder(changes,-Date, na.last=TRUE)
-setkey(changes,ID_unique)
-changes[,oldnew := rep(1:2,times=nrow(changes)/2)]
 achanges$moffen = Transform_changes(changes)
 achanges$moffen$Coo_XY = Merge_xy(achanges$moffen$Coo_X,achanges$moffen$Coo_Y,changes)
 
 # Load kabels changes
-setpbarwrapper(pb,label = "Loading verbindingsdelen changes"); 
+setpbarwrapper(cfg$pb,label = "Loading verbindingsdelen changes"); 
 load(paste0(settings$Input_Datasets,"/6. NOR/changes_ELCVERBINDINGSDELEN.Rda"))
-
-setkey(assets$kabels,Coo_X_van,Coo_Y_van); setkey(changes,Coo_X_van,Coo_Y_van);
-setnames(changes,"PC_6_van","i.PC_6_van")
-changes[,PC_6_van:=unique(assets$kabels)[changes,PC_6_van]]
-
-setkey(assets$kabels,Coo_X_naar,Coo_Y_naar); setkey(changes,Coo_X_naar,Coo_Y_naar);
-changes[,PC_6_naar:=unique(assets$kabels)[changes,PC_6_naar]]
 
 changes = Add_Status_Voltage (changes,Conversion_of_voltages,Status_tabel)
 
 changes[,ID_Object := (1:nrow(changes))]
-changes[,oldnew := rep(1:2,times=nrow(changes)/2)]
+
 changes[,Lengte_2 := sqrt((Coo_X_van-Coo_X_naar)^2+(Coo_Y_van-Coo_Y_naar)^2)]
 achanges$kabels = Transform_changes(changes)
 achanges$kabels$Coo_XY_XY = Merge_xy_xy(achanges$kabels$Coo_X_van,achanges$kabels$Coo_Y_van,achanges$kabels$Coo_X_naar,achanges$kabels$Coo_Y_naar,changes)
 
 # Load the minumum required from the BAR for Verbindingen and Hoofdleidingen
+setpbarwrapper(cfg$pb,label = "Load the BAR for hoofdleidingen"); 
+
 load("E:/1. Alliander/3. Asset Health Analytics/1. Ruwe Datasets/1. BARlog/MH_NRG_MS_KABELS_XY_PC6.Rda")
 BAR_data = mindataset[,list(ID_Hoofdleiding,ID_Verbinding,ID_NAN)]
 load("E:/1. Alliander/3. Asset Health Analytics/1. Ruwe Datasets/1. BARlog/MH_NRG_LS_KABELS_XY_PC6.Rda")
@@ -257,11 +240,8 @@ rm("changes")
 rm("masterdataset")
 rm("mindataset")
 
-# Add the required fields -------------------------------------------------
-setpbarwrapper(pb,label = "Adding some more information to the assets"); 
-
 # Recalculate what mof based on their XY coordinates --------------------
-setpbarwrapper(pb, label = "Calculating historical Moffen"); 
+setpbarwrapper(cfg$pb, label = "Calculating historical Moffen"); 
 
 setkey(achanges$moffen$Coo_XY,ID_unique)
 setkey(assets$moffen,ID_unique)
@@ -284,7 +264,7 @@ allXY[is.na(Coo_Y_oud),Coo_Y_oud:=Coo_Y]
 assets$moffen = unique(historical_topo(allXY)[,list(ID_unique,ID_unique_present,ID_NAN_present,ID_Verbinding_present)])[assets$moffen]
 
 # Recalculate kabel based on their XY coordinates --------------------
-setpbarwrapper(pb, label = "Calculating historical Kabels"); 
+setpbarwrapper(cfg$pb, label = "Calculating historical Kabels"); 
 
 setkey(achanges$kabels$Coo_XY_XY,ID_unique)
 setkey(assets$kabels,ID_unique)
@@ -322,7 +302,7 @@ assets$kabels[,ID_Hoofdleiding_present_BAR := BAR_data[assets$kabels,ID_Hoofdlei
 assets$kabels[,ID_Verbinding_present_BAR := BAR_data[assets$kabels,ID_Verbinding_present_BAR]]
 
 # Add the length changes -------------------
-setpbarwrapper(pb, label = "Calculating length changes Kabels"); 
+setpbarwrapper(cfg$pb, label = "Calculating length changes Kabels"); 
 
 mergeset = rbind(achanges$kabels$Lengte[,lch := nieuw-oud],achanges$kabels$Lengte_2[,lch :=nieuw-oud])
 setkey(mergeset,ID_unique,Date)
@@ -336,7 +316,7 @@ mergeset[,DateRemoved:=NA]
 assets$kabels = rbind(assets$kabels,mergeset,fill=T)
 
 # Add the Status changes to cables ----------------------------
-setpbarwrapper(pb, label = "Calculating status changes Kabels"); 
+setpbarwrapper(cfg$pb, label = "Calculating status changes Kabels"); 
 
 setkey(achanges$kabels$Status,ID_unique,Date)
 achanges$kabels$Status[,Status_ch:=paste0(oud,"->",nieuw)]
@@ -351,7 +331,7 @@ mergeset[,DateLength_ch:=NA]
 assets$kabels = rbind(assets$kabels,mergeset,fill=TRUE)
 
 # Add the Route ----------------------------------------------------------
-setpbarwrapper(pb, label = "Adding MSRing to Kabels");
+setpbarwrapper(cfg$pb, label = "Adding MSRing to Kabels");
 
 setnames(MS_Hoofdleidingen,"ID_Hoofdleiding","ID_Hoofdleiding_present_BAR")
 setkey(MS_Hoofdleidingen,ID_Hoofdleiding_present_BAR); 
@@ -362,7 +342,7 @@ assets$kabels[,Routenaam_Present:=unique(MS_Hoofdleidingen[Routenaam !=""])[asse
 assets$kabels[!is.na(Coo_X_naar)&is.na(Routenaam_Present),Routenaam_Present:=nnsearch_kabel(assets$kabels,"Routenaam_Present")]
 
 # Attach the cables to moffen ------------------------------
-setpbarwrapper(pb, label = "Adding the HLD and MSRings to moffen ")
+setpbarwrapper(cfg$pb, label = "Adding the HLD and MSRings to moffen ")
 
 # First with Beheerder and Verbinding
 setkey(assets$moffen,ID_Verbinding,Beheerder); setkey(assets$kabels,ID_Verbinding,Beheerder)
@@ -389,18 +369,30 @@ assets$moffen[!is.na(Coo_X)&is.na(ID_Verbinding_present_BAR),ID_Verbinding_prese
 assets$moffen[,ID_Object:=1:nrow(assets$moffen)]
 assets$kabels[,ID_Object:=1:nrow(assets$kabels)]
 
+# Make sure the XY are plausible
+assets$moffen[Coo_X<60000 | Coo_X>260000 |Coo_Y<300000|Coo_Y>650000, Coo_X:=NA]
+assets$moffen[Coo_X<60000 | Coo_X>260000 |Coo_Y<300000|Coo_Y>650000, Coo_Y:=NA]
+assets$kabels[Coo_X_van<60000 | Coo_X_van>260000 |Coo_Y_van<300000|Coo_Y_van>650000, Coo_X_van:=NA]
+assets$kabels[Coo_X_van<60000 | Coo_X_van>260000 |Coo_Y_van<300000|Coo_Y_van>650000, Coo_Y_van:=NA]
+assets$kabels[Coo_X_naar<60000 | Coo_X_naar>260000 |Coo_Y_naar<300000|Coo_Y_naar>650000, Coo_X_naar:=NA]
+assets$kabels[Coo_X_naar<60000 | Coo_X_naar>260000 |Coo_Y_naar<300000|Coo_Y_naar>650000, Coo_Y_naar:=NA]
+
 # Save the data --------------------------------------------------
-setpbarwrapper(pb, label = "Saving to file"); 
+setpbarwrapper(cfg$pb, label = "Saving to file"); 
 
 save(assets,file=paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_assets.Rda"),compress=F)
 
-setpbarwrapper(pb, label = "Done"); 
+setpbarwrapper(cfg$pb, label = "Done"); 
 
 }
 
 Transform_changes= function(changes) {
 # Other functions
 # Function that transforms the useless data structure of changes into something more managable
+setkey(changes,Date,ID_unique)
+changes[,ID_Object := 1:nrow(changes)]
+changes = changes[duplicated(changes)|duplicated(changes,fromLast=T)]
+changes[,oldnew := rep(1:2,times=nrow(changes)/2)]
 metacols = c("Date","ID_Object","oldnew","ID_unique")
 nms      = names(changes)
 
@@ -457,8 +449,7 @@ dataxvan,datayvan[,c(paste0(xynames[2],"_oud"),paste0(xynames[2],"_nieuw"),"ID_O
 )
 }
 
-historical_topo = function(allXY, byvars=c("Coo_X","Coo_Y"))
-{
+historical_topo = function(allXY, byvars=c("Coo_X","Coo_Y")){
 # Used to calculate histortical nettopology
 allXY = allXY[!is.na(allXY[[byvars[1]]])]
 allXY[,ID_unique_present:=ID_unique]
@@ -477,7 +468,6 @@ setkeyv(allXY,byvars)
 allXY = unique(newXY)[allXY[,names(allXY)[!(names(allXY) %in% c("ID_unique_present","ID_NAN_present","ID_Verbinding_present","Date_Last"))],with=F],allow.cartesian=T]
 cat(paste0("is NOT NA: NAN, ",sum(!is.na(allXY$ID_NAN_present))," of ",nrow(allXY)," = ",round(sum(!is.na(allXY$ID_NAN_present))/nrow(allXY)*100)," %\n"))
 
-# If nothing found try using the nearest neighbours
 nearest2 = nn2(
 allXY[!is.na(ID_NAN_present),byvars[1:2],with=F],          
 allXY[is.na(ID_NAN_present),byvars[1:2],with=F],
@@ -502,7 +492,6 @@ barplot(a$V1,names.arg=a$Date_Last)
 Add_Status_Voltage = function(dataset,Conversion_of_voltages,Status_tabel){
 # Just a simple wrapper to prevent some clutter
 # Adds spanningsniveau and status details
-try(setnames(dataset,"Spanningsniveau", "SpanningsNiveau"))
 setkey(Conversion_of_voltages,SpanningsNiveau)
 setkey(Status_tabel,Status_Detail)
 
@@ -519,17 +508,18 @@ return(dataset)
 
 nnsearch_kabel_mof = function(kabelsset,moffenset,variable){
 # Third use NN for Routenaam
+if(!any(names(moffenset)==variable)) 
+  eval(parse(text=paste0( "moffenset[,",variable, ":= as.",
+       class(kabelsset[[variable]])
+       ,"(NA)]")))
 nearest = nn2(kabelsset[!is.na(Coo_X_naar) & !is.na(kabelsset[[variable]]),list(Coo_X_naar,Coo_Y_naar)],moffenset[!is.na(Coo_X)&is.na(moffenset[[variable]]),list(Coo_X,Coo_Y)],k=1)
 nearest2= nn2(kabelsset[!is.na(Coo_X_naar) & !is.na(kabelsset[[variable]]),list(Coo_X_van,Coo_Y_van)],moffenset[!is.na(Coo_X)&is.na(moffenset[[variable]]),list(Coo_X,Coo_Y)],k=1)
 nnd = (nearest$nn.dists[,1]>=nearest2$nn.dists[,1])
 nni = nearest$nn.idx[,1]; nni[nnd] = nearest2$nn.idx[nnd,1]
 nni[!is.na(moffenset$Coo_X)&is.na(moffenset[[variable]])] = nni
 
-# output = rep(NA, nrow(moffenset))
+output = kabelsset[[variable]][!is.na(kabelsset$Coo_X_naar)&!is.na(kabelsset[[variable]])][nni[!is.na(nni) & is.na(moffenset[[variable]])]]
 
-# output[is.na(kabelsset[[variable]])&!is.na(nni)] =
-  
-  output = kabelsset[[variable]][!is.na(kabelsset$Coo_X_naar)&!is.na(kabelsset[[variable]])][nni[!is.na(nni) & is.na(moffenset[[variable]])]]
 
 return(output)
 }

@@ -13,6 +13,7 @@ AHA_MVA_CorrelationTable = function(dataset){
   
 library("vcd") #for the cramers V function
 library("heplots") #for the etasq function
+#library("mice") #for the imputation by linear regression with bootstrapped error correction
 
 corTable=data.table(rowname=colnames(dataset))
 corTypeTable=data.table(rowname=colnames(dataset))
@@ -25,10 +26,12 @@ for (currentVariable in names(dataset)){
     if (is.numeric(dataset[,get(currentVariable)])==T){
       #impute the data with median for missing values
       dataset[is.na(eval(currentVariable)),get(currentVariable):=median(dataset$get(currentVariable))]
+      
 
       if (is.numeric(dataset[,get(i)])==T){
         #impute the data with median for missing values
         dataset[is.na(eval(i)),get(i):=median(dataset$get(i))]
+        
         
         corTable[rowname==eval(currentVariable),eval(i):=abs(cor(dataset[,get(currentVariable)],dataset[,get(i)]))]
         corTypeTable[rowname==eval(currentVariable),eval(i):="Pearson"]

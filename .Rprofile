@@ -28,7 +28,7 @@
   }
   
   # Source some functions --------------------------------
-  sourcefiles = c("AHA_Data_Import.R","AHA_Data_Batch_Processing.R",
+  sourcefiles = c("AHA_Data_Import.R","AHA_Data_Batch_Processing.R","Tableau_Functions.R",
                   "AHA_Data_NOR_Log.R", 'AHA_Data_Geo_Functions.R', "AHA_Proxy_KA_Preprocessing.R",
                   "AHA_Data_BAR_Log.R","AHA_Proxy_KA_Postprocessing.R","AHA_Extra_Functions.R",
                   "AHA_MVA_Coupling.R","AHA_MVA_ExtractCableData.R", "AHA_Proxy_KA_BARNOR.R","AHA_Proxy_samenv.R")
@@ -94,9 +94,9 @@ load_settings = function(){
   
   # Laptop Michiel Musterd BearingPoint zBook
   else if (Sys.info()["nodename"] =="NLAMS4044583X") {
-    settings$Bron_Datasets = "F:/1. Alliander Datasets/2. Asset health analytics/0. Ongebruikte en brondata"
-    settings$Ruwe_Datasets = "F:/1. Alliander Datasets/2. Asset health analytics/1. Ruwe Datasets"
-    settings$Input_Datasets = "F:/1. Alliander Datasets/2. Asset health analytics/2. Input Datasets"
+    settings$Bron_Datasets = "D:/1. Alliander Datasets/2. Asset health analytics/0. Ongebruikte en brondata"
+    settings$Ruwe_Datasets = "D:/1. Alliander Datasets/2. Asset health analytics/1. Ruwe Datasets"
+    settings$Input_Datasets = "D:/1. Alliander Datasets/2. Asset health analytics/2. Input Datasets"
     settings$Analyse_Datasets = "-"
     settings$Visuals = "-"
     settings$Results = "-"
