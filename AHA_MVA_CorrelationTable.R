@@ -1,6 +1,4 @@
-
-
-AHA_MVA_CorrelationTable = function(dataset){ 
+AHA_MVA_CorrelationTable = function(dataset,colnumber){ 
 #Written by Michiel Musterd - 13-03-2015
 #This function computes the correlation coefficients between the different columns
 #in the input dataset based on pearson, anova_eta and cramers V for continuous-continuous,
@@ -9,28 +7,27 @@ AHA_MVA_CorrelationTable = function(dataset){
   
 #Note that the absolute value of the pearson coefficient is returned because we are
 #only interested in effect size, not in effect direction
-
-  
-library("vcd") #for the cramers V function
-library("heplots") #for the etasq function
-#library("mice") #for the imputation by linear regression with bootstrapped error correction
+# Requies
+# library("vcd") #for the cramers V function
+# library("heplots") #for the etasq function
+# #library("mice") #for the imputation by linear regression with bootstrapped error correction
 
 corTable=data.table(rowname=colnames(dataset))
 corTypeTable=data.table(rowname=colnames(dataset))
 
+pb = pbarwrapper(title= "Calculating correlation coefficients: ",label="temp",max=ncol(dataset)^2+1)
 
 for (currentVariable in names(dataset)){
-  for (i in names(dataset)){
-    cat(currentVariable, " -- ",i,"\n")
+  for (i in names(dataset)[colnumber]){
+    setpbarwrapper(pb,label = paste0(currentVariable, " -- ", i))
     
     if (is.numeric(dataset[,get(currentVariable)])==T){
       #impute the data with median for missing values
-      dataset[is.na(eval(currentVariable)),get(currentVariable):=median(dataset$get(currentVariable))]
+      dataset[is.na(get(currentVariable)),eval(currentVariable):=median(dataset[,get(currentVariable)],na.rm=T)]
       
-
       if (is.numeric(dataset[,get(i)])==T){
         #impute the data with median for missing values
-        dataset[is.na(eval(i)),get(i):=median(dataset$get(i))]
+        dataset[is.na(get(i)),eval(i):=median(dataset[,get(i)],na.rm=T)]
         
         
         corTable[rowname==eval(currentVariable),eval(i):=abs(cor(dataset[,get(currentVariable)],dataset[,get(i)]))]
@@ -49,7 +46,7 @@ for (currentVariable in names(dataset)){
     if (is.factor(dataset[,get(currentVariable)])==T){  
       if (is.numeric(dataset[,get(i)])==T){
         #impute the data with median for missing values
-        dataset[is.na(eval(i)),get(i):=median(dataset$get(i))]
+        dataset[is.na(get(i)),eval(i):=median(dataset[,get(i)],na.rm=T)]
         
         output=aov(dataset[,get(i)]~dataset[,get(currentVariable)])  
         corTable[rowname==eval(currentVariable),eval(i):=sqrt(etasq(output)$"Partial eta^2"[1])]
@@ -67,10 +64,7 @@ for (currentVariable in names(dataset)){
   }
   
 }
-
-return(list(corTable,corTypeTable))
+setpbarwrapper(pb,label="Done")
+return(data.table(Correlation=corTable,CorrelationType=corTypeTable))
 
 }
-
-
-
