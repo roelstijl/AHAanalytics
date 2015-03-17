@@ -6,6 +6,19 @@ shinyServer(function(input, output,session) {
     
     metadata[elements,selected := is.element(elements, input$Checkbox)]
     
+    setsettings = data.table(Tr_size=as.numeric(input$Tr_size),
+                             Tr_tgt=as.numeric(input$Tr_tgt),
+                             tst_size=as.numeric(input$tst_size),
+                             rnd_seed=as.numeric(input$rnd_seed),
+                             Target_Value=input$Target_Value, 
+                             Target_Variable=input$Target_Variable)
+    
+    output$dataset_details= renderText(paste0("File: ",filename,", ",
+                                              "Variables: ",ncol(dataset),", ",
+                                              "Total size: ",datalength,", ",
+                                              "Sample size: ",nrow(dataset),", ",
+                                              "Target size: ",nrow(dataset[get(input$Target_Variable)==input$Target_Value])))
+    
     # Set the elements to display
     if(input$volgende_x[1] > next_button) {elements <<-elements+15; next_button<<-next_button+1};
     if(input$vorige_x[1]   > last_button) {elements <<-elements-15; last_button<<-last_button+1};
@@ -14,30 +27,26 @@ shinyServer(function(input, output,session) {
     if(elements[1]<1) elements <<- elements - elements[1]+1
     if(elements[length(elements)]>length(metadata$selected)) elements <<- elements - (-length(metadata$selected)+elements[length(elements)])-1
     
-    # Update names when button pressed
-    if(input$Update_Name[1] > update_no_2){      
-      names(checkboxes)[elements[1]-1+as.numeric(input$radiobutton[1])] <<- input$text
-      metadata[elements[1]-1+as.numeric(input$radiobutton[1]),names]<<-input$text
-      update_no_2 <<- update_no_2 + 1}
-    
     # Update checkbox values
     updateCheckboxGroupInput(session,"Checkbox", label = "", choices  = checkboxes[elements], 
                              selected = as.character(elements[1]-1+which(metadata[elements,selected]==1)));
 
     # Update the selectinput
-     updateSelectInput(session, 
-                       "Target_Value", 
+    if(input$Target_Variable[1] > targetvariable) {targetvariable <<- targetvariable+1
+    updateSelectInput(session,"Target_Value", 
                        choices = 
                          setNames(laply(unique((dataset[,input$Target_Variable,with=F])),as.list),
                          laply(unique((dataset[,input$Target_Variable,with=F])),as.list)),
-                       label = NULL,  
-                       selected = NULL);
+                       label = NULL, selected = NULL)}
     
+    # Write output if required
+    if(input$Gen_test_train[1] > createtrain) {Save_preprocess(setsettings,"Test_Train"); createtrain<<-createtrain+1};
+    if(input$Gen_full[1] > createfull) {Save_preprocess(setsettings,"Full"); createfull<<-createfull+1};
     
     # Save the file
     if(input$save_to_file[1] > save_to_file)
     { metadata$selected = metadata$selected+0
-      write.xlsx(metadata,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/",basename(filechooser),".xlsx"),row.names=FALSE);
+      write.xlsx(metadata,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_metadata.xlsx"),sheetName="Sheet1");
       save_to_file <<- save_to_file + 1;
       isolate(cat("Saved to file \n"))
     }
@@ -52,10 +61,12 @@ shinyServer(function(input, output,session) {
   )
   
   output$Cor_Table <- renderTable ({
-    cor_tabel = cor_tabel[,as.numeric(input$radiobutton[1])+elements[1]-1),]
-    setnames(cor_tabel,c("Variabele","Correlatie","xx","Methode"))
+    cor_tabel = data.table(Variabele=Correlations$types$row.names,
+                           Correlatie=Correlations$correlations[[as.numeric(input$radiobutton[1])+elements[1]-1]],
+                           Methode=Correlations$types[[as.numeric(input$radiobutton[1])+elements[1]-1]])
+    cor_tabel = cor_tabel[metadata$selected]
     setorder(cor_tabel,-Correlatie)
-    cor_tabel[,c(1,2,4),with=F][1:25]
+    rbind(cor_tabel[Methode!="Error"][1:20],cor_tabel[Methode=="Error"])
     })
 
 })

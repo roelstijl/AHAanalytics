@@ -282,7 +282,7 @@ station_namen_van = laply(MS_hoofdleidingen$Van_Station_A,
                              (matrix(switch(ifelse(length(unlist(strsplit(x,"/")))==2,"two","nope"),
                                             two = unlist(strsplit(x,"/")),
                                             nope=c(NA,NA)
-        )        )        )      })
+ )))})
 
 MS_hoofdleidingen[,Naam_Station_Van := gsub(toremove,"",tolower(station_namen_van[,2]))]
 MS_hoofdleidingen[,Naam_Station_Naar := gsub(toremove,"",tolower(station_namen_naar[,2]))]
@@ -292,8 +292,8 @@ MS_hoofdleidingen[,Nummer_Station_Naar := gsub(toremove,"",tolower(station_namen
 setkey(MS_hoofdleidingen,Naam_Station_Van,Naam_Station_Naar)
 setkey(storingen$Nettopologie,Naam_Station_Van,Naam_Station_Naar)
 
-storingen$Nettopologie[, ID_Hoofdleiding := MS_hoofdleidingen[storingen$Nettopologie,ID_Hoofdleiding]]
-storingen$Nettopologie[, ID_Verbinding   := MS_hoofdleidingen[storingen$Nettopologie,ID_Verbinding]]
+storingen$Nettopologie[,ID_Hoofdleiding := MS_hoofdleidingen[storingen$Nettopologie,ID_Hoofdleiding]]
+storingen$Nettopologie[,ID_Verbinding   := MS_hoofdleidingen[storingen$Nettopologie,ID_Verbinding]]
 
 
 # Correct the KLAK meldingen, want alleen eerste melders tellen

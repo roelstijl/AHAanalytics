@@ -5,6 +5,35 @@ AHA_MVA_Preprocessing = function(){
   currentvariable = "asset_in"
 }
 
+Save_preprocess = function(st,type){
+  cat("Writing data to file...... ")
+  load(filechooser)
+  mindataset = data.table(mindataset)
+  switch(type,
+        Test_Train = {
+          testrows = rep(F,nrow(mindataset))
+          testrows[sample(1:nrow(mindataset),st$tst_size)] = T
+          trainrow = c(sample(which(mindataset[[st$Target_Variable]]==st$Target_Value & !testrows),st$tst_size*(st$Tr_tgt)),
+                       sample(which(mindataset[[st$Target_Variable]]!=st$Target_Value & !testrows),st$tst_size*(1-st$Tr_tgt)))
+          testrows = which(testrows)
+          
+          testset  = mindataset[testrows,metadata$names[metadata$selected],with=F]
+          trainset = mindataset[trainrow,metadata$names[metadata$selected],with=F]
+          
+          save(testset,trainset,file = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_test_train_set.Rda"),compress=F)
+          write.csv(testset,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_testset.csv"));
+          write.csv(trainset,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_trainset.csv"));
+          },
+        Full       = {
+          alldata = mindataset[,metadata$names[metadata$selected],with=F]
+          write.csv(alldata,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_alldata.csv"));
+          save(alldata,file = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_alldata.Rda"),compress=F)
+          
+        }
+        )
+  cat("Done\n")
+}
+
 Simple_Lift = function(dataset,targetvariable,targetvalue,currentvariable)
 {
   dataset.ext = na.omit(dataset[[currentvariable]])
@@ -54,14 +83,15 @@ Simple_Lift = function(dataset,targetvariable,targetvalue,currentvariable)
   rechtergrens2 <- data.table(rechtergrens, lift);
   rechtergrens3 <- data.table(rechtergrens, totaalonthouden);
   
-  par(mar = c(4, 4, 4, 0))  # Leave space for z axis
+  par(mar = c(5, 4, 0, 4) + 0.3) # Leave space for z axis
   barplot(rechtergrens2$lift, names.arg=rechtergrens2$rechtergrens, las = 2, col = heat.colors(length(rechtergrens2$rechtergrens)), main=colnames(dataset.ext)
           ,cex.names  =0.8,cex.axis = 0.8) # first plot
   abline(h=1);
   mtext("Lift", side=2, line=3)
   
   par(new=TRUE)
-  plot(x = as.factor(rechtergrens3$rechtergrens), y = rechtergrens3$totaalonthouden, pch = 1) #, xaxt="n",yaxt="n"
+  plot(x = as.factor(rechtergrens3$rechtergrens), y = rechtergrens3$totaalonthouden, pch = 1, xaxt="n",yaxt="n",xlab="",ylab="")
+
   axis(side=4)
   mtext("Frequency", side=4, line=3)
   
