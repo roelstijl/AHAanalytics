@@ -135,7 +135,7 @@ setpbarwrapper = function(pb=T,index=-1,label="title",title=""){
     glpc <<- glpc+1; 
     index=glpc;
   }
-  label = paste0(gltitle, ": ", label,"                     ")
+  label = paste0(gltitle, ": ", label,"                                         ")
   setTxtProgressBar2 (pb, index,label = label)
 }
 

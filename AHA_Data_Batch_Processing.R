@@ -45,9 +45,12 @@ processPC6("MH_NRG_LS_MOFFEN","punt")
 
 # Add the dates etc
 AHA_Data_BAR_Log()
+
+# Tableau output
+AHA_Data_KA_Proxy_Preprocessing("assetsBAR")
   
 # NOR processing ------------------
-NORdate = "1501"
+NORdate = ""
 AHA_Data_Import("NOR",paste0("ELCVERBINDINGEN_",NORdate),"ELCVERBINDINGEN","save")
 AHA_Data_Import("NOR",paste0("ELCVERBINDINGSDELEN_",NORdate),"ELCVERBINDINGSDELEN","save")
 AHA_Data_Import("NOR",paste0("ELCVERBINDINGSKNOOPPUNTEN_",NORdate),"ELCVERBINDINGSKNOOPPUNTEN","save")
@@ -65,9 +68,13 @@ processPC6("masterdataset_ELCVERBINDINGSKNOOPPUNTEN","punt_NOR",paste0(settings$
 AHA_Data_NOR_Log_Postprocessing()
 
 # Preprocessing for Proxi
-AHA_Data_KA_Proxy_Preprocessing("assetsBAR","assetsNOR")
+AHA_Data_KA_Proxy_Preprocessing("assetsNOR")
 
 # Tableau output ---------------------------
+
+Save_Tableau_assets("BAR","BAR_Tableau")
+Save_Tableau_assets("NOR","NOR_Tableau")
+
 # Add the XY coordinates in a spatial file
 processXY("MH_NRG_LS_KABELS","lines",,veld="Ligging")
 processXY("MH_NRG_MS_KABELS","lines",,veld="Ligging")

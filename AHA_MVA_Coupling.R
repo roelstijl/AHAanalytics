@@ -37,7 +37,7 @@ AHA_MVA_Coupling = function(ProxyListFile=paste0(settings$Ruwe_Datasets,"/25. Ko
   
   #Specify the names of all sets to be coupled
   Settype="LSkabels"
-  Nfiles=12
+  Nfiles=13
   InputFileList=list(as.character(1:Nfiles))
   InputFileList[1]=paste0(settings$Ruwe_Datasets,"/15. CBS/CBS_Gecombineerd_Gemeente_Wijk_Buurt.Rda")
   InputFileList[2]=paste0(settings$Ruwe_Datasets,"/16. Zakking/Zakking.Rda")
@@ -50,7 +50,9 @@ AHA_MVA_Coupling = function(ProxyListFile=paste0(settings$Ruwe_Datasets,"/25. Ko
   InputFileList[9]=paste0(settings$Ruwe_Datasets,"/13. Kadaster_TOP10_NL_Sept/inrichtingselement_lijn_XY_overig.Rda")
   InputFileList[10]=paste0(settings$Ruwe_Datasets,"/13. Kadaster_TOP10_NL_Sept/inrichtingselement_punt_XY_boom.Rda")
   InputFileList[11]=paste0(settings$Ruwe_Datasets,"/13. Kadaster_TOP10_NL_Sept/inrichtingselement_punt_XY_overig.Rda")
-  InputFileList[12]=paste0(settings$Ruwe_Datasets,"/10. BAG/panden000_XY_clean.Rda")
+  InputFileList[12]=paste0(settings$Ruwe_Datasets,"/2. Kabelgegevens/KoppelFabrikanttypeBelasting.Rda")
+  InputFileList[13]=paste0(settings$Ruwe_Datasets,"/10. BAG/panden000_XY_clean.Rda")
+  
   
   #Check existence of each of these files before starting the run  
   existCheck=1:Nfiles
@@ -77,12 +79,15 @@ AHA_MVA_Coupling = function(ProxyListFile=paste0(settings$Ruwe_Datasets,"/25. Ko
   
   #First we process the fabrikanttype column into more useful data about the cable
   if (Settype=="LSkabels" | Settype=="MSkabels"){
-  SetName=load(ProxyListFile)
-  Set=get(SetName)
-  mindataset=AHA_MVA_ExtractCableData(Set)
-  save(mindataset,file=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/ProxylistRich.Rda"),compress=F)
+    SetName=load(ProxyListFile)
+    Set=get(SetName)
+    mindataset=AHA_MVA_ExtractCableData(Set)
+    save(mindataset,file=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/ProxylistRich.Rda"),compress=F)
   }else if (Settype=="LSmoffen" | Settype=="MSmoffen"){
-    
+    SetName=load(ProxyListFile)
+    Set=get(SetName)
+    mindataset=AHA_MVA_ExtractMofData(Set)
+    save(mindataset,file=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/ProxylistRich.Rda"),compress=F)
   }else{
     stop("Unknown settype, abort coupling")
   }
@@ -192,8 +197,18 @@ AHA_MVA_Coupling = function(ProxyListFile=paste0(settings$Ruwe_Datasets,"/25. Ko
            includeNNdist=1,NNdistName="Afstand_Overige_Punt_Inrichtingselement",
            outFileName=currentOutFile, Set1Name=currentInFile,Set2Name=InputFileList[[SetNo]])
   
-  #BAG panden - XY
+  #Max belasting kabel 
   SetNo=12
+  cat("Starting ",SetNo," coupling \n")
+  currentInFile=currentOutFile
+  currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
+  coupling(no_of_keys=1,couple_method=0,key1_nameA="Fabrikanttype",
+           key2_nameA="Fabrikanttype",cleantextkey=1,
+           outFileName=currentOutFile, Set1Name=currentInFile,Set2Name=InputFileList[[SetNo]])
+  
+  
+  #BAG panden - XY
+  SetNo=13
   currentInFile=currentOutFile
   cat("Starting BAG panden coupling \n")
   currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
@@ -229,7 +244,7 @@ coupling = function(no_of_keys=2,couple_method=1,includeNNdist=0,NNdistName="-",
                     includeNNamount=0,amountRad=100,key1_nameA="Coo_X_van",amountIDname="-",amountName="-",
                     key1_nameB="Coo_Y_van",key2_nameA="Coo_X",key2_nameB="Coo_Y",pandensetRepeat=0,
                     outFileName=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/KoppelOutput.Rda"),
-                    Set1Name,Set2Name){
+                    Set1Name,Set2Name,cleantextkey=0){
   
 
   
@@ -372,6 +387,11 @@ coupling = function(no_of_keys=2,couple_method=1,includeNNdist=0,NNdistName="-",
   if (no_of_keys==1){
     setkeyv(Set1,key1_nameA)
     setkeyv(Set2,key2_nameA)
+  }
+
+  if (cleantextkey==1){
+    Set1[,eval(key1_nameA):=gsub(" ","",tolower(get(key1_nameA)))]
+    Set2[,eval(key2_nameA):=gsub(" ","",tolower(get(key2_nameA)))]
   }
   
   

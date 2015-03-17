@@ -137,9 +137,10 @@ for(i in header[header[,5]=="datetimeYDM"|header[,5]=="ymd_hms",1]){mindataset[,
 for(i in header[header[,5]=="datetimeM"|header[,5]=="dmy_hm",1])   {mindataset[,i] = as.Date(dmy_hm(mindataset[,i]))}
 
 # Correct for missing information if 2 digit year in the 20th century
-l_ply(names(mindataset[sapply(mindataset,class)=="Date"]),
-  function(x) {mindataset[which(mindataset[,x] > "2015-06-01"),x] = mindataset[which(mindataset[,x] > "2015-06-01"),x] - years(100)}
-      )    
+l_ply(names(mindataset)[laply(mindataset,function(x) class(x) =="Date")],
+      function(x) {mindataset[which(mindataset[,x] > "2015-06-01"),x] = mindataset[which(mindataset[,x] > "2015-06-01"),x] - years(100)}
+)
+
 # Choose what output to generate depending on user selection ---------------------------
 if(mode=="shiny"){
   

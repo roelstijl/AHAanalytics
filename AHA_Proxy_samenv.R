@@ -19,7 +19,7 @@ proxy_samenv  <- function(global=F){
       rm(assetsltb)
     }
   }else{
-    setwd(settings$Analyse_Datasets)
+    setwd(paste0(settings$Analyse_Datasets,"/1. KA Proxy"))
     proxy_res      <- list() 
     myFile <- file.choose(); load(myFile);
     proxy_res$PC   <- assetsltb
@@ -104,7 +104,7 @@ koppellijst =list()  # Aanmaken koppellijst
   View(freqtabel)
   filename  = paste0(settings$Analyse_Datasets,"/4. KA Proxy samengevoegd/Proxy_koppellijst_",gsub(":",".",paste0(Sys.time())),".Rda")
   filename2 = paste0(settings$Analyse_Datasets,"/4. KA Proxy samengevoegd/Proxy_frequentietabel_",gsub(":",".",paste0(Sys.time())),".xlsx")
-  write.xlsx("freqtabel",file=filename2)
+  write.xlsx(freqtabel,file=filename2)
   save(koppellijst,file=filename)
   print("klaar")
 }
