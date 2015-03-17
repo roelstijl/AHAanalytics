@@ -75,16 +75,27 @@ l_ply(assets,function(curfield){
 setnames(assets$LSkabel,"ID_NAN","ID_NAN_kabel")
 setnames(assets$MSkabel,"ID_NAN","ID_NAN_kabel")
 
-assets$LSmoffen[!is.na(Coo_X),ID_Verbinding:=nnsearch_kabel_mof(assets$LSkabels,assets$LSmoffen,"ID_Verbinding")]
-assets$LSmoffen[!is.na(Coo_X),ID_Hoofdleiding:=nnsearch_kabel_mof(assets$LSkabels,assets$LSmoffen,"ID_Hoofdleiding")]
-assets$LSmoffen[!is.na(Coo_X),ID_NAN_kabel:=nnsearch_kabel_mof(assets$LSkabels,assets$LSmoffen,"ID_NAN_kabel")]
-assets$LSmoffen[!is.na(Coo_X),Datum_Bouwjaar_kabel:=nnsearch_kabel_mof(assets$LSkabels,assets$LSmoffen,"Datum_Bouwjaar")]
+LSmoffenkoppel = assets$LSmoffen[,list(ID_NAN,Coo_X,Coo_Y)]
+MSmoffenkoppel = assets$MSmoffen[,list(ID_NAN,Coo_X,Coo_Y)]
 
-assets$MSmoffen[!is.na(Coo_X),ID_Verbinding:=nnsearch_kabel_mof(assets$MSkabels,assets$MSmoffen,"ID_Verbinding")]
-assets$MSmoffen[!is.na(Coo_X),ID_Hoofdleiding:=nnsearch_kabel_mof(assets$MSkabels,assets$MSmoffen,"ID_Hoofdleiding")]
-assets$MSmoffen[!is.na(Coo_X),ID_NAN_kabel:=nnsearch_kabel_mof(assets$MSkabels,assets$MSmoffen,"ID_NAN_kabel")]
-assets$MSmoffen[!is.na(Coo_X),Routenaam:=nnsearch_kabel_mof(assets$MSkabels,assets$MSmoffen,"Routenaam")]
-assets$MSmoffen[!is.na(Coo_X),Datum_Bouwjaar_kabel:=nnsearch_kabel_mof(assets$MSkabels,assets$MSmoffen,"Datum_Bouwjaar")]
+LSmoffenkoppel[!is.na(Coo_X),ID_Verbinding:=nnsearch_kabel_mof(assets$LSkabels,LSmoffenkoppel,"ID_Verbinding")]
+LSmoffenkoppel[!is.na(Coo_X),ID_Hoofdleiding:=nnsearch_kabel_mof(assets$LSkabels,LSmoffenkoppel,"ID_Hoofdleiding")]
+LSmoffenkoppel[!is.na(Coo_X),ID_NAN_kabel:=nnsearch_kabel_mof(assets$LSkabels,LSmoffenkoppel,"ID_NAN_kabel")]
+LSmoffenkoppel[!is.na(Coo_X),Datum_Bouwjaar_kabel:=nnsearch_kabel_mof(assets$LSkabels,LSmoffenkoppel,"Datum_Bouwjaar")]
+
+MSmoffenkoppel[!is.na(Coo_X),ID_Verbinding:=nnsearch_kabel_mof(assets$MSkabels,MSmoffenkoppel,"ID_Verbinding")]
+MSmoffenkoppel[!is.na(Coo_X),ID_Hoofdleiding:=nnsearch_kabel_mof(assets$MSkabels,MSmoffenkoppel,"ID_Hoofdleiding")]
+MSmoffenkoppel[!is.na(Coo_X),ID_NAN_kabel:=nnsearch_kabel_mof(assets$MSkabels,MSmoffenkoppel,"ID_NAN_kabel")]
+MSmoffenkoppel[!is.na(Coo_X),Routenaam:=nnsearch_kabel_mof(assets$MSkabels,MSmoffenkoppel,"Routenaam")]
+MSmoffenkoppel[!is.na(Coo_X),Datum_Bouwjaar_kabel:=nnsearch_kabel_mof(assets$MSkabels,MSmoffenkoppel,"Datum_Bouwjaar")]
+
+setkey(assets$LSmoffen,ID_NAN)
+setkey(assets$MSmoffen,ID_NAN)
+setkey(LSmoffenkoppel,ID_NAN)
+setkey(MSmoffenkoppel,ID_NAN)
+
+assets$LSmoffen = unique(LSmoffenkoppel[,list(ID_Verbinding,ID_Hoofdleiding,ID_NAN_kabel,Datum_Bouwjaar,ID_NAN)])[assets$LSmoffen]
+assets$MSmoffen = unique(MSmoffenkoppel[,list(ID_Verbinding,ID_Hoofdleiding,ID_NAN_kabel,Routenaam,Datum_Bouwjaar,ID_NAN)])[assets$MSmoffen]
 
 setnames(assets$LSkabel,"ID_NAN_kabel","ID_NAN")
 setnames(assets$MSkabel,"ID_NAN_kabel","ID_NAN")

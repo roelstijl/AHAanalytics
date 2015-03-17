@@ -10,7 +10,8 @@
   
   # Install required packages if not .Firinstalled already -------------------------------
   packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash","parallel","doParallel","maptools","RANN","proj4","tools",
-               "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2","foreign","rgeos","stringr")
+               "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2","foreign","rgeos","stringr",
+               "vcd","heplots")
   
   for (m in 1:length(packages)){
     # Install if not present
@@ -31,7 +32,8 @@
   sourcefiles = c("AHA_Data_Import.R","AHA_Data_Batch_Processing.R","Tableau_Functions.R",
                   "AHA_Data_NOR_Log.R", 'AHA_Data_Geo_Functions.R', "AHA_Proxy_KA_Preprocessing.R",
                   "AHA_Data_BAR_Log.R","AHA_Proxy_KA_Postprocessing.R","AHA_Extra_Functions.R",
-                  "AHA_MVA_Coupling.R","AHA_MVA_ExtractCableData.R")
+                  "AHA_MVA_Coupling.R","AHA_MVA_ExtractCableData.R","AHA_MVA_Preprocessing_Functions.R",
+                  "AHA_MVA_CorrelationTable.R")
   l_ply(sourcefiles,function(x) try(source(x)))
   
   # l_ply(ffiles,source)

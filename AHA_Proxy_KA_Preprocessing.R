@@ -31,7 +31,6 @@ AHA_assetsBAR = function(cfg){
 setpbarwrapper(cfg$pb, label = "Loading BAR data");
 # Laad de assets en converteer de datums als deze verkeerd staan 
 load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_BAR_assets.Rda"))
-assets$MSHLDROUTE = NULL
 
 setpbarwrapper(cfg$pb, label = "Calculating BAR data");
 # behoud alleen dat deel van de assets dat binnen de periode veranderd is.
@@ -41,22 +40,18 @@ minassets = list();
 minassets$LSkabels=assets$LSkabels[(!is.na(DateAdded)& DateAdded > cfg$firstdate_BAR & DateAdded < cfg$lastdate) | 
                                  (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_BAR & DateRemoved < cfg$lastdate)|
                                  (!is.na(DateStatus_ch)& DateStatus_ch > cfg$firstdate_BAR & DateStatus_ch < cfg$lastdate & substrRight(Status_ch,11)=="Uit Bedrijf")|
-                                 (!is.na(DateLength_ch)& DateLength_ch > cfg$firstdate_BAR & DateLength_ch < cfg$lastdate)|
-                                   Date_Last_Modified!=as.Date("2014-05-18")]
+                                 (!is.na(DateLength_ch)& DateLength_ch > cfg$firstdate_BAR & DateLength_ch < cfg$lastdate)]
 
-minassets$MSkabels=assets$MSkabels[(!is.na(DateAdded)& DateAdded > cfg$firstdate_BAR & DateAdded < cfg$lastdate) | 
+assets$MSkabels=assets$MSkabels[(!is.na(DateAdded)& DateAdded > cfg$firstdate_BAR & DateAdded < cfg$lastdate) | 
                                      (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_BAR & DateRemoved < cfg$lastdate)|
                                      (!is.na(DateStatus_ch)& DateStatus_ch > cfg$firstdate_BAR & DateStatus_ch < cfg$lastdate & substrRight(Status_ch,11)=="Uit Bedrijf")|
-                                     (!is.na(DateLength_ch)& DateLength_ch > cfg$firstdate_BAR & DateLength_ch < cfg$lastdate)|
-                                     Date_Last_Modified!=as.Date("2014-05-18")]
+                                     (!is.na(DateLength_ch)& DateLength_ch > cfg$firstdate_BAR & DateLength_ch < cfg$lastdate)]
 
-minassets$MSmoffen=assets$MSmoffen[(!is.na(DateAdded)& DateAdded > cfg$firstdate_BAR & DateAdded < cfg$lastdate) | 
-                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_BAR & DateRemoved < cfg$lastdate)|
-                                   Date_Last_Modified!=as.Date("2014-05-18")]
+assets$MSmoffen=assets$MSmoffen[(!is.na(DateAdded)& DateAdded > cfg$firstdate_BAR & DateAdded < cfg$lastdate) | 
+                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_BAR & DateRemoved < cfg$lastdate)]
 
-minassets$LSmoffen=assets$LSmoffen[((!is.na(DateAdded)& DateAdded > cfg$firstdate_BAR & DateAdded < cfg$lastdate) | 
-                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_BAR & DateRemoved < cfg$lastdate))|
-                                   Date_Last_Modified!=as.Date("2014-05-18")]
+assets$LSmoffen=assets$LSmoffen[((!is.na(DateAdded)& DateAdded > cfg$firstdate_BAR & DateAdded < cfg$lastdate) | 
+                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_BAR & DateRemoved < cfg$lastdate))]
 
 assets = minassets
 
