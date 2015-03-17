@@ -257,16 +257,33 @@ AHA_Data_Determine_PC=function(datatable,x="Coo_X",y="Coo_Y",PC="PC_6",extrainfo
   datatable[,V1:=co$V1]
   coordinates(co) = datatable[,c(x,y),with=FALSE]
   proj4string(co) <- CRS("+init=epsg:28992")
-  
-  # Extract PC4
+
+#   load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial_Michiel.Rda"))
+#   pc4_m  = pc4
+#   pc4_m_data = data.table(pc4@data)
+#   setkey(pc4_m_data,postcode4)
+#     
+#   load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial_OLD.Rda"))
+#   pc4_old_data = data.table(data.table(pc4@data))
+#   setnames(pc4_old_data,"PC4CODE","postcode4")
+#   setkey(pc4_old_data,postcode4)
+#   pc4_m_data = pc4_old_data[pc4_m_data]
+#   rownames(pc4_m_data) = pc4_m_data$postcode4
+#   
+#   pc4 = SpatialPolygonsDataFrame(pc4_m,pc4_m_data)
+#   save(pc4,file=paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial.Rda"))
+
+# Extract PC4
   ret = data.table(co %over% pc4)
-  co@data$PC_4 = as.character(ret[,PC4CODE])
-  datatable[,PC_4 := as.character(ret$PC4CODE)]
+  co@data$PC_4 = as.character(ret[,postcode4])
+  datatable[,PC_4 := as.character(ret$postcode4)]
   
   if(extrainfo){
-    datatable[,Woonplaats     := as.character(ret$PC4NAAM)]
-    datatable[,Gemeente       := as.character(ret$GEMNAAM)]
-    datatable[,GemeenteCode   := as.character(ret$GEMCODE)]
+    try(datatable[,Woonplaats     := as.character(ret$PC4NAAM)])
+    try(datatable[,Gemeente       := as.character(ret$GEMNAAM)])
+    try(datatable[,GemeenteCode   := as.character(ret$GEMCODE)])
+    try(datatable[,PC_4_Naam      := as.character(ret$PC4NAAM)])
+    try(datatable[,Provincie_Naam := as.character(ret$PROVC_NM)])
   }
   
   # Next repeat proces with the PC 6 regions

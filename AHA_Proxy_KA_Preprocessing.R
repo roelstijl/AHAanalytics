@@ -31,7 +31,6 @@ AHA_assetsBAR = function(cfg){
 setpbarwrapper(cfg$pb, label = "Loading BAR data");
 # Laad de assets en converteer de datums als deze verkeerd staan 
 load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_BAR_assets.Rda"))
-assets$MSHLDROUTE = NULL
 
 setpbarwrapper(cfg$pb, label = "Calculating BAR data");
 # behoud alleen dat deel van de assets dat binnen de periode veranderd is.
@@ -43,15 +42,16 @@ minassets$LSkabels=assets$LSkabels[(!is.na(DateAdded)& DateAdded > cfg$firstdate
                                  (!is.na(DateStatus_ch)& DateStatus_ch > cfg$firstdate_BAR & DateStatus_ch < cfg$lastdate & substrRight(Status_ch,11)=="Uit Bedrijf")|
                                  (!is.na(DateLength_ch)& DateLength_ch > cfg$firstdate_BAR & DateLength_ch < cfg$lastdate)]
 
-minassets$MSkabels=assets$MSkabels[(!is.na(DateAdded)& DateAdded > cfg$firstdate_BAR & DateAdded < cfg$lastdate) | 
+assets$MSkabels=assets$MSkabels[(!is.na(DateAdded)& DateAdded > cfg$firstdate_BAR & DateAdded < cfg$lastdate) | 
                                      (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_BAR & DateRemoved < cfg$lastdate)|
                                      (!is.na(DateStatus_ch)& DateStatus_ch > cfg$firstdate_BAR & DateStatus_ch < cfg$lastdate & substrRight(Status_ch,11)=="Uit Bedrijf")|
                                      (!is.na(DateLength_ch)& DateLength_ch > cfg$firstdate_BAR & DateLength_ch < cfg$lastdate)]
 
-minassets$MSmoffen=assets$MSmoffen[(!is.na(DateAdded)& DateAdded > cfg$firstdate_BAR & DateAdded < cfg$lastdate) | 
+assets$MSmoffen=assets$MSmoffen[(!is.na(DateAdded)& DateAdded > cfg$firstdate_BAR & DateAdded < cfg$lastdate) | 
                                  (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_BAR & DateRemoved < cfg$lastdate)]
-minassets$LSmoffen=assets$LSmoffen[(!is.na(DateAdded)& DateAdded > cfg$firstdate_BAR & DateAdded < cfg$lastdate) | 
-                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_BAR & DateRemoved < cfg$lastdate)]
+
+assets$LSmoffen=assets$LSmoffen[((!is.na(DateAdded)& DateAdded > cfg$firstdate_BAR & DateAdded < cfg$lastdate) | 
+                                 (!is.na(DateRemoved)& DateRemoved > cfg$firstdate_BAR & DateRemoved < cfg$lastdate))]
 
 assets = minassets
 
@@ -68,17 +68,19 @@ setpbarwrapper(cfg$pb, label = "Loading NOR data");
 # Set what dates unexplainable bumps in the data occured, NOR
 cfg$BadDates = list()
 cfg$BadDates$kabels = list(
-  DateAdded   = as.Date(c("2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05")),
-  DateRemoved = as.Date(c("1970-01-01","2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05")),
-  Date_Status_ch = as.Date(c("1970-01-01","2012-12-08")),
-  DateLength_ch = as.Date("1970-01-01","2015-01-03","2012-12-08","2007-11-03","2011-02-05","2007-09-08"))
+  DateAdded   = as.Date(c("2010-04-03", "2011-06-04", "2010-07-03", "2007-01-06" )),
+  DateRemoved = as.Date(c("2010-07-03", "2011-06-04")),
+  Date_Status_ch = as.Date(c("2000-01-01")),
+  DateLength_ch = as.Date(c("2009-05-09"))
+)
 
 cfg$BadDates$moffen = list(
-  DateAdded   = as.Date(c("2007-01-06","2011-06-04","2011-02-05","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05")),
-  DateRemoved = as.Date(c("1970-01-01","2007-01-06","2010-07-03",'2011-02-05', "2011-06-04","2012-05-05","2011-08-06")))
+  DateAdded   = as.Date(c("2011-06-04", "2010-07-03", "2007-01-06"),
+  DateRemoved = as.Date(c("2011-08-06", "2010-07-03", "2011-09-03")))
+)
 
 # Laad de assets en converteer de datums als deze verkeerd staan 
-load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_assets.Rda"))
+#load(paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_NOR_assets.Rda"))
 try(setnames(assets$kabels,"PC_6_naar.y","PC_6_naar"))
 setpbarwrapper(cfg$pb, label = "Calculating NOR data");
 

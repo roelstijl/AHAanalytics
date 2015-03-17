@@ -32,6 +32,8 @@ vector_in_DT = function(vector,DT){
   return(a)
 }
 
+
+
 substrRight <- function(x, n){
   substr(x, nchar(x)-n+1, nchar(x))
 }
@@ -111,9 +113,12 @@ savewrapper = function(..., file, compress=F)
   save()
 }
 
-# Used for the progressbar
-pbarwrapper = function(title="PlaceHolder", label = "Starting...", max = 1,min = 0,initial = 0,width = 450)
-{
+pbarwrapper = function(title="PlaceHolder", label = "Starting...", max = 1,min = 0,initial = 0,width = 450){
+  # Roel Stijl, Bearingpoint 2015
+  # Used for the progressbar generation
+  # use setpbwrapper to set steps of progress
+  # title, label and max are needed, remainder is there for historic reasons
+  
   cat("\n")
   gltitle <<- title
   label     = paste0(title, ": ",label)
@@ -135,7 +140,7 @@ setpbarwrapper = function(pb=T,index=-1,label="title",title=""){
     glpc <<- glpc+1; 
     index=glpc;
   }
-  label = paste0(gltitle, ": ", label,"                     ")
+  label = paste0(gltitle, ": ", label,"                                         ")
   setTxtProgressBar2 (pb, index,label = label)
 }
 

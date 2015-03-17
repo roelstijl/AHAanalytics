@@ -1,6 +1,6 @@
-AHA_Data_BAR_Log  = function()
-{
 # Creates as delta set from the statis BAR set
+
+AHA_Data_BAR_Log  = function(){
 # Load and prepare some data --------------------------------------------------
 assets = list(); 
 changes = list();
@@ -30,10 +30,9 @@ assets$MSmoffen = (Calc_Dates(mindataset,"Moffen"))
 setpbarwrapper(pb, 5,label = "Processing MS routenamen data")
 load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/MS_hoofdleidingen.Rda"))
 MSHLDRoute    = (mindataset)
-
 setkey(assets$MSkabels,ID_Hoofdleiding)
 setkey(MSHLDRoute,ID_Hoofdleiding)
-assets$MSkabels = unique(MSHLDRoute[,list(Routenaam,ID_Hoofdleiding)])[assets$MSkabels]
+assets$MSkabels[,Routenaam:=unique(MSHLDRoute)[assets$MSkabels,Routenaam]]
 
 # Bereken postcode 4
 assets$LSmoffen[,PC_4:=substr(assets$LSmoffen$PC_6,1,4)]
@@ -49,14 +48,72 @@ assets$MSkabels = assets$MSkabels[,Brontabel := "ms_kabels"]
 assets$LSmoffen = assets$LSmoffen[,Brontabel := "ls_moffen"]
 assets$MSmoffen = assets$MSmoffen[,Brontabel := "ms_moffen"]
 
+# Make sure we don't have any out of bound XY
+assets$LSmoffen[Coo_X<60000 | Coo_X>260000 |Coo_Y<400000|Coo_Y>650000, Coo_X:=NA]
+assets$LSmoffen[Coo_X<60000 | Coo_X>260000 |Coo_Y<400000|Coo_Y>650000, Coo_Y:=NA]
+assets$LSkabels[Coo_X_van<60000 | Coo_X_van>260000 |Coo_Y_van<400000|Coo_Y_van>650000, Coo_X_van:=NA]
+assets$LSkabels[Coo_X_van<60000 | Coo_X_van>260000 |Coo_Y_van<400000|Coo_Y_van>650000, Coo_Y_van:=NA]
+assets$LSkabels[Coo_X_naar<60000 | Coo_X_naar>260000 |Coo_Y_naar<400000|Coo_Y_naar>650000, Coo_X_naar:=NA]
+assets$LSkabels[Coo_X_naar<60000 | Coo_X_naar>260000 |Coo_Y_naar<400000|Coo_Y_naar>650000, Coo_Y_naar:=NA]
+assets$MSmoffen[Coo_X<60000 | Coo_X>260000 |Coo_Y<400000|Coo_Y>650000, Coo_X:=NA]
+assets$MSmoffen[Coo_X<60000 | Coo_X>260000 |Coo_Y<400000|Coo_Y>650000, Coo_Y:=NA]
+assets$MSkabels[Coo_X_van<60000 | Coo_X_van>260000 |Coo_Y_van<400000|Coo_Y_van>650000, Coo_X_van:=NA]
+assets$MSkabels[Coo_X_van<60000 | Coo_X_van>260000 |Coo_Y_van<400000|Coo_Y_van>650000, Coo_Y_van:=NA]
+assets$MSkabels[Coo_X_naar<60000 | Coo_X_naar>260000 |Coo_Y_naar<400000|Coo_Y_naar>650000, Coo_X_naar:=NA]
+assets$MSkabels[Coo_X_naar<60000 | Coo_X_naar>260000 |Coo_Y_naar<400000|Coo_Y_naar>650000, Coo_Y_naar:=NA]
+
+# Montagedatum
+l_ply(assets,function(curfield){
+  l_ply(names(curfield)[laply(curfield,function(x) class(x) =="Date")],
+     function(x) {
+     eval(parse(text = 
+     paste0("curfield[",x," > as.Date(\"2015-06-01\") & !is.na(",x,"),",x," := ", 
+     x," - years(100)]")))})  
+})
+
+# Add XY
+setnames(assets$LSkabel,"ID_NAN","ID_NAN_kabel")
+setnames(assets$MSkabel,"ID_NAN","ID_NAN_kabel")
+
+LSmoffenkoppel = assets$LSmoffen[,list(ID_NAN,Coo_X,Coo_Y)]
+MSmoffenkoppel = assets$MSmoffen[,list(ID_NAN,Coo_X,Coo_Y)]
+
+LSmoffenkoppel[!is.na(Coo_X),ID_Verbinding:=nnsearch_kabel_mof(assets$LSkabels,LSmoffenkoppel,"ID_Verbinding")]
+LSmoffenkoppel[!is.na(Coo_X),ID_Hoofdleiding:=nnsearch_kabel_mof(assets$LSkabels,LSmoffenkoppel,"ID_Hoofdleiding")]
+LSmoffenkoppel[!is.na(Coo_X),ID_NAN_kabel:=nnsearch_kabel_mof(assets$LSkabels,LSmoffenkoppel,"ID_NAN_kabel")]
+LSmoffenkoppel[!is.na(Coo_X),Datum_Bouwjaar_kabel:=nnsearch_kabel_mof(assets$LSkabels,LSmoffenkoppel,"Datum_Bouwjaar")]
+
+MSmoffenkoppel[!is.na(Coo_X),ID_Verbinding:=nnsearch_kabel_mof(assets$MSkabels,MSmoffenkoppel,"ID_Verbinding")]
+MSmoffenkoppel[!is.na(Coo_X),ID_Hoofdleiding:=nnsearch_kabel_mof(assets$MSkabels,MSmoffenkoppel,"ID_Hoofdleiding")]
+MSmoffenkoppel[!is.na(Coo_X),ID_NAN_kabel:=nnsearch_kabel_mof(assets$MSkabels,MSmoffenkoppel,"ID_NAN_kabel")]
+MSmoffenkoppel[!is.na(Coo_X),Routenaam:=nnsearch_kabel_mof(assets$MSkabels,MSmoffenkoppel,"Routenaam")]
+MSmoffenkoppel[!is.na(Coo_X),Datum_Bouwjaar_kabel:=nnsearch_kabel_mof(assets$MSkabels,MSmoffenkoppel,"Datum_Bouwjaar")]
+
+setkey(assets$LSmoffen,ID_NAN)
+setkey(assets$MSmoffen,ID_NAN)
+setkey(LSmoffenkoppel,ID_NAN)
+setkey(MSmoffenkoppel,ID_NAN)
+
+assets$LSmoffen = unique(LSmoffenkoppel[,list(ID_Verbinding,ID_Hoofdleiding,ID_NAN_kabel,Datum_Bouwjaar,ID_NAN)])[assets$LSmoffen]
+assets$MSmoffen = unique(MSmoffenkoppel[,list(ID_Verbinding,ID_Hoofdleiding,ID_NAN_kabel,Routenaam,Datum_Bouwjaar,ID_NAN)])[assets$MSmoffen]
+
+setnames(assets$LSkabel,"ID_NAN_kabel","ID_NAN")
+setnames(assets$MSkabel,"ID_NAN_kabel","ID_NAN")
+
+# Change some names mostly from tableau insights
+try(setnames(assets$MSmoffen,"Wijziging_Naam","Naam_Wijziging"))
+assets$LSmoffen[Datum_Eind=="2099-12-31",Datum_Eind:=NA]
+assets$MSmoffen[Datum_Eind=="2099-12-31",Datum_Eind:=NA]
+
+
 # Save
 setpbarwrapper(pb, 6,label = "Saving to file")
-save(assets,file=paste0(settings$Input_Datasets,"/2. All Assets/Asset_Data_BAR_assets.Rda"))
+save(assets,file=paste0(settings$Input_Datasets,"/2. All assets/Asset_Data_BAR_assets.Rda"))
 setpbarwrapper(pb, 7,label = "Done!")
 
 }
 
-# Function used to calculate the Assets added removed and length changed-------------------------
+# Function used to calculate the assets added removed and length changed-------------------------
 Calc_Dates = function(mindataset,assettype="kabels")
 {
 # Added
@@ -94,23 +151,6 @@ if (assettype == "kabels")
 mindataset[,DateRemoved:=(max(Datum_Eind)),by=ID_NAN]
 mindataset[DateRemoved>"2090-01-01",DateRemoved:=NA]
 mindataset[!is.na(DateRemoved),Status_ID:="Removed"]
+mindataset[Datum_Eind>"2090-01-01",Datum_Eind:=NA]
 
 return(mindataset)}
-
-#Functie om kabels aan moffen te koppelen
-nnsearch_kabel_mof = function(kabelsset,moffenset,variable){
-  # Third use NN for Routenaam
-  nearest = nn2(kabelsset[!is.na(Coo_X_naar) & !is.na(kabelsset[[variable]]),list(Coo_X_naar,Coo_Y_naar)],moffenset[!is.na(Coo_X)&is.na(moffenset[[variable]]),list(Coo_X,Coo_Y)],k=1)
-  nearest2= nn2(kabelsset[!is.na(Coo_X_naar) & !is.na(kabelsset[[variable]]),list(Coo_X_van,Coo_Y_van)],moffenset[!is.na(Coo_X)&is.na(moffenset[[variable]]),list(Coo_X,Coo_Y)],k=1)
-  nnd = (nearest$nn.dists[,1]>=nearest2$nn.dists[,1])
-  nni = nearest$nn.idx[,1]; nni[nnd] = nearest2$nn.idx[nnd,1]
-  nni[!is.na(moffenset$Coo_X)&is.na(moffenset[[variable]])] = nni
-  
-  # output = rep(NA, nrow(moffenset))
-  
-  # output[is.na(kabelsset[[variable]])&!is.na(nni)] =
-  
-  output = kabelsset[[variable]][!is.na(kabelsset$Coo_X_naar)&!is.na(kabelsset[[variable]])][nni[!is.na(nni) & is.na(moffenset[[variable]])]]
-  
-  return(output)
-}
