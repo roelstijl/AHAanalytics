@@ -1,5 +1,5 @@
 #Written by Michiel Musterd 17-03-2015
-
+library("caTools")
 
 AHA_MVA_CDBreadin=function(){
 #This function reads in the CDB file (put in a directory on my C-drive because that is an SSD)
@@ -45,7 +45,7 @@ for (i in 1:length(levels(CDBorderedSet$MeetID))){
   
   setkey(CDBsingleMeetID,Datum,Tijd)
   
-  filename=paste0(settings$Ruwe_Datasets,"/19. CDB/",levels(CDBorderedSet$MeetID)[i],".Rda")
+  filename=paste0(settings$Ruwe_Datasets,"/19. CDB/",CDBsingleMeetID$MeetID[1],".Rda")
   save(CDBsingleMeetID,file=filename,compress=F)
   
   cat(paste0(i, " done -- runtime (s):", proc.time()[3]-ptm[3],"\n"))
@@ -61,6 +61,7 @@ save(countMeetIDs,file=paste0(settings$Ruwe_Datasets,"/19. CDB/ListOfMeetIDs.Rda
 }
 
 AHA_MVA_CDBcalcmetrics=function(){
+  
   #This function takes the output of the CDBreadin function and uses it to construct
   #5 metrics for each MeetID: mean(I), I_max, mean(I^2), mean ((dI/dt)^2), max_year(min_2h I) where Delta
   #is the derivative of I at each timestep
@@ -71,7 +72,16 @@ AHA_MVA_CDBcalcmetrics=function(){
   
   #now calculate the metrics for each MeetID
   cntr=0
-  for (i in namesSelect[10]){
+  Isqmean=(1:length(namesSelect))*0
+  Imean=(1:length(namesSelect))*0
+  Imax=(1:length(namesSelect))*0
+  dIdTsquared=(1:length(namesSelect))*0
+  maxyear_min2h=(1:length(namesSelect))*0
+    
+
+  ptm=proc.time()  
+  for (i in namesSelect){
+    cat("Cntr:", cntr," -- Mpoint: ",i," -- Runtime (s): ",proc.time()[3]-ptm[3],"\n")
     load(paste0(settings$Ruwe_Datasets,"/19. CDB/",i,".Rda"))
     cntr=cntr+1
     
@@ -81,37 +91,45 @@ AHA_MVA_CDBcalcmetrics=function(){
     Imean[cntr]=mean(CDBsingleMeetID$Meetwaarde)
     Imax[cntr]=max(CDBsingleMeetID$Meetwaarde)
     
-    #add a time/date field usuable for time computations
-    CDBsingleMeetID[,DatumTijd:=paste0(CDBsingleMeetID$Datum," ",CDBsingleMeetID$Tijd)]
-    CDBsingleMeetID[,DatumTijdCalc:=data.table(sapply(CDBsingleMeetID$DatumTijd,as.POSIXct))$V1]
     
-    #calculate the timestep between every row
-    DTend=CDBsingleMeetID$DatumTijdCalc[nrow(CDBsingleMeetID)]+(CDBsingleMeetID$DatumTijdCalc[nrow(CDBsingleMeetID)]-CDBsingleMeetID$DatumTijdCalc[nrow(CDBsingleMeetID)-1])
-    DeltaTijd=c(CDBsingleMeetID$DatumTijdCalc[2:nrow(CDBsingleMeetID)],DTend)-CDBsingleMeetID$DatumTijdCalc
+    
+    
+    #add a time/date field usuable for time computations
+#     CDBsingleMeetID[,DatumTijd:=paste0(CDBsingleMeetID$Datum," ",CDBsingleMeetID$Tijd)]
+#     strptime(CDBsingleMeetID$DatumTijd,"%Y-%m-%d %H:%M:%S")
+#     
+#     CDBsingleMeetIDtemp[,DatumTijdCalc:=strptime(CDBsingleMeetIDtemp$DatumTijd,"%Y-%m-%d %H:%M:%S")]
+    
+
+    #we assume the timestep to be 300 seconds, we could calculate it, but won't for now
+    DeltaTijd=rep(300,nrow(CDBsingleMeetID))
     #note Tijd is in seconds
+    
+
     
     #calculate Delta I for all   
     DIend=CDBsingleMeetID$Meetwaarde[nrow(CDBsingleMeetID)]+(CDBsingleMeetID$Meetwaarde[nrow(CDBsingleMeetID)]-CDBsingleMeetID$Meetwaarde[nrow(CDBsingleMeetID)-1])
     DeltaI=c(CDBsingleMeetID$Meetwaarde[2:nrow(CDBsingleMeetID)],DIend)-CDBsingleMeetID$Meetwaarde
     
+    
+
     #Now we can calculate the derivatives and the derivative of I squared
     dIdTsquared[cntr]=mean((DeltaI/DeltaTijd)^2)
     
     #Finally we compute the minimum per 2h (7200 s) frame and then the max of that for the year
-    min2h=1:nrow(CDBsingleMeetID)
-    if (mean(DeltaTijd)==300){
-      for (j in 1:nrow(CDBsingleMeetID)){
-        if ((j+24)<nrow(CDBsingleMeetID)){
-          min2h[j]=min(CDBsingleMeetID$Meetwaarde[j:(j+24)])
-        }else{
-          cat(j,"\n")
-          min2h[j]=min(CDBsingleMeetID$Meetwaarde[(j-24):j]) 
-        }
-      }      
-    }
+   
+
+    
+    maxyear_min2h[cntr]=max(runmin(CDBsingleMeetID$Meetwaarde, round(7200/mean(DeltaTijd))))
     
     
   }
+  
+  mindataset=data.table(M_Point=namesSelect,Mean_I=Imean,Max_I=Imax,Mean_I_squared=Isqmean,Mean_squared_dIdt=dIdTsquared,Maxyear_min2h=maxyear_min2h)
+  
+  save(mindataset,file=paste0(settings$Ruwe_Datasets,"/19. CDB/Mpoint_BelastingIndicators.Rda"))
+  
+  return(mindataset)
 
 }
 
