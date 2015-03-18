@@ -13,8 +13,8 @@ Save_preprocess = function(st,type){
         Test_Train = {
           testrows = rep(F,nrow(mindataset))
           testrows[sample(1:nrow(mindataset),st$tst_size)] = T
-          trainrow = c(sample(which(mindataset[[st$Target_Variable]]==st$Target_Value & !testrows),st$tst_size*(st$Tr_tgt)),
-                       sample(which(mindataset[[st$Target_Variable]]!=st$Target_Value & !testrows),st$tst_size*(1-st$Tr_tgt)))
+          trainrow = c(sample(which(mindataset[[st$Target_Variable]]==st$Target_Value & !testrows),st$Tr_size*(st$Tr_tgt)),
+                       sample(which(mindataset[[st$Target_Variable]]!=st$Target_Value & !testrows),st$Tr_size*(1-st$Tr_tgt)))
           testrows = which(testrows)
           
           testset  = mindataset[testrows,metadata$names[metadata$selected],with=F]
