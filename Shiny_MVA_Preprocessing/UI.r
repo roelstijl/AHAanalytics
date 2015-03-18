@@ -29,8 +29,10 @@ ifelse(file.exists(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings
 ifelse(file.exists(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_correlations.Rda")),
        {load(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_correlations.Rda"),envir = globalenv())},
        {Correlations <<- AHA_MVA_CorrelationTable(dataset);
-       save(Correlations,file = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_correlations.Rda"))}
+       save(Correlations,file = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_correlations.Rda"))}  
 )
+setcolorder(Correlations$types,c(metadata$names,"row.names"))
+setcolorder(Correlations$correlations,c(metadata$names,"row.names"))
 
 Variable_names <<- as.list(metadata$names)
 names(Variable_names) <<-metadata$names

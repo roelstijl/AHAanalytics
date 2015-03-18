@@ -64,9 +64,10 @@ shinyServer(function(input, output,session) {
     cor_tabel = data.table(Variabele=Correlations$types$row.names,
                            Correlatie=Correlations$correlations[[as.numeric(input$radiobutton[1])+elements[1]-1]],
                            Methode=Correlations$types[[as.numeric(input$radiobutton[1])+elements[1]-1]])
-    cor_tabel = cor_tabel[metadata$selected]
+    cor_tabel = cor_tabel[pmatch(metadata$names,cor_tabel$Variabele)][metadata$selected]
+    
     setorder(cor_tabel,-Correlatie)
-    rbind(cor_tabel[Methode!="Error"][1:20],cor_tabel[Methode=="Error"])
+    rbind(cor_tabel[Methode!="Error"][1:min(20,nrow(cor_tabel[Methode!="Error"]))],cor_tabel[Methode=="Error"])
     })
 
 })
