@@ -17,7 +17,7 @@ shinyServer(function(input, output,session) {
                                               "Variables: ",ncol(dataset),", ",
                                               "Total size: ",datalength,", ",
                                               "Sample size: ",nrow(dataset),", ",
-                                              "Target size: ",nrow(dataset[get(input$Target_Variable)==input$Target_Value])))
+                                              "Target %: ",nrow(dataset[get(input$Target_Variable)==input$Target_Value])/nrow(dataset)))
     
     # Set the elements to display
     if(input$volgende_x[1] > next_button) {elements <<-elements+15; next_button<<-next_button+1};
