@@ -1,3 +1,11 @@
+temp = function(){
+  l_ply(1:4,function(x) koppellijst[[x]][,Brontabel:=names(koppellijst)[x]])
+  
+  write.csv(rbindlist(koppellijst,fill=T),file=paste0(settings$Analyse_Datasets,"/2. Proxy validatie/Validatie Scores.csv"))
+  
+}
+
+
 AHA_Proxy_KA_Postprocessing = function(Proxy_files_to_import=0,GoogleMaps=F,includePCmaps=F,FullSet=F)
 {
 # This function will plot the data files used in project AHA onto google maps
