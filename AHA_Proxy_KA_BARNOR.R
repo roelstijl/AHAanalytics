@@ -110,7 +110,7 @@ AHA_Proxy_KA_BAR_NOR =
 # Bepalen of kabels wel of niet vervangen is, aanmaken lijst met weg te schrijven data  ---------------------------
     if(checkverv){
     tic()
-    setTkProgressBar(pb,nr1,label="Checken op Bepalen of kabels vervangen zijn (M☺S)")
+    setTkProgressBar(pb,nr1,label="Checken op Bepalen of kabels vervangen zijn (MS)")
     assets$MSkabels$is.verv <- kabel_verv(assets$MSkabels,config)
     setTkProgressBar(pb, (nr1+nr2)/2,label = "Bepalen of kabels vervangen zijn (LS)") ;
     assets$LSkabels$is.verv <- kabel_verv(assets$LSkabels,config)
