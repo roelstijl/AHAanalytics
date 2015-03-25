@@ -310,3 +310,15 @@ dow = sapply(seq(0,6),function(x) wday(date+days(x)))
 firstFriday = date + days(which(dow==5)-1)+2
 return(firstFriday)
 }
+
+#Check whether old names are in the colnames of a datatable, if true then change this name
+namechange <- function(datatable,oldnames,newnames){
+  if(length(oldnames)!=length(newnames)){print("Unequal length of name vectors")}else{
+    lengthnames = length(oldnames)
+    for(i in 1:lengthnames){
+      if(sum(grepl(oldnames[i],names(datatable)))){
+        setnames(datatable,oldnames[i],newnames[i])
+      }
+    }
+  }
+}
