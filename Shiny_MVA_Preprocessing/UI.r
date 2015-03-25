@@ -1,8 +1,9 @@
-# Tool for the preprocessing of data for MVA pruposes
+# Roel Stijl (Bearingpoint) 2015
+# Tool for the preprocessing of data for MVA purposes
 cfg <<-list()
 cfg$max_categories <<- 25
-cfg$namelength <<- 25
-cfg$samplesize <<- 5000
+cfg$namelength     <<- 25
+cfg$samplesize     <<- 5000
 
 # Prepare some variables for the first run
 filechooser <<- choose.files(default = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/*.Rda"))
@@ -46,11 +47,16 @@ setcolorder(Correlations$correlations,c(metadata$names,"row.names"))
 Variable_names <<- as.list(metadata$names)
 names(Variable_names) <<-metadata$names
 
+#Convert the data into something usefull
+cfg$elements          <<- 1:min(15,length(metadata$selected));
+cfg$checkboxes        <<- 1:length(metadata$selected);  
+names(cfg$checkboxes) <<- metadata$shortname;
+names(cfg$elements)   <<- rep("-",15);
+
+# Prepare some variables to be used to keep track of the GUI
 update_no_1 <<- 0;
 update_no_2 <<- 0;
-
 save_to_file <<- 0;
-text_in_box <<- "";
 next_button<<-0;
 last_button<<-0;
 updatedcheckbox <<-0;
@@ -58,11 +64,6 @@ createtrain <<-0;
 createfull <<-0;
 targetvariable <<-0;
 
-#Convert the data into something usefull
-elements <<- 1:min(15,length(metadata$selected));
-checkboxes <<- 1:length(metadata$selected);  
-names(checkboxes)   <<- metadata$shortname;
-names(elements) <<- matrix("-",elements[length(elements)]);
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(  
@@ -81,10 +82,10 @@ fluidRow(
   column(4,actionButton("volgende_x", label = "Next"))
 ),
       fluidRow(
-      column(2,radioButtons("radiobutton", label = "",choices=elements,selected="4")),
+      column(2,radioButtons("radiobutton", label = "",choices=cfg$elements,selected="4")),
           
       column(10,checkboxGroupInput("Checkbox", label = "",
-              choices = checkboxes[elements],selected = as.character(elements[1]-1+which(metadata[elements,selected]==1)))
+              choices = cfg$checkboxes[cfg$elements],selected = as.character(cfg$elements[1]-1+which(metadata[cfg$elements,selected]==1)))
       ))
       ,
 fluidRow(

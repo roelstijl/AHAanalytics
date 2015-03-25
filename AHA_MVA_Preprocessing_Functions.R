@@ -161,7 +161,7 @@ Simple_Lift = function(dataset,targetvariable,targetvalue,currentvariable){
 tabeltotaal <- table(dataset[[currentvariable]]);
 tabelgestoord <- table(dataset[dataset[[targetvariable]] == targetvalue,currentvariable,with=F]);
 
-if(nrow(tabelgestoord)==0 | nrow (tabeltotaal)==0) {plot(1:2); return()}
+if(nrow(tabelgestoord)==0 | nrow (tabeltotaal)==0 | nrow(tabeltotaal)<=100) {plot(1:2); cat("Error, too few to too many (>100) variables\n"); return()}
 
 tabelmerge = switch (class(dataset[[currentvariable]]),
                      numeric  =  merge(tabeltotaal, tabelgestoord, by = 1, all = TRUE, sort = TRUE),
@@ -210,19 +210,13 @@ plot(x = as.factor(rechtergrens3$rechtergrens), y = rechtergrens3$totaalonthoude
 
 axis(side=4)
 mtext("Frequency", side=4, line=3)
-
-#   key(rechtergrens2,rechtergrens)
-#   key(rechtergrens3,rechtergrens)
-#   datasets = 
-#   
-#   ggplot(rechtergrens2) + 
-#     geom_bar(aes(x = lift, y = rechtergrens ),colour = "black") + 
-#     geom_lines()
-#     theme_bw() +
-#     theme(axis.text.x = element_text(angle = 90, hjust = 1))
 }
 
 frequencybar = function(datavector){
+# Written by Roel Stijl (Bearingpoint) 2015
+# Creates a plot with frequencies of e.g. empty values
+# Datavector has to be a 1xM datatable
+  
 varname = names(datavector)[1]
 
 datavector[[varname]] = ifelse(is.na(datavector[[varname]]),"NA",datavector[[varname]])
