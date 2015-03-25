@@ -1,5 +1,6 @@
 # Tool for the preprocessing of data for MVA pruposes
 cfg <<-list()
+cfg$max_categories <<- 25
 cfg$namelength <<- 25
 cfg$samplesize <<- 5000
 
@@ -9,11 +10,19 @@ filename <<- file_path_sans_ext(basename(filechooser))
 
 ifelse(file.exists(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_sample.Rda")),
 load(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_sample.Rda"),envir = globalenv()),       
-{load(filechooser);
- mindataset = data.table(mindataset)
- dataset    <<- mindataset[sample(1:nrow(mindataset),cfg$samplesize)]
- datalength <<- nrow(mindataset)
- save(dataset,datalength,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_sample.Rda"))})
+{ SetName  = load(filechooser)
+mindataset = data.table(get(SetName))
+
+l_ply(names(mindataset)[laply(mindataset,is.character)],function(x) mindataset[,eval(x):=as.factor(mindataset[,get(x)])])
+l_ply(names(mindataset)[laply(mindataset,function(x) class(x)[1])=="POSIXct"],function(x) mindataset[,eval(x):=as.Date(get(x))])
+l_ply(names(mindataset)[laply(mindataset,function(x) class(x)[1])=="integer"],function(x) mindataset[,eval(x):=as.numeric(get(x))])
+l_ply(names(mindataset)[laply(mindataset,function(x) class(x)[1])=="Date"],function(x) mindataset[,eval(x):=as.numeric(get(x))])
+
+dataset    <<- mindataset[sample(1:nrow(mindataset),cfg$samplesize)]
+datalength <<- nrow(mindataset)
+save(dataset,datalength,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_sample.Rda"))})
+
+setcolorder(dataset,cn(dataset))
 
 # load an excel file with the metadata if none exist
 ifelse(file.exists(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_metadata.xlsx")),
@@ -80,7 +89,7 @@ fluidRow(
       ,
 fluidRow(
   column(6,textInput("Tr_size",label="Train size",value = "10000")),
-  column(6,textInput("Tr_tgt", label="Train % ",value = "0.5"))
+  column(6,textInput("Tr_tgt", label="Train % ",value = "50"))
 ),
 
 fluidRow(

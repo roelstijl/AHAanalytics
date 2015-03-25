@@ -1,5 +1,6 @@
+# Written by Roel Stijl (Bearingpoint) (2014-2015)
 # Used to derive the monthly change version of the NOR using first month as a basis
-# Source can be backup or file, cfg$backups will be created every 6 months unless backup=FALSE
+# Source can be backup or file, backups will be created every 6 months unless backup=FALSE
 
 AHA_Data_NOR_Log = function(NORtable, datasource="file",backups=F){
 # Load functions and settings ----------------------------------------
@@ -10,7 +11,6 @@ cfg$NORtable      = NORtable
 cfg$datafolder    = paste0(settings$Ruwe_Datasets ,"/6. NOR");
 cfg$outputfolder  = paste0(settings$Input_Datasets,"/6. NOR");
 cfg$datasource    = datasource
-cfg$backups       = backups 
 cfg$firstfile = 1
 
 cfg$files = list.files(pattern=paste0(cfg$NORtable,".*\\.Rda"), path=cfg$datafolder,full.names=TRUE)
@@ -19,11 +19,11 @@ cfg$files=cfg$files[!grepl("masterdataset_backup",cfg$filesshort )]
 cfg$filesshort =cfg$filesshort [!grepl("masterdataset_backup",cfg$filesshort )]
 cfg$curdate = llply(cfg$filesshort,function(x) firstFri(gsub("[^0-9]","",x)))
 
-cfg$pb = pbarwrapper(title = "AHA_Data_NOR_Log start", label = "Start", max = length(cfg$filesshort )*3+1+cfg$backups*length(cfg$filesshort )/3);
+cfg$pb = pbarwrapper(title = "AHA_Data_NOR_Log start", label = "Start", max = length(cfg$filesshort )*3+1+backups*length(cfg$filesshort )/3);
 
 cfg$comparecols = switch (cfg$NORtable,
     ELCVERBINDINGSKNOOPPUNTEN=c("ID_unique", "ID_NAN","Bronsysteem","SpanningsNiveau","Beheerder", "Soort",  "Constructie","Fabrikanttype","Isolatiemedium",  "Fabrikant","Coo_X","Coo_Y"),
-    ELCVERBINDINGSDELEN=c("ID_unique","Lengte","Bronsysteem","ID_NAN","Status","Beheerder","Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar","Fabrikanttype","SpanningsNiveau"),
+    ELCVERBINDINGSDELEN=c("ID_unique","Lengte","BRONNAN","Bronsysteem","ID_NAN","Status","Beheerder","Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar","Fabrikanttype","SpanningsNiveau"),
     ELCVERBINDINGEN=c("ID_unique","Lengte","Bronsysteem",	"SpanningsNiveau","Beheerder",	"Soort",	"Soortnet"))
 
 # Plot to check for anomolies in file sizes
@@ -62,7 +62,7 @@ doubles = combinedset[((!duplicated(combinedset,fromLast=F) & !duplicated(combin
 doubles[,Date:=cfg$curdate[[n]]]
  
 # Collect changes and write them back to the masterdataset if needed
-ifelse(!exists("changes"),{changes = doubles},{changes = rbind(changes, doubles)})
+ifelse(!exists("changes"),{changes = doubles},{changes = rbind(changes, doubles,fill=T)})
 
 cfg$notcomparecols = c(names(masterdataset)[!names(masterdataset) %in% cfg$comparecols],"ID_unique")
 
@@ -73,8 +73,8 @@ masterdataset = rbind(masterdataset[!(masterdataset$ID_unique %in% doubles[file=
                           mindataset[doubles[file==n,ID_unique],cfg$comparecols,with=F][masterdataset[doubles[file==n,ID_unique],cfg$notcomparecols,with=F]]
                       ,fill=T)
 
-# Save cfg$backups every 6 cycles if on
-if (n%%6 == 0 & cfg$backups) {
+# Save backups every 6 cycles if on
+if (n%%6 == 0 & backups) {
 setpbarwrapper(cfg$pb,  label = "Saving backup");
 save(changes,file=paste0(cfg$outputfolder,"/backup/masterdataset_backup_changes_",cfg$filesshort [n]));   
 save(masterdataset,file=paste0(cfg$outputfolder,"/backup/masterdataset_backup_masterdataset_",cfg$filesshort [n]));   
@@ -113,7 +113,7 @@ AHA_NOR_Load_Backup=function (cfg){
 
 AHA_NOR_Load_File = function(cfg,n,masterdataset=NULL){
   # Determine date at which the file was created
-  setpbarwrapper(cfg$pb,  title = paste0("AHA_Data_NOR_Log, file: ",cfg$filesshort[n]), label = "Starting import"); 
+#   setpbarwrapper(cfg$pb,  title = paste0("AHA_Data_NOR_Log, file: ",cfg$filesshort[n]), label = "Starting import"); 
   par(mfrow=c(2,1))
   load(cfg$files[n])
   
