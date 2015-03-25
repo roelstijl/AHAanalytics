@@ -56,6 +56,15 @@ load_settings = function(){
     settings$Visuals = "C:/Datasets/AHAdata/5. Visuals and Tableau workbooks"
     settings$Results = "C:/Datasets/AHAdata/6. Results"}
   
+  # Laptop frank
+  else if (Sys.info()["nodename"] =="L-AW09JM" ) {
+    settings$Bron_Datasets = "C:/Data/Asset Health Data/0. Ongebruikte en brondata"
+    settings$Ruwe_Datasets = "C:/Data/Asset Health Data/1. Ruwe Datasets"
+    settings$Input_Datasets = "C:/Data/Asset Health Data/2. Input Datasets"
+    settings$Analyse_Datasets = "C:/Data/Asset Health Data/3. Analyse Datasets"
+    settings$Visuals = "C:/Data/Asset Health Data/5. Visuals and Tableau workbooks"
+    settings$Results = "C:/Data/Asset Health Data/6. Results"}
+  
   # Laptop Roel Stijl Bearingpoint Zbook
   else if (Sys.info()["nodename"] =="NLAMS4043734Y") {
     settings$Bron_Datasets = "F:/1. Alliander/3. Asset Health Analytics/0. Ongebruikte en brondata"
