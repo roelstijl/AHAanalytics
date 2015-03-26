@@ -18,12 +18,13 @@ if(file.exists(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",f
   SetName  = load(filechooser)
   mindataset = data.table(get(SetName))
   
-  l_ply(names(mindataset)[laply(mindataset,is.character)],function(x) mindataset[,eval(x):=as.factor(mindataset[,get(x)])])
-  l_ply(names(mindataset)[laply(mindataset,function(x) class(x)[1])=="POSIXct"],function(x) mindataset[,eval(x):=as.Date(get(x))])
-  l_ply(names(mindataset)[laply(mindataset,function(x) class(x)[1])=="integer"],function(x) mindataset[,eval(x):=as.numeric(get(x))])
-  l_ply(names(mindataset)[laply(mindataset,function(x) class(x)[1])=="Date"],function(x) mindataset[,eval(x):=as.numeric(get(x))])
-  
   dataset    <<- mindataset[sample(1:nrow(mindataset),cfg$samplesize)]
+  
+  l_ply(names(dataset)[laply(dataset,is.character)],function(x) dataset[,eval(x):=as.factor(dataset[,get(x)])])
+  l_ply(names(dataset)[laply(dataset,function(x) class(x)[1])=="POSIXct"],function(x) dataset[,eval(x):=as.Date(get(x))])
+  l_ply(names(dataset)[laply(dataset,function(x) class(x)[1])=="integer"],function(x) dataset[,eval(x):=as.numeric(get(x))])
+  l_ply(names(dataset)[laply(dataset,function(x) class(x)[1])=="Date"],function(x) dataset[,eval(x):=as.numeric(get(x))])
+  
   setcolorder(dataset,cn(dataset))
   save(dataset,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_sample.Rda"))
   cat("Done\n ")
