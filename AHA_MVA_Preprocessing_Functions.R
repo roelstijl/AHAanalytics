@@ -2,9 +2,10 @@ Save_preprocess = function(st,type){
 # Written by Roel Stijl (Bearingpoint B.V.) - 13-03-2015  
 # Saves output from shiny function
   
-  cat("Writing data to file...... ")
-load(filechooser)
-mindataset = data.table(mindataset)
+cat("Writing data to file...... ")
+SetName  = load(filechooser)
+mindataset = data.table(get(SetName))
+
 l_ply(names(mindataset)[laply(mindataset,is.character)],function(x) mindataset[,eval(x):=as.factor(mindataset[,get(x)])])
 l_ply(names(mindataset)[laply(mindataset,function(x) class(x)[1])=="POSIXct"],function(x) mindataset[,eval(x):=as.Date(get(x))])
 l_ply(names(mindataset)[laply(mindataset,function(x) class(x)[1])=="integer"],function(x) mindataset[,eval(x):=as.numeric(get(x))])
@@ -151,10 +152,8 @@ Simple_Lift = function(dataset,targetvariable,targetvalue,currentvariable){
 # Creates a simple lift graph
 
 # dataset.local = dataset
-# 
 # if(class(dataset.local[[currentvariable]])=="Date")    dataset.local[[currentvariable]] = as.numeric(dataset.local[[currentvariable]])
 # if(class(dataset.local[[currentvariable]])=="integer") dataset.local[[currentvariable]] = as.numeric(dataset.local[[currentvariable]])
-# 
 # if(class(dataset.local[[targetvariable]])=="Date")    dataset.local[[targetvariable]] = as.numeric(dataset.local[[targetvariable]])
 # if(class(dataset.local[[targetvariable]])=="integer") dataset.local[[targetvariable]] = as.numeric(dataset.local[[targetvariable]])
 

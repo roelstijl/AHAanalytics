@@ -9,38 +9,48 @@ cfg$samplesize     <<- 5000
 filechooser <<- choose.files(default = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/*.Rda"))
 filename <<- file_path_sans_ext(basename(filechooser))
 
-ifelse(file.exists(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_sample.Rda")),
-load(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_sample.Rda"),envir = globalenv()),       
-{ SetName  = load(filechooser)
-mindataset = data.table(get(SetName))
+# Sample the data
+if(file.exists(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_sample.Rda")))
+{ # Load data if ran before
+  load(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_sample.Rda"),envir = globalenv())
+} else { # Run it for the first time
+  cat("Creating sample set .... ")
+  SetName  = load(filechooser)
+  mindataset = data.table(get(SetName))
+  
+  l_ply(names(mindataset)[laply(mindataset,is.character)],function(x) mindataset[,eval(x):=as.factor(mindataset[,get(x)])])
+  l_ply(names(mindataset)[laply(mindataset,function(x) class(x)[1])=="POSIXct"],function(x) mindataset[,eval(x):=as.Date(get(x))])
+  l_ply(names(mindataset)[laply(mindataset,function(x) class(x)[1])=="integer"],function(x) mindataset[,eval(x):=as.numeric(get(x))])
+  l_ply(names(mindataset)[laply(mindataset,function(x) class(x)[1])=="Date"],function(x) mindataset[,eval(x):=as.numeric(get(x))])
+  
+  dataset    <<- mindataset[sample(1:nrow(mindataset),cfg$samplesize)]
+  setcolorder(dataset,cn(dataset))
+  save(dataset,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_sample.Rda"))
+  cat("Done\n ")
+}
 
-l_ply(names(mindataset)[laply(mindataset,is.character)],function(x) mindataset[,eval(x):=as.factor(mindataset[,get(x)])])
-l_ply(names(mindataset)[laply(mindataset,function(x) class(x)[1])=="POSIXct"],function(x) mindataset[,eval(x):=as.Date(get(x))])
-l_ply(names(mindataset)[laply(mindataset,function(x) class(x)[1])=="integer"],function(x) mindataset[,eval(x):=as.numeric(get(x))])
-l_ply(names(mindataset)[laply(mindataset,function(x) class(x)[1])=="Date"],function(x) mindataset[,eval(x):=as.numeric(get(x))])
-
-dataset    <<- mindataset[sample(1:nrow(mindataset),cfg$samplesize)]
-datalength <<- nrow(mindataset)
-save(dataset,datalength,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_sample.Rda"))})
-
-setcolorder(dataset,cn(dataset))
-
-# load an excel file with the metadata if none exist
-ifelse(file.exists(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_metadata.xlsx")),
-{temp = read.xlsx(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_metadata.xlsx"),1)
+# Settings in excel file
+if(file.exists(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_metadata.xlsx")))
+{ # load an excel file with the metadata if none exist
+ temp = read.xlsx(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_metadata.xlsx"),1)
  temp$selected = as.logical(temp$selected)
- metadata <<- data.table(temp)},
-{metadata  <<- data.table(
+ metadata <<- data.table(temp)
+} else { # Create metadata
+  metadata  <<- data.table(
   names     = cn(dataset),
   selected  = T,
-  shortname = paste0(substring(cn(dataset),1,cfg$namelength),ifelse(nchar(cn(dataset))>=cfg$namelength,"...","")))})
+  shortname = paste0(substring(cn(dataset),1,cfg$namelength),ifelse(nchar(cn(dataset))>=cfg$namelength,"...","")))
+}
 
 # load or calculate the correlations, depending of wether this has been done before
-ifelse(file.exists(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_correlations.Rda")),
-       {load(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_correlations.Rda"),envir = globalenv())},
-       {Correlations <<- AHA_MVA_CorrelationTable(dataset);
-       save(Correlations,file = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_correlations.Rda"))}  
-)
+if(file.exists(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_correlations.Rda")))
+{
+ load(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_correlations.Rda"),envir = globalenv())
+} else {
+ Correlations <<- AHA_MVA_CorrelationTable(dataset);
+ save(Correlations,file = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_correlations.Rda"))
+}
+
 setcolorder(Correlations$types,c(metadata$names,"row.names"))
 setcolorder(Correlations$correlations,c(metadata$names,"row.names"))
 
