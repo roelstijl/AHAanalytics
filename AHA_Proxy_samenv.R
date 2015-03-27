@@ -118,9 +118,10 @@ koppellijst =list()  # Aanmaken koppellijst
     koppellijst[[klasse]]$punten               <- rowSums(koppellijst[[klasse]][,c("XY","PC","TOPO"),with=F],na.rm=T)*
                                                   koppellijst[[klasse]]$GIS_datum*
                                                   koppellijst[[klasse]]$Component*
-                                                  koppellijst[[klasse]]$Component/
+                                                  koppellijst[[klasse]]$Storingsdatum/
                                                   koppellijst[[klasse]]$freq
     
+    koppellijst[[klasse]]$Oorzaak              <- (storingen[[voltage]][J(koppellijst[[klasse]]$ID_KLAK_Melding)]$Oorzaak2)
     koppellijst[[klasse]]$Graafschade          <- (storingen[[voltage]][J(koppellijst[[klasse]]$ID_KLAK_Melding)]$Oorzaak2 %in% config$graafschade)
   
     print(paste("Klaar, aantal gevonden assets is",assetsgevonden,"aantal gekoppelde assets is",assetsgekoppeld))
@@ -136,4 +137,3 @@ koppellijst =list()  # Aanmaken koppellijst
 vervangingmoffen = function(moffenlijst,kabellijst){
   test <-(sum(kabellijst[J(moffenlijst["ID_KLAK_Melding"]),]$DateAdded==moffenlijst["DateRemoved"])>0)
   return(test)}
-
