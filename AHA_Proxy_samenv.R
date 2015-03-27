@@ -1,4 +1,4 @@
-proxy_samenv  <- function(global=F){
+proxy_samenv  <- function(global=F,set){
   #Deze functie gebruikt drie proxy-uitkomsten (van PC, XY en TOPO) 
   #en voegt deze samen tot één lange lijst. Er  worden punten gegeven
   #aan elke koppeling op basis van de gebruikte koppelmethode, wel/geen
@@ -95,8 +95,12 @@ koppellijst =list()  # Aanmaken koppellijst
 
     koppellijst[[klasse]]$Component            <- ifelse(koppellijst[[klasse]]$Netcomponent %in% config[[klasse]]$comp,2,
                                                          ifelse(koppellijst[[klasse]]$Netcomponent %in% config[[klasse]]$onbk,1,0))
-    koppellijst[[klasse]]                      <- koppellijst[[klasse]][(koppellijst[[klasse]][,list(freq=length(unique(ID_unique))), by=ID_KLAK_Melding])][
-                                                             ,c(names(koppellijst[[klasse]]),"freq"),with=F]
+    if(set=="NOR"){
+      koppellijst[[klasse]]                      <- koppellijst[[klasse]][(koppellijst[[klasse]][,list(freq=length(unique(ID_unique))), by=ID_KLAK_Melding])][
+                                                             ,c(names(koppellijst[[klasse]]),"freq"),with=F]}
+      {koppellijst[[klasse]]                     <- koppellijst[[klasse]][(koppellijst[[klasse]][,list(freq=length(unique(ID_BAR))), by=ID_KLAK_Melding])][
+        ,c(names(koppellijst[[klasse]]),"freq"),with=F]}
+      
     koppellijst[[klasse]]$punten               <- rowSums(koppellijst[[klasse]][,c("XY","PC","TOPO","GIS_datum"),with=F],na.rm=T)/
                                                   koppellijst[[klasse]]$freq
     print(paste("Klaar, aantal gevonden assets is",assetsgevonden,"aantal gekoppelde assets is",assetsgekoppeld))
