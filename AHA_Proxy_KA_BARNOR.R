@@ -68,8 +68,6 @@ AHA_Proxy_KA_BAR_NOR =
     storingen$MS          = storingen$MS[!duplicated(storingen$MS$ID_KLAK_Melding),]
     storingen$LS          = storingen$LS[!duplicated(storingen$LS$ID_KLAK_Melding),]
     try(setnames(storingen$KLAKMelders, "Routenaam", "Routenaam_MS"))
-    #Weggoien HS assets
-    assets <- lapply(assets, function(ascomp){ascomp <- ascomp[!(ascomp$Netvlak=="HS"),]})
     
     #PC_4 Toevoegen
     assets$MSmoffen$PC_4 = substr(assets$MSmoffen$PC_6,1,4)
@@ -91,6 +89,8 @@ AHA_Proxy_KA_BAR_NOR =
                 assets$MSkabels$Index=rownames(assets$MSkabels)
                 assets$LSmoffen$Index=rownames(assets$LSmoffen)
                 assets$MSmoffen$Index=rownames(assets$MSmoffen) #Toevoegen unieke index aan assets
+                #Weggoien HS assets
+                assets <- lapply(assets, function(ascomp){ascomp <- ascomp[!(ascomp$Netvlak=="HS"),]})
                 toc()},
            BAR={l_ply(assets[1:4],function(x) try(setnames(x,"Status_R","Status_ID"),silent=T))
                 l_ply(assets[1:4],function(x) try(setnames(x,"Hoofdleiding","ID_Hoofdleiding"),silent=T))
@@ -98,7 +98,11 @@ AHA_Proxy_KA_BAR_NOR =
                 l_ply(assets[1:4],function(x) try(setnames(x,"ID_MS_Hoofdleiding","ID_Hoofdleiding_2"),silent=T))
                 l_ply(assets[1:4],function(x) try(setnames(x,"Bouwejaar","Bouwjaar"),silent=T))
                 assets$MSkabels$PC_4_van  <- substr(assets$MSkabels$PC_6_van,1,4)
-                assets$MSkabels$PC_4_naar <- substr(assets$MSkabels$PC_6_naar,1,4)}
+                assets$MSkabels$PC_4_naar <- substr(assets$MSkabels$PC_6_naar,1,4)
+                assets$LSkabels$Index=assets$LSkabels$ID_BAR
+                assets$MSkabels$Index=assets$MSkabels$ID_BAR
+                assets$LSmoffen$Index=assets$LSmoffen$ID_BAR
+                assets$MSmoffen$Index=assets$MSmoffen$ID_BAR} #Toevoegen unieke index aan assets
     )
   
  #nettopo$EAN_koppel$ID_Hoofdleiding_LS <- as.character(nettopo$EAN_koppel$ID_Hoofdleiding_LS) #zorgen dat hoofdleidingen characters zijn
@@ -107,10 +111,10 @@ AHA_Proxy_KA_BAR_NOR =
     if(meldersproc){setTkProgressBar(pb,nr1,label="Checken op KLAKMelders");storingen$KLAKMelders = klakmelders_select(storingen$KLAKMelders,config)}
     
 
-# Bepalen of kabels wel of niet vervangen is, aanmaken lijst met weg te schrijven data  ---------------------------
+# Bepalen of kabels wel of niet vervangen zijn, aanmaken lijst met weg te schrijven data  ---------------------------
     if(checkverv){
     tic()
-    setTkProgressBar(pb,nr1,label="Checken op Bepalen of kabels vervangen zijn (MS)")
+    setTkProgressBar(pb,nr1,label = "Checken op Bepalen of kabels vervangen zijn (MS)")
     assets$MSkabels$is.verv <- kabel_verv(assets$MSkabels,config)
     setTkProgressBar(pb, (nr1+nr2)/2,label = "Bepalen of kabels vervangen zijn (LS)") ;
     assets$LSkabels$is.verv <- kabel_verv(assets$LSkabels,config)
@@ -159,10 +163,17 @@ assets$MSmoffen <- assets$MSmoffen[!(DateRemoved==as.Date("2010-07-03")|DateRemo
              dummy$MSkabels_naar = assets$MSkabels[,c("Index","PC_4_naar"),with=F];setkey(dummy$MSkabels_naar,PC_4_naar)
            },
            TOPO={
-             setkey(assets$LSmoffen,ID_Hoofdleiding_present_BAR)
-             setkey(assets$MSmoffen,Routenaam_MS)
-             setkey(assets$LSkabels,ID_Hoofdleiding_present_BAR)
-             setkey(assets$MSkabels,Routenaam_MS)
+             if(set=="NOR"){
+               setkey(assets$LSmoffen,ID_Hoofdleiding_present_BAR)
+               setkey(assets$LSkabels,ID_Hoofdleiding_present_BAR)
+               setkey(assets$MSmoffen,Routenaam_MS)
+               setkey(assets$MSkabels,Routenaam_MS)}else{
+                 setkey(assets$LSmoffen,ID_Hoofdleiding)
+                 setkey(assets$LSkabels,ID_Hoofdleiding)
+                 setkey(assets$MSmoffen,Routenaam)
+                 setkey(assets$MSkabels,Routenaam)
+             }
+
            },
            XY={
              dummy=list()
