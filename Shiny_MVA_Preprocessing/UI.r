@@ -3,7 +3,7 @@
 cfg <<-list()
 cfg$max_categories <<- 25
 cfg$namelength     <<- 25
-cfg$samplesize     <<- 5000
+cfg$samplesize     <<- 20000
 
 # Prepare some variables for the first run
 filechooser <<- choose.files(default = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/*.Rda"))
@@ -17,16 +17,18 @@ if(file.exists(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",f
   cat("Creating sample set .... ")
   SetName  = load(filechooser)
   mindataset = data.table(get(SetName))
-  
+  datalength <<- nrow(mindataset)
   dataset    <<- mindataset[sample(1:nrow(mindataset),cfg$samplesize)]
   
   l_ply(names(dataset)[laply(dataset,is.character)],function(x) dataset[,eval(x):=as.factor(dataset[,get(x)])])
   l_ply(names(dataset)[laply(dataset,function(x) class(x)[1])=="POSIXct"],function(x) dataset[,eval(x):=as.Date(get(x))])
   l_ply(names(dataset)[laply(dataset,function(x) class(x)[1])=="integer"],function(x) dataset[,eval(x):=as.numeric(get(x))])
   l_ply(names(dataset)[laply(dataset,function(x) class(x)[1])=="Date"],function(x) dataset[,eval(x):=as.numeric(get(x))])
+  l_ply(names(dataset)[laply(dataset,function(x) class(x)[1])=="factor"],function(x) dataset[,eval(x):=factor(get(x))])
+  
   
   setcolorder(dataset,cn(dataset))
-  save(dataset,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_sample.Rda"))
+  save(dataset,datalength,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_sample.Rda"))
   cat("Done\n ")
 }
 
