@@ -10,7 +10,8 @@
   
   # Install required packages if not .Firinstalled already -------------------------------
   packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash","parallel","doParallel","maptools","RANN","proj4","tools",
-               "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2","foreign","rgeos","stringr")
+               "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2","foreign","rgeos","stringr",
+               "vcd","heplots")
   
   for (m in 1:length(packages)){
     # Install if not present
@@ -31,7 +32,8 @@
   sourcefiles = c("AHA_Data_Import.R","AHA_Data_Batch_Processing.R","Tableau_Functions.R",
                   "AHA_Data_NOR_Log.R", 'AHA_Data_Geo_Functions.R', "AHA_Proxy_KA_Preprocessing.R",
                   "AHA_Data_BAR_Log.R","AHA_Proxy_KA_Postprocessing.R","AHA_Extra_Functions.R",
-                  "AHA_MVA_Coupling.R","AHA_MVA_ExtractCableData.R", "AHA_Proxy_KA_BARNOR.R","AHA_Proxy_samenv.R")
+                  "AHA_MVA_Coupling.R","AHA_MVA_ExtractCableData.R","AHA_MVA_Preprocessing_Functions.R",
+                  "AHA_MVA_CorrelationTable.R")
   l_ply(sourcefiles,function(x) try(source(x)))
   
   # l_ply(ffiles,source)
@@ -53,6 +55,15 @@ load_settings = function(){
     settings$Analyse_Datasets = "C:/Datasets/AHAdata/3. Analyse Datasets"
     settings$Visuals = "C:/Datasets/AHAdata/5. Visuals and Tableau workbooks"
     settings$Results = "C:/Datasets/AHAdata/6. Results"}
+  
+  # Laptop frank
+  else if (Sys.info()["nodename"] =="L-AW09JM" ) {
+    settings$Bron_Datasets = "C:/Data/Asset Health Data/0. Ongebruikte en brondata"
+    settings$Ruwe_Datasets = "C:/Data/Asset Health Data/1. Ruwe Datasets"
+    settings$Input_Datasets = "C:/Data/Asset Health Data/2. Input Datasets"
+    settings$Analyse_Datasets = "C:/Data/Asset Health Data/3. Analyse Datasets"
+    settings$Visuals = "C:/Data/Asset Health Data/5. Visuals and Tableau workbooks"
+    settings$Results = "C:/Data/Asset Health Data/6. Results"}
   
   # Laptop Roel Stijl Bearingpoint Zbook
   else if (Sys.info()["nodename"] =="NLAMS4043734Y") {
@@ -97,7 +108,7 @@ load_settings = function(){
     settings$Bron_Datasets = "D:/1. Alliander Datasets/2. Asset health analytics/0. Ongebruikte en brondata"
     settings$Ruwe_Datasets = "D:/1. Alliander Datasets/2. Asset health analytics/1. Ruwe Datasets"
     settings$Input_Datasets = "D:/1. Alliander Datasets/2. Asset health analytics/2. Input Datasets"
-    settings$Analyse_Datasets = "-"
+    settings$Analyse_Datasets = "D:/1. Alliander Datasets/2. Asset health analytics/3. Analyse Datasets"
     settings$Visuals = "-"
     settings$Results = "-"
     settings$Testcodes ="C:/Users/michiel.musterd/Documents/Alliander project/5. TestCodes"

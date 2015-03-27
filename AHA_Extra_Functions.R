@@ -32,6 +32,8 @@ vector_in_DT = function(vector,DT){
   return(a)
 }
 
+
+
 substrRight <- function(x, n){
   substr(x, nchar(x)-n+1, nchar(x))
 }
@@ -111,9 +113,12 @@ savewrapper = function(..., file, compress=F)
   save()
 }
 
-# Used for the progressbar
-pbarwrapper = function(title="PlaceHolder", label = "Starting...", max = 1,min = 0,initial = 0,width = 450)
-{
+pbarwrapper = function(title="PlaceHolder", label = "Starting...", max = 1,min = 0,initial = 0,width = 450){
+  # Roel Stijl, Bearingpoint 2015
+  # Used for the progressbar generation
+  # use setpbwrapper to set steps of progress
+  # title, label and max are needed, remainder is there for historic reasons
+  
   cat("\n")
   gltitle <<- title
   label     = paste0(title, ": ",label)
@@ -304,4 +309,16 @@ date = as.Date(paste0(initialdate,"01"), "%y%m%d")
 dow = sapply(seq(0,6),function(x) wday(date+days(x)))
 firstFriday = date + days(which(dow==5)-1)+2
 return(firstFriday)
+}
+
+#Check whether old names are in the colnames of a datatable, if true then change this name
+namechange <- function(datatable,oldnames,newnames){
+  if(length(oldnames)!=length(newnames)){print("Unequal length of name vectors")}else{
+    lengthnames = length(oldnames)
+    for(i in 1:lengthnames){
+      if(sum(grepl(oldnames[i],names(datatable)))){
+        setnames(datatable,oldnames[i],newnames[i])
+      }
+    }
+  }
 }

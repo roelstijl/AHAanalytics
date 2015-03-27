@@ -50,7 +50,7 @@ AHA_Data_BAR_Log()
 AHA_Data_KA_Proxy_Preprocessing("assetsBAR")
   
 # NOR processing ------------------
-NORdate = ""
+NORdate = "14"
 AHA_Data_Import("NOR",paste0("ELCVERBINDINGEN_",NORdate),"ELCVERBINDINGEN","save")
 AHA_Data_Import("NOR",paste0("ELCVERBINDINGSDELEN_",NORdate),"ELCVERBINDINGSDELEN","save")
 AHA_Data_Import("NOR",paste0("ELCVERBINDINGSKNOOPPUNTEN_",NORdate),"ELCVERBINDINGSKNOOPPUNTEN","save")
