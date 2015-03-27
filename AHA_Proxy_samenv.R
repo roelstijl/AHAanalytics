@@ -1,4 +1,4 @@
-proxy_samenv  <- function(global=F){
+proxy_samenv  <- function(global=F,set){
   #Deze functie gebruikt drie proxy-uitkomsten (van PC, XY en TOPO) 
   #en voegt deze samen tot één lange lijst. Er  worden punten gegeven
   #aan elke koppeling op basis van de gebruikte koppelmethode, wel/geen
@@ -81,9 +81,10 @@ koppellijst =list()  # Aanmaken koppellijst
      if(type=="moffen"){
        kabelklasse = paste0(voltage,"kabels")
        koppellijst[[klasse]]
-       koppellijst[[klasse]]$is.verv2 <- apply(koppellijst[[klasse]],1,function(x) vervangingmoffen(x,koppellijst[[kabelklasse]])) #Check op moffen die vervangen zijn door een nieuw stuk kabel
+       koppellijst[[klasse]]$is.verv2 <- pbapply(koppellijst[[klasse]],1,function(x) vervangingmoffen(x,koppellijst[[kabelklasse]])) #Check op moffen die vervangen zijn door een nieuw stuk kabel
        koppellijst[[klasse]]$koppelc  <- koppellijst[[klasse]]$in.timediff & (koppellijst[[klasse]]$is.verv | koppellijst[[klasse]]$is.verv2)
-     }
+     }}
+for(klasse in c("LSkabels","LSmoffen","MSkabels","MSmoffen")){
     try(koppellijst[[klasse]] <- koppellijst[[klasse]][which(koppellijst[[klasse]]$koppelc)]) #Neem alleen gekoppelde assets mee, die vervangen zijn en voldoen
     colname = paste(klasse,"gekoppeld");    freqtabel = cbind(freqtabel,Freq=data.frame(table(koppellijst[[klasse]]$method))$Freq);setnames(freqtabel,"Freq",colname)
     assetsgekoppeld <- nrow(koppellijst[[klasse]])
@@ -113,14 +114,18 @@ koppellijst =list()  # Aanmaken koppellijst
     
     koppellijst[[klasse]]$Component            <- ifelse(koppellijst[[klasse]]$Netcomponent %in% config[[klasse]]$comp,1.5,
                                                          ifelse(koppellijst[[klasse]]$Netcomponent %in% config[[klasse]]$onbk,1,0.5))
-    koppellijst[[klasse]]                      <- koppellijst[[klasse]][(koppellijst[[klasse]][,list(freq=length(unique(ID_unique))), by=ID_KLAK_Melding])][
-                                                             ,c(names(koppellijst[[klasse]]),"freq"),with=F]
+    if(set=="NOR"){
+      koppellijst[[klasse]]                      <- koppellijst[[klasse]][(koppellijst[[klasse]][,list(freq=length(unique(ID_unique))), by=ID_KLAK_Melding])][
+                                                             ,c(names(koppellijst[[klasse]]),"freq"),with=F]}
+    else{
+      koppellijst[[klasse]]                     <- koppellijst[[klasse]][(koppellijst[[klasse]][,list(freq=length(unique(ID_BAR))), by=ID_KLAK_Melding])][
+                                                             ,c(names(koppellijst[[klasse]]),"freq"),with=F]}
     koppellijst[[klasse]]$punten               <- rowSums(koppellijst[[klasse]][,c("XY","PC","TOPO"),with=F],na.rm=T)*
                                                   koppellijst[[klasse]]$GIS_datum*
                                                   koppellijst[[klasse]]$Component*
                                                   koppellijst[[klasse]]$Component/
                                                   koppellijst[[klasse]]$freq
-    
+    koppellijst[[klasse]]$Oorzaak              <- storingen[[voltage]][J(koppellijst[[klasse]]$ID_KLAK_Melding)]$Oorzaak2
     koppellijst[[klasse]]$Graafschade          <- (storingen[[voltage]][J(koppellijst[[klasse]]$ID_KLAK_Melding)]$Oorzaak2 %in% config$graafschade)
   
     print(paste("Klaar, aantal gevonden assets is",assetsgevonden,"aantal gekoppelde assets is",assetsgekoppeld))
@@ -134,6 +139,11 @@ koppellijst =list()  # Aanmaken koppellijst
 }
 
 vervangingmoffen = function(moffenlijst,kabellijst){
+  if(moffenlijst["ID_KLAK_Melding"]=="3740842"){
+    print("blah")
+    print(paste(kabellijst[J(moffenlijst["ID_KLAK_Melding"]),]$DateAdded))
+    print(moffenlijst["DateRemoved"])
+  }
   test <-(sum(kabellijst[J(moffenlijst["ID_KLAK_Melding"]),]$DateAdded==moffenlijst["DateRemoved"])>0)
   return(test)}
 
