@@ -85,10 +85,13 @@ switch(cfg$atype,
   
   # Preprocess the geospatial data
   setpbarwrapper (cfg$pb, label = "Converting to selected output"); 
+  dataset[,Coo]
   switch(cfg$mode,
-                lines = return(SpatialLines(llply(1:length(mdsys),
+                lines = return(SpatialLines(
+                  llply(1:length(dataset$Coo),
                               function(x) 
-                                {return(Lines(list(Line(dataset$mdsys[x])),dataset[x,ID_Object]))}),
+                                {Lines(list(Line(dataset[x,Coo])),dataset[x,ID_Object])
+                                 },.progress = "text"),
                               proj4string=CRS("+init=epsg:28992"))),
                 
                 beginend = {dataset[,Coo_X_van :=laply(Coo,function(x) x[1,1])];       dataset[,Coo_Y_van :=laply(Coo,function(x) x[1,2])]

@@ -2,9 +2,8 @@ Save_preprocess = function(st,type){
 # Written by Roel Stijl (Bearingpoint B.V.) - 13-03-2015  
 # Saves output from shiny function
   
-cat("Writing data to file...... ")
-SetName  = load(filechooser)
-mindataset = data.table(get(SetName))
+cat("Loading original data from file...... ")
+mindataset = LoadWrap(filechoosers)
 
 l_ply(names(mindataset)[laply(mindataset,is.character)],function(x) mindataset[,eval(x):=as.factor(mindataset[,get(x)])])
 l_ply(names(mindataset)[laply(mindataset,function(x) class(x)[1])=="POSIXct"],function(x) mindataset[,eval(x):=as.Date(get(x))])
@@ -16,6 +15,8 @@ l_ply(names(mindataset), function(x)
          factor ={
            mindataset[is.na(get(x))|tolower(get(x))=="onbekend"|tolower(get(x))=="unknown"|get(x)==""|get(x)=="NA"|get(x)=="",eval(x):=as.factor(NA)]
          }))
+
+cat("Writing data to file...... ")
 
 switch(type,
       Test_Train = {
@@ -29,12 +30,12 @@ switch(type,
         trainset = mindataset[trainrow,metadata$names[metadata$selected],with=F]
         
         save(testset,trainset,metadata,cfg,file = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_test_train_set.Rda"),compress=F)
-        write.table(testset,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_testset.csv"),sep = ";",na="");
-        write.table(trainset,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_trainset.csv"),sep = ";",na="");
+        SaveWrap(testset,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_testset.csv"));
+        SaveWrap(trainset,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_trainset.csv"));
         },
       Full       = {
         alldata = mindataset[,metadata$names[metadata$selected],with=F]
-        write.table(alldata,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_alldata.csv"),sep = ";",na="");
+        SaveWrap(alldata,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_alldata.csv"));
         save(alldata,metadata,cfg,file = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_alldata.Rda"),compress=F)
         
       }
@@ -160,13 +161,14 @@ Simple_Lift = function(dataset,targetvariable,targetvalue,currentvariable){
 tabeltotaal <- table(dataset[[currentvariable]]);
 tabelgestoord <- table(dataset[dataset[[targetvariable]] == targetvalue,currentvariable,with=F]);
 
-if(nrow(tabelgestoord)==0 | nrow (tabeltotaal)==0 | nrow(tabeltotaal)<=100) {plot(1:2); cat("Error, too few to too many (>100) variables\n"); return()}
-
 tabelmerge = switch (class(dataset[[currentvariable]]),
                      numeric  =  merge(tabeltotaal, tabelgestoord, by = 1, all = TRUE, sort = TRUE),
                      factor   =  merge(tabeltotaal, tabelgestoord, by = 1, all = TRUE, sort = TRUE),
                      character=  merge(tabeltotaal, tabelgestoord, by = 1, all = TRUE, sort = TRUE),
                      Date     =  merge(tabeltotaal, tabelgestoord, by = 1, all = TRUE, sort = TRUE))
+
+if(nrow(tabelgestoord)==0 | nrow (tabeltotaal)==0 | (!is.numeric(tabeltotaal) & nrow(tabeltotaal)<=100)) 
+{plot(1:2); cat("Error, too few to too many (>100) variables\n"); return()}
 
 tabelmerge[is.na(tabelmerge)] <- 0;
 

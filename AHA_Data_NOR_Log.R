@@ -141,6 +141,8 @@ AHA_NOR_Load_File = function(cfg,n,masterdataset=NULL){
   
   # Create the NAN number or Verbindingen if not present already
   if(!any(colnames(mindataset)=="ID_NAN")){mindataset$ID_NAN=as.character(NA)}
+  if(!any(colnames(mindataset)=="BRONNAN")){mindataset$BRONNAN=as.character(NA)}
+  
   if(!any(colnames(mindataset)=="Bronsysteem")){mindataset$Bronsysteem=as.character(NA)}
   if(!any(colnames(mindataset)=="ID_Verbinding"))
   {switch (cfg$NORtable, ELCVERBINDINGSKNOOPPUNTEN={mindataset$ID_Verbinding=as.character(NA)})}

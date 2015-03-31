@@ -13,6 +13,33 @@ cNA = function(dataset)
                   sapply(dataset,function(x) sum(!is.na(x))-sum(as.character(x)=="",na.rm=T)))), horiz=TRUE,las=1,cex.names=0.7,legend = c("empty","NA","Not NA"))
 }
 
+LoadWrap = function(filename="NULL",filetype = "",filepath=settings$Analyse_Datasets,cfg=list())
+{
+# Roel Stijl (Bearingpoint) 2015
+# A little wrapper to make the loading easier and easier to modify
+  if(filename=="NULL") filename= choose.files(default = paste0(filepath,"/",filetype,"*"))
+  settings$Last_Load <<- filename
+  
+  switch(file_ext(filename),
+         ssv = {return(data.table(fread(filename)))},
+         csv = {return(data.table(fread(filename)))},
+         Rda = {SetName  = load(filename)
+                return(get(SetName))}
+)
+
+}
+
+SaveWrap = function(mindataset,filename)
+{
+  dir.create(dirname(filename), showWarnings = FALSE)
+  
+  switch(file_ext(filename),
+           csv = {write.csv(mindataset,file=filename,row.names = F)},
+          Rda = {save(mindataset,file=filename,compress=F)}
+          )
+  
+}
+
 vector_in_DT = function(vector,DT){
   # Compares all values in the seperate DT cols and returns number of matches without NA
   # Removed cases spaces e.d. for fuzzier comparison
