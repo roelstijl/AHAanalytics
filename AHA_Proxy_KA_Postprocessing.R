@@ -36,7 +36,6 @@ cfg$GoogleMaps    = GoogleMaps
 setpbarwrapper(pb,label = "Loading blackout data"); 
 
 load(paste0(settings$Input_Datasets,"/23. Validatie_data/Validatie koppelingen.Rda"))
-
 load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"))
 
 if (cfg$GoogleMaps){

@@ -26,7 +26,7 @@
 # parameters voor beslisboomalgoritme; zie ?rpart.control (indien package geladen) voor meer info
 # ter info: in rpartpackage zijn standaardwaardes anders dan hier, namelijk (20, round(20/3), 0.01)
 
-AHA_MVA_Analyse = function(methode = "RF", analyse = "testtrain", imputatie = "Amelia", aantalimp = 5, aantalboom = 500, minsplit = 60, minbucket = 20, cp = 0.001){
+AHA_MVA_Analyse = function(methode = "RF", analyse = "testtrain", imputatie = "preprocess", aantalimp = 5, aantalboom = 500, minsplit = 60, minbucket = 20, cp = 0.001,inputfilename="-"){
   
   # laden relevante packages
   require(randomForest);
@@ -37,16 +37,21 @@ AHA_MVA_Analyse = function(methode = "RF", analyse = "testtrain", imputatie = "A
   # Deze code voert de MVA analyse uit, volgt op de preprocessing
   switch(analyse,
          testtrain= {  
+           if (inputfilename=="-"){
            cat("Kies een test / train set... \n")
            filechooser = choose.files(default = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/*.Rda"))
            filename    = file_path_sans_ext(basename(filechooser))
-           load(filechooser)
+           load(filechooser)}
+           else{
+             load(inputfilename)
+           }
+           
            trainset=data.table(trainset)
            testset=data.table(testset)
            
            #Factoren: NA -> Onbekend
-           l_ply(names(trainset),function(x) {if(is.factor(trainset[[x]])) trainset[is.na(get(x)),eval(x):="onbekend" ]})
-           l_ply(names(testset),function(x) {if(is.factor(testset[[x]])) testset[is.na(get(x)),eval(x):="onbekend" ]})
+           l_ply(names(trainset),function(x) {if(is.factor(trainset[[x]])) trainset[is.na(get(x)),eval(x):="Onbekend" ]})
+           l_ply(names(testset),function(x) {if(is.factor(testset[[x]])) testset[is.na(get(x)),eval(x):="Onbekend" ]})
          },
          
          fullset = {
@@ -166,6 +171,26 @@ AHA_MVA_Analyse = function(methode = "RF", analyse = "testtrain", imputatie = "A
            testdoel <- doelvariabele[c((lengtetrain+1):length(doelvariabele))];
          },
          
+         preprocess = {
+           #we slaan de doelvariabele apart op
+           lengtetrain <- nrow(trainset);
+           dataset <- rbind(trainset, testset);
+           doelvariabele <- dataset[[cfg$Target_Variable]];
+           dataset[,eval(cfg$Target_Variable) := NULL];
+           dataset <- data.frame(dataset);
+           
+           #aantal omzettingen naar juiste formaat
+           aantalimp <- 1;
+           imptrain <- vector("list", aantalimp);
+           imptest <- vector("list", aantalimp);
+           imptrain[[1]] <- dataset[c(1:lengtetrain),];
+           imptest[[1]] <- dataset[c((lengtetrain+1):nrow(dataset)),];
+           
+           #En we onthouden de doelvariabele die respectievelijk bij de train- en de testset hoort.
+           traindoel <- doelvariabele[c(1:lengtetrain)];
+           testdoel <- doelvariabele[c((lengtetrain+1):length(doelvariabele))];
+         },
+         
          gemiddelde = {
            #we slaan de doelvariabele apart op
            lengtetrain <- nrow(trainset);
@@ -173,6 +198,7 @@ AHA_MVA_Analyse = function(methode = "RF", analyse = "testtrain", imputatie = "A
            doelvariabele <- dataset[[cfg$Target_Variable]];
            dataset[,eval(cfg$Target_Variable) := NULL];
            dataset <- data.frame(dataset);
+                 
            
            for (i in 1:ncol(dataset))
            {
@@ -195,12 +221,20 @@ AHA_MVA_Analyse = function(methode = "RF", analyse = "testtrain", imputatie = "A
              }
            }
            
+     
+           
+           
            #aantal omzettingen naar juiste formaat
            aantalimp <- 1;
            imptrain <- vector("list", aantalimp);
            imptest <- vector("list", aantalimp);
            imptrain[[1]] <- dataset[c(1:lengtetrain),];
            imptest[[1]] <- dataset[c((lengtetrain+1):nrow(dataset)),];
+           
+           
+           
+           
+           
            
            #En we onthouden de doelvariabele die respectievelijk bij de train- en de testset hoort.
            traindoel <- doelvariabele[c(1:lengtetrain)];
@@ -235,6 +269,8 @@ AHA_MVA_Analyse = function(methode = "RF", analyse = "testtrain", imputatie = "A
                dataset[,i] <- as.factor(dataset[,i]);
              }
            }
+           
+           
            
            #aantal omzettingen naar juiste formaat
            aantalimp <- 1;
