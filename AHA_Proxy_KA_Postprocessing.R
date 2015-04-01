@@ -1,7 +1,16 @@
 temp = function(){
-  l_ply(1:4,function(x) koppellijst[[x]][,Brontabel:=names(koppellijst)[x]])
+  load("E:/1. Alliander/3. Asset Health Analytics/2. Input Datasets/2. All Assets/BRONNAN.Rda")
+  load("E:/1. Alliander/3. Asset Health Analytics/3. Analyse Datasets/4. KA Proxy samengevoegd/Proxy_koppellijst_2015-03-27 21.20.07.Rda")
   
-  write.csv(rbindlist(koppellijst,fill=T),file=paste0(settings$Analyse_Datasets,"/2. Proxy validatie/Validatie Scores.csv"))
+  l_ply(1:4,function(x) koppellijst[[x]][,Brontabel:=names(koppellijst)[x]])
+  tussenres = rbindlist(koppellijst,fill=T)
+  
+  setkey(tussenres,ID_NAN)
+  setkey(BRONNANset,ID_NAN)
+  tussenres[,ID_BRON_NAN := unique(BRONNANset)[tussenres,BRONNAN]]
+  tussenres[is.na(ID_BRON_NAN),ID_BRON_NAN := ID_NAN]
+  
+  write.csv(tussenres,file=paste0(settings$Analyse_Datasets,"/4. Tableau sets/Validatie Scores.csv"))
   
 }
 
@@ -27,7 +36,6 @@ cfg$GoogleMaps    = GoogleMaps
 setpbarwrapper(pb,label = "Loading blackout data"); 
 
 load(paste0(settings$Input_Datasets,"/23. Validatie_data/Validatie koppelingen.Rda"))
-
 load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_storingen.Rda"))
 
 if (cfg$GoogleMaps){

@@ -9,11 +9,11 @@ proxy_samenv  <- function(global=F,set){
     if(!(exists("proxy_res"))){
       setwd(paste0(settings$Analyse_Datasets,"/1. KA Proxy"))
       proxy_res      <- list() 
-      myFile <- file.choose(caption = "Selecteer Postcode file"); load(myFile);
+      myFile <- file.choose(); load(myFile);
       proxy_res$PC   <- assetsltb
-      myFile <- file.choose(caption = "Selecteer XY file"); load(myFile);
+      myFile <- file.choose(); load(myFile);
       proxy_res$XY   <- assetsltb
-      myFile <- file.choose(caption = "Selecteer Topologie file"); load(myFile);
+      myFile <- file.choose(); load(myFile);
       proxy_res$TOPO <- assetsltb
       proxy_res <<- proxy_res
       rm(assetsltb)

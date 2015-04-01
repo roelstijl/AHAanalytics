@@ -19,6 +19,7 @@ if(file.exists(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",f
   mindataset = data.table(get(SetName))
   datalength <<- nrow(mindataset)
   dataset    <<- mindataset[sample(1:nrow(mindataset),cfg$samplesize)]
+  datalength <<- nrow(mindataset)
   
   l_ply(names(dataset)[laply(dataset,is.character)],function(x) dataset[,eval(x):=as.factor(dataset[,get(x)])])
   l_ply(names(dataset)[laply(dataset,function(x) class(x)[1])=="POSIXct"],function(x) dataset[,eval(x):=as.Date(get(x))])
@@ -88,7 +89,8 @@ shinyUI(fluidPage(
       selectInput("Target_Variable", label="Target variable",choices = Variable_names,selected = Variable_names[1]),
       
       selectInput("Target_Value", label="Target value",
-                  choices = setNames(as.list(unique(dataset[,metadata$names[1],with=F])),as.list(unique(dataset[,metadata$names[1],with=F])))),      
+                  choices = setNames(as.list(laply(unique(dataset[,metadata$names[1],with=F]),as.character))
+                  ,as.list(laply(unique(dataset[,metadata$names[1],with=F]),as.character)))),      
 fluidRow(
   column(4,actionButton("vorige_x", label = "Last")),
   column(4,actionButton("save_to_file", label = "Save")),

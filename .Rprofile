@@ -34,12 +34,13 @@
                   "AHA_Data_BAR_Log.R","AHA_Proxy_KA_Postprocessing.R","AHA_Extra_Functions.R",
                   "AHA_MVA_Coupling.R","AHA_MVA_ExtractCableData.R","AHA_MVA_Preprocessing_Functions.R",
                   "AHA_MVA_CorrelationTable.R","AHA_MVA_Analyse.R")
+
   l_ply(sourcefiles,function(x) try(source(x)))
   
   # l_ply(ffiles,source)
   
   # Finnish -------------------------------------
-  cat("Loaded settings, built by R Stijl (Bearingpoint), J Heres (Alliander)")  
+  cat("Loaded settings, built by R Stijl (Bearingpoint), J Heres (Alliander)\n")
 }
 
 load_settings = function(){
