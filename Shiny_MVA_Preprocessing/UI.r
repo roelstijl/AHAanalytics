@@ -3,7 +3,7 @@
 cfg <<-list()
 cfg$max_categories <<- 25
 cfg$namelength     <<- 25
-cfg$samplesize     <<- 20000
+cfg$samplesize     <<- 100000
 
 # Prepare some variables for the first run
 filechooser <<- choose.files(default = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/*.Rda"))
@@ -12,7 +12,9 @@ filename <<- file_path_sans_ext(basename(filechooser))
 # Sample the data
 if(file.exists(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_sample.Rda")))
 { # Load data if ran before
+  cat("Loading already existing sample set .... ")
   load(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_sample.Rda"),envir = globalenv())
+  cat("Done\n")
 } else { # Run it for the first time
   cat("Creating sample set .... ")
   SetName  = load(filechooser)
@@ -36,9 +38,11 @@ if(file.exists(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",f
 # Settings in excel file
 if(file.exists(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_metadata.xlsx")))
 { # load an excel file with the metadata if none exist
+  cat("Loading already existing correlations set .... ")
  temp = read.xlsx(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_metadata.xlsx"),1)
  temp$selected = as.logical(temp$selected)
  metadata <<- data.table(temp)
+ cat("Done\n")
 } else { # Create metadata
   metadata  <<- data.table(
   names     = cn(dataset),

@@ -2,39 +2,43 @@ Save_preprocess = function(st,type){
 # Written by Roel Stijl (Bearingpoint B.V.) - 13-03-2015  
 # Saves output from shiny function
   
-cat("Loading original data from file...... ")
-mindataset = LoadWrap(filechoosers)
+cat("Loading original data from file...... \n")
+mindataset = LoadWrap(filechooser)
 
-l_ply(names(mindataset)[laply(mindataset,is.character)],function(x) mindataset[,eval(x):=as.factor(mindataset[,get(x)])])
-l_ply(names(mindataset)[laply(mindataset,function(x) class(x)[1])=="POSIXct"],function(x) mindataset[,eval(x):=as.Date(get(x))])
-l_ply(names(mindataset)[laply(mindataset,function(x) class(x)[1])=="integer"],function(x) mindataset[,eval(x):=as.numeric(get(x))])
-l_ply(names(mindataset)[laply(mindataset,function(x) class(x)[1])=="Date"],function(x) mindataset[,eval(x):=as.numeric(get(x))])
+cat("Selecting desired columns...... \n ")
+alldata = mindataset[,metadata$names[metadata$selected],with=F]
+rm(mindataset)
+gc()
 
-l_ply(names(mindataset), function(x) 
-  switch(class(mindataset[[x]]),
+l_ply(names(alldata)[laply(alldata,is.character)],function(x) alldata[,eval(x):=as.factor(alldata[,get(x)])])
+l_ply(names(alldata)[laply(alldata,function(x) class(x)[1])=="POSIXct"],function(x) alldata[,eval(x):=as.Date(get(x))])
+l_ply(names(alldata)[laply(alldata,function(x) class(x)[1])=="integer"],function(x) alldata[,eval(x):=as.numeric(get(x))])
+l_ply(names(alldata)[laply(alldata,function(x) class(x)[1])=="Date"],function(x) alldata[,eval(x):=as.character(get(x))])
+
+l_ply(names(alldata), function(x) 
+  switch(class(alldata[[x]]),
          factor ={
-           mindataset[is.na(get(x))|tolower(get(x))=="onbekend"|tolower(get(x))=="unknown"|get(x)==""|get(x)=="NA"|get(x)=="",eval(x):=as.factor(NA)]
+           alldata[is.na(get(x))|tolower(get(x))=="onbekend"|tolower(get(x))=="unknown"|get(x)==""|get(x)=="NA"|get(x)=="",eval(x):=as.factor(NA)]
          }))
 
-cat("Writing data to file...... ")
+cat("Writing data to file...... \n ")
 
 switch(type,
       Test_Train = {
-        testrows = rep(F,nrow(mindataset))
-        testrows[sample(1:nrow(mindataset),st$tst_size)] = T
-        trainrow = c(sample(which(mindataset[[st$Target_Variable]]==st$Target_Value & !testrows),st$Tr_size*(st$Tr_tgt)),
-                     sample(which(mindataset[[st$Target_Variable]]!=st$Target_Value & !testrows),st$Tr_size*(1-st$Tr_tgt)))
+        testrows = rep(F,nrow(alldata))
+        testrows[sample(1:nrow(alldata),st$tst_size)] = T
+        trainrow = c(sample(which(alldata[[st$Target_Variable]]==st$Target_Value & !testrows),st$Tr_size*(st$Tr_tgt)),
+                     sample(which(alldata[[st$Target_Variable]]!=st$Target_Value & !testrows),st$Tr_size*(1-st$Tr_tgt)))
         testrows = which(testrows)
         
-        testset  = mindataset[testrows,metadata$names[metadata$selected],with=F]
-        trainset = mindataset[trainrow,metadata$names[metadata$selected],with=F]
+        testset  = alldata[testrows,]
+        trainset = alldata[trainrow,]
         
         save(testset,trainset,metadata,cfg,file = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_test_train_set.Rda"),compress=F)
         SaveWrap(testset,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_testset.csv"));
         SaveWrap(trainset,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_trainset.csv"));
         },
       Full       = {
-        alldata = mindataset[,metadata$names[metadata$selected],with=F]
         SaveWrap(alldata,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_alldata.csv"));
         save(alldata,metadata,cfg,file = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_alldata.Rda"),compress=F)
         
