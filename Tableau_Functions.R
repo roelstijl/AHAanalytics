@@ -22,7 +22,7 @@ SaveWrap(rbind(dataset$LSmoffen,dataset$MSmoffen,fill=T),paste0(settings$Analyse
 }
 
 Save_Tableau_storingen = function(folder){
-  dataset = LoadWrap(filechoose=T)
+  dataset = LoadWrap
   
   # Loop over all components of dataset
   for (n in names(dataset))
@@ -61,6 +61,15 @@ Save_Tableau_dataset = function(){
                                                  xcol = CooNames[Co,1],ycol = CooNames[Co,2],
                                                  xcolout = strrep(CooNames[Co,1],"Coo_X","Lon"), ycolout = strrep(CooNames[Co,2],"Coo_Y","Lat"))
       }}
-    
-    SaveWrap(dataset,paste0(settings$Analyse_Datasets,"/4. Tableau sets/",file_path_sans_ext(basename(settings$Last_Load)),"_Tableau.csv"))
+
+  SaveWrap(dataset2,paste0(settings$Analyse_Datasets,"/4. Tableau sets/",file_path_sans_ext(basename(settings$Last_Load)),"_Tableau.csv"))
+
+  train = sample(1:100000,20000)
+  
+  SaveWrap(dataset[sample(1:100000,20000)],paste0(settings$Analyse_Datasets,"/4. Tableau sets/",file_path_sans_ext(basename(settings$Last_Load)),"_Tableau_Train.csv"))
+  
+  setkey(dataset,ID_unique)
+  setkey(mindataset,ID_unique)
+  dataset2=mindataset[,list(Datum_Aanschaf,Datum_Fabrikage,Datum_Inbedrijf,Datum_Uitbedrijf,ID_unique)][dataset]
+ 
 }
