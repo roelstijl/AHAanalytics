@@ -91,14 +91,16 @@ setkey(storingen$MS,ID_KLAK_Melding)
 storingen$KLAKMelders[,Datum:=unique(storingen$LS)[storingen$KLAKMelders,Datum]]
 storingen$KLAKMelders[is.na(storingen$KLAKMelders$Datum),Datum:=unique(storingen$MS)[storingen$KLAKMelders[is.na(Datum)],Datum]]
 
-storingen$KLAKMelders[,KLAKLS:=unique(storingen$LS)[storingen$KLAKMelders,ID_KLAK_Melding]]
+storingen$KLAKMelders[,Routenaam:=unique(storingen$MS)[storingen$KLAKMelders,Routenaam]]
+storingen$KLAKMelders[is.na(ID_Hoofdleiding),ID_Verbinding:=unique(storingen$MS)[storingen$KLAKMelders[is.na(ID_Hoofdleiding)],ID_Verbinding]]
+storingen$KLAKMelders[is.na(ID_Hoofdleiding),ID_Hoofdleiding:=unique(storingen$MS)[storingen$KLAKMelders[is.na(ID_Hoofdleiding)],ID_Hoofdleiding]]
 
+KLAKperHLD = list()
+setkey(storingen$KLAKMelders,Routenaam,ID_KLAK_Melding)
+KLAKperHLD$Routenaam = unique(storingen$KLAKMelders[!is.na(Routenaam)&Routenaam!="",list(Datum,Routenaam)])
 
-setkey(KLAKMelders,ID_Verbinding,ID_Hoofdleiding,)
+setkey(storingen$KLAKMelders,ID_Hoofdleiding,ID_KLAK_Melding)
+KLAKperHLD$ID_Hoofdleiding = unique(storingen$KLAKMelders[!is.na(ID_Hoofdleiding)&ID_Hoofdleiding!="",list(Datum,ID_Hoofdleiding)])
 
-storingen$MS = storingen$MS[,list(ID_Hoofdleiding,Routenaam,ID_KLAK_Melding,Datum)]
-
-
-
-save(storingen,file=paste0(settings$Input_Datasets,"/25. KLAK-OUD/KLAK_Meldingen_per_HLD.Rda"),compress=F)
+save(KLAKperHLD,file=paste0(settings$Input_Datasets,"/25. KLAK-OUD/KLAK_Meldingen_per_HLD.Rda"),compress=F)
 }
