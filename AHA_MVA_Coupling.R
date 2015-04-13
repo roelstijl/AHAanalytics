@@ -22,13 +22,14 @@
 # TargetVariables(coupledNOR,threshold)
 # ExtractMofData(mindataset)
 # ExtractCableData(mindataset)
+# KLAKhistoryCoupling()
 #-----------------------------------------------------------------#
 
 
 
 
 AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR input/MSmoffen_NOR.Rda"),
-                            Proxyfile=paste0(settings$Analyse_Datasets,"/1. Proxylijsten/Proxy_koppellijst_2015-03-25 14.00.00.Rda"),
+                            Proxyfile=paste0(settings$Analyse_Datasets,"/1. Proxylijsten/Proxy_koppellijst_2015-03-27 21.20.07inclOorzaak.Rda"),
                             Settype="MSmoffen", ProxyThreshold=0.3){
   #Wrapper function to call the coupling function multiple times with different settings
   #in order to provide 1 call coupling of the proxylist with all external datasources
@@ -117,12 +118,12 @@ AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR inpu
   if (Settype=="LSkabels" | Settype=="MSkabels"){
     SetName=load(NORfile)
     Set=get(SetName)
-    coupledSet=AHA_MVA_ExtractCableData(Set)
+    coupledSet=ExtractCableData(Set)
 
   }else if (Settype=="LSmoffen" | Settype=="MSmoffen"){
     SetName=load(NORfile)
     Set=get(SetName)
-    coupledSet=AHA_MVA_ExtractMofData(Set)
+    coupledSet=ExtractMofData(Set)
 
   }else{
     stop("Unknown settype, abort coupling")
@@ -131,8 +132,10 @@ AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR inpu
   
   #Add dag, maand, jaar fields for each date field
   cat("Started adding dag,maand, jaar, runtime (s):",proc.time()[3]-ptm[3] ," \n")
-  coupledSet=AHA_MVA_splitDate(coupledSet)
+  coupledSet=splitDate(coupledSet)
   
+  #Calculate the amount of failures per year on the HLD/Route of the cable
+  coupledSet=KLAKhistoryCoupling(NORset=coupledSet,settype=Settype)
   
   #CBS - PC4 coupling
   SetNo=1
@@ -225,8 +228,8 @@ AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR inpu
   }else if (Settype=="MSkabels" | Settype=="MSmoffen"){
     SetNo=13
     cat("Starting ",SetNo," coupling, runtime (s):",proc.time()[3]-ptm[3] ," \n")
-    coupledSet=coupling(no_of_keys=1,couple_method=0,key1_nameA="ID_Hoofdleiding_present",
-                        key2_nameA="ID_Hoofdleiding_present",
+    coupledSet=coupling(no_of_keys=1,couple_method=0,key1_nameA="ID_Verbinding_present",
+                        key2_nameA="ID_Verbinding_present",
                         outFileName="InMemory", Set1Name="InMemory",Set2Name=InputFileList[[SetNo]],memorySet=coupledSet)
   }
   
@@ -288,7 +291,7 @@ AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR inpu
   if (Settype=="LSkabels" | Settype=="MSkabels"){
     #Calculate belasting metrics
     cat("Calculating load metrics \n")
-    coupledSet=AHA_MVA_CalcLoadIndicators(coupledSet)
+    coupledSet=CalcLoadIndicators(coupledSet,Settype)
 
   }else if (Settype=="LSmoffen" | Settype=="MSmoffen") {
     coupledSet$Max_Belasting=NULL
@@ -301,7 +304,7 @@ AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR inpu
   
   #finally couple the proxylist into the set to get the target variable
   ProxySet=get(load(Proxyfile))
-  coupledSet=AHA_MVA_CoupleNORproxy(coupledSet,ProxySet,Settype=Settype,threshold=ProxyThreshold)
+  coupledSet=CoupleNORproxy(coupledSet,ProxySet,Settype=Settype,threshold=ProxyThreshold)
  
   #save the final file with a more descriptive name
   save(coupledSet,file=finalSetTargetOutFileName,compress=F)
@@ -759,15 +762,20 @@ CoupleNORproxy = function(NORset,ProxySet,Settype="LSkabels"){
   
 }
 
-CalcLoadIndicators=function(inputSet){
+CalcLoadIndicators=function(inputSet,settype){
   #Note, inputSet needs to contain a column Max_Belasting, ID_Hoofdleiding and the five load metrics
   
   #First we calculate the value of the max belasting of the HLD, assuming that this is the one the highest in 
   #the tree and that load fractions are equally distributed over the HLD.
   #We also add metrics for mean I squared to be weighted against
   inputSet[is.na(Max_Belasting),Max_Belasting:=-100]
-  inputSet[,Max_Belasting_HLD := max(Max_Belasting),by=ID_Hoofdleiding_present]  
-  inputSet[,Max_Belasting_HLD_squared := max(Max_Belasting)*abs(max(Max_Belasting)),by=ID_Hoofdleiding_present]
+  if (settype=="LSkabels"){
+    inputSet[,Max_Belasting_HLD := max(Max_Belasting),by=ID_Hoofdleiding_present]  
+    inputSet[,Max_Belasting_HLD_squared := max(Max_Belasting)*abs(max(Max_Belasting)),by=ID_Hoofdleiding_present]
+  }else if(settype=="MSkabels"){
+    inputSet[,Max_Belasting_HLD := max(Max_Belasting),by=ID_Verbinding_present]  
+    inputSet[,Max_Belasting_HLD_squared := max(Max_Belasting)*abs(max(Max_Belasting)),by=ID_Verbinding_present]
+  }
   inputSet[Max_Belasting==-100,Max_Belasting:=NA]
   inputSet[Max_Belasting_HLD==-100,Max_Belasting_HLD:=NA]
   inputSet[Max_Belasting_HLD_squared==-10000,Max_Belasting_HLD_squared:=NA]
@@ -948,6 +956,56 @@ ExtractCableData=function(mindataset){
   
   return(mindataset)
   
+}
+
+
+KLAKhistoryCoupling = function(NORset="",settype="LSmoffen"){
+  
+  KLAKsetName=load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_Meldingen_per_HLD.Rda"))
+  KLAKlist=get(KLAKsetName)
+  
+  if (settype=="LSmoffen" | settype=="LSkabels") {
+    KLAKset=KLAKlist$ID_Hoofdleiding
+    setkey(NORset,ID_Hoofdleiding_present)
+    setkey(KLAKset,ID_Hoofdleiding)
+    ID_list=unique(KLAKset$ID_Hoofdleiding)
+    
+    
+  }else if (settype=="MSmoffen" | settype=="MSkabels"){
+    KLAKset=KLAKlist$Routenaam
+    setkey(NORset,Routenaam_Present)
+    setkey(KLAKset,Routenaam)
+    ID_list=unique(KLAKset$Routenaam)
+    
+    
+  }
+  rm(KLAKlist)
+  
+  if (settype=="LSmoffen" | settype=="MSmoffen"){
+    NORset[,DateLastChange:=as.Date(DateRemoved,"%Y%m%d")]
+  }else if (settype=="LSkabels"| settype=="MSkabels"){
+    NORset[,DateLastChange:=as.Date(pmax(DateRemoved,DateLength_ch,Date_Status_ch,na.rm=T),"%Y%m%d")]
+  }
+  
+  
+  #convert datum to a number that is easy to compare numerically in both sets (yyyymmdd)
+  KLAKset[nchar(KLAKset[,Datum])>8,Datum:=paste0(substr(Datum,1,2),"-",substr(Datum,4,5),"-",substr(Datum,9,10))]
+  KLAKset[Datum!="",DatumNum:=as.Date(paste0(20,substr(Datum,7,8),substr(Datum,4,5),substr(Datum,1,2)),"%Y%m%d")]
+  
+  
+   cntr=0
+   for (i in ID_list){    
+     cntr=cntr+1
+     print(paste0(cntr," of ",length(ID_list)))
+     NORset[i,HLDStoringenSinds2001:=sum(KLAKset[i,DatumNum]<DateLastChange),by=DateLastChange]
+   }
+  
+  NORset[,HLDStoringenPerJaar:=HLDStoringenSinds2001/as.numeric(DateLastChange-min(KLAKset$DatumNum,na.rm=T))*365]
+  
+  NORset[is.na(HLDStoringenSinds2001),HLDStoringenSinds2001:=0]
+  NORset[is.na(HLDStoringenPerJaar),HLDStoringenPerJaar:=0]
+  
+  return(NORset)
 }
 
 
