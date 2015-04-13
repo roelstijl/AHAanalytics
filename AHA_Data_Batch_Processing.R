@@ -1,7 +1,20 @@
-AHA_Data_Batch_Processing = function(range)
-{
-# Settings ---------------------
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
+# Function in this file perform batch processing of the data
 
+AHA_Data_Batch_Processing = function(){
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
+# Function used to batch process all the data processing functions
+# Input:
+# none
+
+# Other data ---------------------------
+manualinput <- readline("Convert source files to raw files manually y/n?\n\n")
+
+if (manualinput == "y")
+AHA_Data_Import() # load additional files
+  
 # process the nettopo -----------------------
 AHA_DATA_Correct_NRG_Corruption() # Corrects corruptions in the NRG data
 AHA_Data_Import("Nettopologie","aansluitingengeotrace")
@@ -85,19 +98,28 @@ Tableau_Create_Polygons(fileout="MH_NRG_LS_KABELS_Geospatial_Tableau",sources="s
 }
 
 BAR_HLD_Subset= function(){
-  load(paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_LS_KABELS_XY_PC6.Rda"))
-  try(setnames(mindataset,"Ls_Verbinding","ID_Verbinding"))
-  BAR_LS_HLD = mindataset[,list(ID_NAN,ID_Hoofdleiding,ID_Verbinding)]
-  
-  load(paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_MS_KABELS_XY_PC6.Rda"))
-  try(setnames(mindataset,"ID_MS_HLD","ID_Verbinding"))
-  BAR_MS_HLD = mindataset[,list(ID_NAN,ID_Hoofdleiding,ID_Verbinding)]
-  
-  save(BAR_LS_HLD,BAR_MS_HLD,file=paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_KABELS_HLD_Sample.Rda"))
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
+# Function creates a sample of the BAR data
+# Input:
+# none
+load(paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_LS_KABELS_XY_PC6.Rda"))
+try(setnames(mindataset,"Ls_Verbinding","ID_Verbinding"))
+BAR_LS_HLD = mindataset[,list(ID_NAN,ID_Hoofdleiding,ID_Verbinding)]
+
+load(paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_MS_KABELS_XY_PC6.Rda"))
+try(setnames(mindataset,"ID_MS_HLD","ID_Verbinding"))
+BAR_MS_HLD = mindataset[,list(ID_NAN,ID_Hoofdleiding,ID_Verbinding)]
+
+save(BAR_LS_HLD,BAR_MS_HLD,file=paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_KABELS_HLD_Sample.Rda"))
 }
 
 KLAK_MS_fix_CooXY = function(){
-# Converts the coordinates from lon lat to RDS
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
+# Function converts the coordinates from lon lat to RDS
+# Input:
+# none
 load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK MS en klant melding.Rda"))
 Convert_Coordinate_System(mindataset)
 save(mindataset,file=paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK MS en klant melding_XY.Rda"))

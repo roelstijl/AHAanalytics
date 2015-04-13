@@ -1,6 +1,7 @@
 Save_preprocess = function(st,type){
-# Written by Roel Stijl (Bearingpoint B.V.) - 13-03-2015  
-# Saves output from shiny function
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
+# Functions in this file process the imported BAR log file to a delta# Saves output from shiny function
   
 cat("Loading original data from file...... \n")
 mindataset = LoadWrap(filechooser)

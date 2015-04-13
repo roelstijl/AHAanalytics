@@ -1,12 +1,19 @@
-AHA_Data_BAR_Log  = function()
-{
-# Creates as delta set from the statis BAR set
-# Load and prepare some data --------------------------------------------------
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
+# Functions in this file process the imported BAR log file to a delta
+
+AHA_Data_BAR_Log  = function(){
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
+# Function calculates the Delta of the bar log file
+# No input required
+
+# Load and prepare some data
 assets = list(); 
 changes = list();
 pb = pbarwrapper(title = paste0("AHA_Data_BAR_Log_Postprocessing, ",as.character(Sys.time())), label = "Start", min = 0, max = 7, initial = 0, width = 450);
 
-# Kabels --------------------------------------
+# Kabels
 setpbarwrapper(pb, 1,label = "Processing MS kabel data"); 
 load(paste0(settings$Ruwe_Datasets,"/1. BARlog/MH_NRG_MS_KABELS_XY_PC6.Rda"))
 assets$MSkabels = (Calc_Dates(mindataset))
@@ -79,9 +86,14 @@ setpbarwrapper(pb, 7,label = "Done!")
 
 }
 
-# Function used to calculate the Assets added removed and length changed-------------------------
-Calc_Dates = function(mindataset,assettype="kabels")
-{
+Calc_Dates = function(mindataset,assettype="kabels"){
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
+# Function calculates the Delta of the bar log file
+# Input:
+# mindataset - a dataset to calculate the dates of changes of
+# assettype - the type of asset, mof or kabel
+  
 # Added
 setkey(mindataset,ID_NAN)
 mindataset[,DateAdded:=min(Datum_Begin),by=ID_NAN]
@@ -120,20 +132,27 @@ mindataset[!is.na(DateRemoved),Status_ID:="Removed"]
 
 return(mindataset)}
 
-#Functie om kabels aan moffen te koppelen
 nnsearch_kabel_mof = function(kabelsset,moffenset,variable){
-  # Third use NN for Routenaam
-  nearest = nn2(kabelsset[!is.na(Coo_X_naar) & !is.na(kabelsset[[variable]]),list(Coo_X_naar,Coo_Y_naar)],moffenset[!is.na(Coo_X)&is.na(moffenset[[variable]]),list(Coo_X,Coo_Y)],k=1)
-  nearest2= nn2(kabelsset[!is.na(Coo_X_naar) & !is.na(kabelsset[[variable]]),list(Coo_X_van,Coo_Y_van)],moffenset[!is.na(Coo_X)&is.na(moffenset[[variable]]),list(Coo_X,Coo_Y)],k=1)
-  nnd = (nearest$nn.dists[,1]>=nearest2$nn.dists[,1])
-  nni = nearest$nn.idx[,1]; nni[nnd] = nearest2$nn.idx[nnd,1]
-  nni[!is.na(moffenset$Coo_X)&is.na(moffenset[[variable]])] = nni
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
+# Function calculated the nearest cable to a given mof
+# Input:
+# kabelset - a set of cables to compare to
+# moffenset - of set of moffen to compare the cables to
+# variable - the variable to do the comparison for
   
-  # output = rep(NA, nrow(moffenset))
-  
-  # output[is.na(kabelsset[[variable]])&!is.na(nni)] =
-  
-  output = kabelsset[[variable]][!is.na(kabelsset$Coo_X_naar)&!is.na(kabelsset[[variable]])][nni[!is.na(nni) & is.na(moffenset[[variable]])]]
-  
-  return(output)
+# Third use NN for Routenaam
+nearest = nn2(kabelsset[!is.na(Coo_X_naar) & !is.na(kabelsset[[variable]]),list(Coo_X_naar,Coo_Y_naar)],moffenset[!is.na(Coo_X)&is.na(moffenset[[variable]]),list(Coo_X,Coo_Y)],k=1)
+nearest2= nn2(kabelsset[!is.na(Coo_X_naar) & !is.na(kabelsset[[variable]]),list(Coo_X_van,Coo_Y_van)],moffenset[!is.na(Coo_X)&is.na(moffenset[[variable]]),list(Coo_X,Coo_Y)],k=1)
+nnd = (nearest$nn.dists[,1]>=nearest2$nn.dists[,1])
+nni = nearest$nn.idx[,1]; nni[nnd] = nearest2$nn.idx[nnd,1]
+nni[!is.na(moffenset$Coo_X)&is.na(moffenset[[variable]])] = nni
+
+# output = rep(NA, nrow(moffenset))
+
+# output[is.na(kabelsset[[variable]])&!is.na(nni)] =
+
+output = kabelsset[[variable]][!is.na(kabelsset$Coo_X_naar)&!is.na(kabelsset[[variable]])][nni[!is.na(nni) & is.na(moffenset[[variable]])]]
+
+return(output)
 }

@@ -1,4 +1,7 @@
 AHA_Data_KA_Proxy_Preprocessing = function(datasets=c("assetsBAR","assetsNOR","nettopo","storingen","validatieset")){
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
+# Script used for the complete project
 # Merges the Delta data into small datasets for analysis
 # Datasets selects only a certain set to process (default = all)
 # cfg$firstdate_NOR is the startdate of the data subset

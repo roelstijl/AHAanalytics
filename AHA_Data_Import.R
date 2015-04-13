@@ -1,35 +1,34 @@
 AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="save",override=T,ID_Object=F){
-  
-  # Asset health analytics import script, 
-  # Load project first
-  # (c) Roel Stijl (Bearingpoint), Jacco Heres (Alliander), 2014
-  
-  # This file imports select collumns from raw files and modifies the headers based on an xlsx file
-  # The xlsx file is <filename>_header.xlsx, and is automatically created importing a CSV
-  # Default for the xlsx file is all collumns and default headers, can be modified using shiny GUI or excel
-  # The functions operates in several modes these can be be shiny, save or load
-  # - shiny provides a GUI for editing the header files
-  # - load provides a mode to load a file to workspace (e.g. output = AHA_impot(a,b,c))
-  # - save will save the data to file <filename>.Rda
-  # - header will just dump the header xlsx
-  # Multiple files is supported, initial input dataname is a partial search
-  
-  # An attached excel sheet contains all the information for the import, the following date formats are allowed
-  #  "date",         dmy
-  #  "dateymd",      ymd
-  #  "datetime",     my_hms
-  #  "datetimeYDM",  ymd_hms
-  #  "datetimeM",    dmy_hm
-  #  "Hours minuts", hm
-  
-  # Do all the loading and modifying of files -------------------------------
-  # Define the location of your data based on the system used
-  cfg           = list()
-  cfg$compress  = F
-  cfg$started   = Sys.time()
-  shinyfolder   = "Shiny"
-  pb = pbarwrapper (title = "Import", label = "Starting...", min = 0, max = length(datafiles)*3, initial = 0, width = 450); pc=0;
-  
+# Asset health analytics import script, 
+# Load project first
+# (c) Roel Stijl (Bearingpoint), Jacco Heres (Alliander), 2014
+
+# This file imports select collumns from raw files and modifies the headers based on an xlsx file
+# The xlsx file is <filename>_header.xlsx, and is automatically created importing a CSV
+# Default for the xlsx file is all collumns and default headers, can be modified using shiny GUI or excel
+# The functions operates in several modes these can be be shiny, save or load
+# - shiny provides a GUI for editing the header files
+# - load provides a mode to load a file to workspace (e.g. output = AHA_impot(a,b,c))
+# - save will save the data to file <filename>.Rda
+# - header will just dump the header xlsx
+# Multiple files is supported, initial input dataname is a partial search
+
+# An attached excel sheet contains all the information for the import, the following date formats are allowed
+#  "date",         dmy
+#  "dateymd",      ymd
+#  "datetime",     my_hms
+#  "datetimeYDM",  ymd_hms
+#  "datetimeM",    dmy_hm
+#  "Hours minuts", hm
+
+# Do all the loading and modifying of files -------------------------------
+# Define the location of your data based on the system used
+cfg           = list()
+cfg$compress  = F
+cfg$started   = Sys.time()
+shinyfolder   = "Shiny_Import_Data"
+pb = pbarwrapper (title = "Import", label = "Starting...", min = 0, max = length(datafiles)*3, initial = 0, width = 450); pc=0;
+
 
   if (folder == "automatic"){
     filechooser= choose.files(default = paste0(settings$Bron_Datasets,"/*"))
@@ -183,10 +182,11 @@ else if(mode=="load") {
 }else{
   cat("Wrong mode selected, load, save or shiny\n")
 } } }
-
   
 AHA_Data_Import_SVG = function(){
-  
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
+# Functions to convert SVG files into HTML readable files
   load(paste0(settings$Ruwe_Datasets,"/17. Storingsschetsen/OBJ3700673_STORINGSSCHETSFORMU_DATA_TABLE_MAIN.Rda"))
   schetstabel = mindataset
   
