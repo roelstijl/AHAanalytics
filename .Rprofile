@@ -33,7 +33,7 @@
                   "AHA_Data_NOR_Log.R", 'AHA_Data_Geo_Functions.R', "AHA_Data_MVA_Preprocessing_Functions.R",
                   "AHA_Data_BAR_Log.R","AHA_Proxy_KA_Postprocessing.R","AHA_Extra_Functions.R",
                   "AHA_MVA_Coupling.R","AHA_MVA_Preprocessing_Functions.R",
-                  "AHA_MVA_Analyse.R",,"AHA_MVA_CouplePreprocessing.R")
+                  "AHA_MVA_Analyse.R","AHA_MVA_CouplePreprocessing.R")
 
   l_ply(sourcefiles,function(x) try(source(x)))
   
@@ -111,7 +111,7 @@ load_settings = function(){
     settings$Input_Datasets = "D:/1. Alliander Datasets/2. Asset health analytics/2. Input Datasets"
     settings$Analyse_Datasets = "D:/1. Alliander Datasets/2. Asset health analytics/3. Analyse Datasets"
     settings$Visuals = "-"
-    settings$Results = "-"
+    settings$Results = "D:/1. Alliander Datasets/2. Asset health analytics/4. Analyse Resultaten"
     settings$Testcodes ="C:/Users/michiel.musterd/Documents/Alliander project/5. TestCodes"
     .libPaths ("C:/Users/michiel.musterd/Documents/R")}
   

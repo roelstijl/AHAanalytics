@@ -12,17 +12,29 @@
 #-----------------------------------------------------------------#
 
 AHA_MVA_wrappers = function(){
+  rm(list = setdiff(ls(), lsf.str()))
+  .First()
+  gc()
+  
   cat("The functions in this file are for separate use in testing, please call them separately \n")
+  CallProxyNORcouple(Settype="MSmoffen")
+  gc()
+  CallProxyNORcouple(Settype="LSmoffen")
+  gc()
+  CallProxyNORcouple(Settype="MSkabels")
+  gc()
+  #CallProxyNORcouple(Settype="LSkabels")
+  #gc()
+  
+  
+ 
 }
 
 
-CallProxyNORcouple = function (){
-  rm(list = setdiff(ls(), lsf.str()))
-  .First()
+CallProxyNORcouple = function (Settype="MSmoffen"){
   
   #settings for the NORfile and proxylist
-  Settype="LSmoffen"
-  NORfile=paste0(settings$Analyse_Datasets,"/2. CoupledWithoutProxy/MVA_Coupled_AnalysisSet_LSmoffen.Rda")
+  NORfile=paste0(settings$Analyse_Datasets,"/2. CoupledWithoutProxy/MVA_Coupled_AnalysisSet_",Settype,".Rda")
   Proxyfile=paste0(settings$Analyse_Datasets,"/1. Proxylijsten/Proxy_koppellijst_2015-03-27 21.20.07inclOorzaak.Rda")
   
   #load the files and clean some memory
@@ -41,19 +53,18 @@ CallProxyNORcouple = function (){
   finalSetTargetOutFileName=paste0(settings$Analyse_Datasets,"/3. CoupledWithProxy/MVA_Final_",Settype,".Rda")
   
   #couple the punten into the set
-  coupledSet=AHA_MVA_CoupleNORproxy(NORset=coupledSet,ProxySet=koppellijst,Settype=Settype)
+  coupledSet=CoupleNORproxy(NORset=coupledSet,ProxySet=koppellijst,Settype=Settype)
   gc()
   
   
   #couple the target variables into the set for the list of thresholds
-  coupledSet=AHA_MVA_TargetVariables(coupledNOR=coupledSet,threshold=list(0.3,0.5,1.0))
+  coupledSet=TargetVariables(coupledNOR=coupledSet,threshold=list(0.3,0.5,1.0))
   
   #save the set and clean memory again
   save(coupledSet,file=finalSetTargetOutFileName,compress=F)
   gc()
   
-  
-  
+   
 }
 
 TestCoupling = function(){
@@ -87,17 +98,17 @@ TestCoupling = function(){
   
   #Belastingindicator coupling
   
-  SetNo=16
-  cat("Starting ",SetNo," coupling, runtime (s):",proc.time()[3]-ptm[3] ," \n")
-  coupledSet=coupling(no_of_keys=1,couple_method=0,key1_nameA="ID_Verbinding_present",key2_nameA="ID_Verbinding_present",
-                      outFileName="InMemory", Set1Name="InMemory",Set2Name=InputFileList[[SetNo]],memorySet=coupledSet)
-  
+#   SetNo=16
+#   cat("Starting ",SetNo," coupling, runtime (s):",proc.time()[3]-ptm[3] ," \n")
+#   coupledSet=coupling(no_of_keys=1,couple_method=0,key1_nameA="ID_Verbinding_present",key2_nameA="ID_Verbinding_present",
+#                       outFileName="InMemory", Set1Name="InMemory",Set2Name=InputFileList[[SetNo]],memorySet=coupledSet)
+#   
   
   SetNo=13
   cat("Starting ",SetNo," coupling, runtime (s):",proc.time()[3]-ptm[3] ," \n")
-  coupledSetV2=coupling(no_of_keys=1,couple_method=0,key1_nameA="ID_Hoofdleiding_present",
-                        key2_nameA="ID_Hoofdleiding_present",
-                        outFileName="InMemory", Set1Name="InMemory",Set2Name=InputFileList[[SetNo]],memorySet=coupledSet)
+  coupledSet=coupling(no_of_keys=1,couple_method=0,key1_nameA="ID_Verbinding_present",
+                      key2_nameA="ID_Verbinding_present",
+                      outFileName="InMemory", Set1Name="InMemory",Set2Name=InputFileList[[SetNo]],memorySet=coupledSet)
   
   # SetNo=6
   # currentInFile=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/Proxylist.Rda")
