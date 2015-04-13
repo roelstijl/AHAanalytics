@@ -25,8 +25,8 @@
 ######################################################################
 
 AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR input/MSmoffen_NOR.Rda"),
-                            Proxyfile=paste0(settings$Analyse_Datasets,"/1. Proxylijsten/Proxy_koppellijst_2015-03-25 14.00.00.Rda"),
-                            Settype="MSmoffen", ProxyThreshold=0.5){
+                            Proxyfile=paste0(settings$Analyse_Datasets,"/1. Proxylijsten/Proxy_koppellijst_2015-03-27 21.20.07.Rda"),
+                            Settype="MSmoffen", ProxyThreshold=0.3){
   #Wrapper function to call the coupling function multiple times with different settings
   #in order to provide 1 call coupling of the proxylist with all external datasources
   #
@@ -811,3 +811,7 @@ AHA_MVA_TargetVariables = function(coupledNOR,threshold=0.3){
   return(coupledNOR)
 }
 
+# coupledNOR$gestoordAsset= ifelse(coupledNOR$punten>=0.3,1,0)
+# coupledSet = coupledNOR
+# coupledSet[,Oorzaak:=NULL]
+# coupledSet[,punten:=NULL]
