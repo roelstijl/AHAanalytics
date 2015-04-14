@@ -463,7 +463,6 @@ coupling = function(no_of_keys=2,couple_method=1,includeNNdist=0,NNdistName="-",
   }
 
   
-    
   if (couple_method==1){ #coupling on nearest neighbour
     
     # if pandenset=1 I need to loop over all panden files so I rewrote the
@@ -522,8 +521,6 @@ coupling = function(no_of_keys=2,couple_method=1,includeNNdist=0,NNdistName="-",
     
     
       indexNearest=nn2(Set2Sub,Set1Sub,k=1)
-    
-      
     
       cat("Nearest neighours identified, proceed to coupling \n")
       
@@ -672,6 +669,9 @@ coupling = function(no_of_keys=2,couple_method=1,includeNNdist=0,NNdistName="-",
 }
 
 splitDate = function(inputSet=mindataset){
+  #This function splits each column of the inputset that has the class "Date"
+  #into a separate column for day, month and year. The assumed dateformat is
+  #yyyy-mm-dd
   
   Names_Date_Cols=which(sapply(inputSet,class)=="Date")
   
@@ -711,22 +711,25 @@ CoupleNORproxy = function(NORset,ProxySet,Settype="LSkabels"){
   
   CurrentProxyList=OorzaakClassificatie[CurrentProxyList]
   
-  
   #check whether ID_unique in the koppelijst has PC6 by making it numeric, if so: cut off the last 4 characters because we couple to PC2
   if (sum(is.na(as.numeric(CurrentProxyList$ID_unique)))>100){
     CurrentProxyList$ID_unique=substr(CurrentProxyList$ID_unique,1,nchar(CurrentProxyList$ID_unique)-4)
   }
   
   #select only the most likely failed asset for each ID_KLAK_Melding
-#   CurrentProxyList[,maxpuntenKLAK := max(punten),by=ID_KLAK_Melding]
-#   CurrentProxyList=CurrentProxyList[punten==maxpuntenKLAK,]
-#   setkey(CurrentProxyList,ID_KLAK_Melding)
-#   CurrentProxyList=unique(CurrentProxyList)
-  
+  #   CurrentProxyList[,maxpuntenKLAK := max(punten),by=ID_KLAK_Melding]
+  #   CurrentProxyList=CurrentProxyList[punten==maxpuntenKLAK,]
+  #   setkey(CurrentProxyList,ID_KLAK_Melding)
+  #   CurrentProxyList=unique(CurrentProxyList)
+    
   #Sum punten by ID_unique when it is found in more failures
   CurrentProxyList[,punten := sum(punten),by=ID_unique]
   
-  #select one of the ID_uniques at random when punten is equal
+  #Select for each ID_unique only the assets with the heighest number of punten
+  CurrentProxyList[,maxpunten := max(punten),by=ID_unique]
+  CurrentProxyList=CurrentProxyList[punten==maxpunten,]
+  
+  #select one of the ID_uniques at "random" (whatever way unique() does this) when punten is equal
   setkey(CurrentProxyList,ID_unique)
   CurrentProxyList=unique(CurrentProxyList)
   
@@ -740,7 +743,6 @@ CoupleNORproxy = function(NORset,ProxySet,Settype="LSkabels"){
     setkey(NORset,i.ID_unique)
   }else{setkey(NORset,ID_unique)}
   
-  #setkey(CurrentProxyList,ID_unique)
   
   #perform the coupling and set anything that doesn't couple to 0 (because there is no failure in that case)
   coupledNOR=CurrentProxyList[NORset]
@@ -763,7 +765,7 @@ CoupleNORproxy = function(NORset,ProxySet,Settype="LSkabels"){
 }
 
 CalcLoadIndicators=function(inputSet,settype){
-  #Note, inputSet needs to contain a column Max_Belasting, ID_Hoofdleiding and the five load metrics
+  #Note, inputSet needs to contain a column Max_Belasting, ID_Hoofdleiding/ID_Verbinding and the five load metrics
   
   #First we calculate the value of the max belasting of the HLD, assuming that this is the one the highest in 
   #the tree and that load fractions are equally distributed over the HLD.
@@ -960,6 +962,9 @@ ExtractCableData=function(mindataset){
 
 
 KLAKhistoryCoupling = function(NORset="",settype="LSmoffen"){
+  #This function counts the historic failures (KLAK_meldingen) in a HLD (LS) or Route (MS)
+  #and couples those to assets in the current HLD/route, up to, but excluding, the time that the asset
+  #itself fails
   
   KLAKsetName=load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_Meldingen_per_HLD.Rda"))
   KLAKlist=get(KLAKsetName)
@@ -981,6 +986,7 @@ KLAKhistoryCoupling = function(NORset="",settype="LSmoffen"){
   }
   rm(KLAKlist)
   
+  #Create a variable with information on the last change on the asset, this is the moment it failed itself
   if (settype=="LSmoffen" | settype=="MSmoffen"){
     NORset[,DateLastChange:=as.Date(DateRemoved,"%Y%m%d")]
   }else if (settype=="LSkabels"| settype=="MSkabels"){
@@ -1000,6 +1006,7 @@ KLAKhistoryCoupling = function(NORset="",settype="LSmoffen"){
      NORset[i,HLDStoringenSinds2001:=sum(KLAKset[i,DatumNum]<DateLastChange),by=DateLastChange]
    }
   
+  #Note that the variable will always be called HLDstoringen.. even though for MS it is actually a RouteStoring
   NORset[,HLDStoringenPerJaar:=HLDStoringenSinds2001/as.numeric(DateLastChange-min(KLAKset$DatumNum,na.rm=T))*365]
   
   NORset[is.na(HLDStoringenSinds2001),HLDStoringenSinds2001:=0]

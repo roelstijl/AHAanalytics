@@ -47,7 +47,7 @@ BAGimport = function (){
   
   folder=paste0(settings$Bron_Datasets,"/10. BAG/ExtractOutput")
   
-  for (i in 11:54){
+  for (i in 1:54){
     gc()
     cat("Working on set number: ",i,"\n")
     if (i==1){
@@ -100,6 +100,9 @@ BAGimport = function (){
     
   }
   
+  #call BAG cleanup to clean the generated sets
+  BAGcleanup()
+  
   return("Done!")
   
 }
@@ -137,17 +140,14 @@ BAGcleanup = function(){
 }
 
 CreateLoadIndicators=function(){
-  #koppel LS kabels aan belastingmetrics
-  load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/LS_HLDbelastingindicators.Rda"))
-  
-  setkey(LSkabels,ID_Hoofdleiding_present)
-  setkey(HLDmetrics,ID_Hoofdleiding)
-  
-  coupledSetLS=HLDmetrics[LSkabels] 
-  #99.3% gevonden :)
-  
-  
-  
+#   #koppel LS kabels aan belastingmetrics
+#   load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/LS_HLDbelastingindicators.Rda"))
+#   
+#   setkey(LSkabels,ID_Hoofdleiding_present)
+#   setkey(HLDmetrics,ID_Hoofdleiding)
+#   
+#   coupledSetLS=HLDmetrics[LSkabels] 
+#   #99.3% gevonden :)
   
   #koppel MS kabels aan belastingmetrics
   load(paste0(settings$Ruwe_Datasets,"/00. NOR input/MSkabels_NOR.Rda"))
