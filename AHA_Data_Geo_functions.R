@@ -1,19 +1,28 @@
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
 # Contains all the geographical functions used in the project
-# Asset Health Analytics, Roel Stijl, 2014-2015
 
 AHA_RDCtoGPS = function(coordinates){  
-  # Converts for RDS to GPS coordinates
-  # Created by R Stijl, Bearingpoint
-  # ! legacy
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
+# Function used to Converts for RDS to GPS coordinates
+# Input:
+# Coordinates, a data table with XY coordinates
+
   Convert_Coordinate_System (data.table( x = coordinates[,1,with=FALSE],y= coordinates[,2,with=FALSE])
                              ,from = "RDS", to = "lonlat",
                              xcol ="x",ycol="y", plotgooglemaps=F)[,list(Coo_X,Coo_Y)]
 }
 
 Convert_Coordinate_System = function(mindataset,from = "lonlat", to = "RDS",xcol ="LOC_X_COORDINAAT",ycol="LOC_Y_COORDINAAT",xcolout ="Coo_X",ycolout ="Coo_Y", plotgooglemaps=F){
-  # Function converts from coordinate system to other system and has the option to plot it
-  # Takes the entire dataset, but could be faster if the input data is smaller or just xy
-  # Expects a data table as entry and outputs a data table with coordinates added
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
+# Function converts from coordinate system to other system and has the option to plot it
+# Takes the entire dataset, but could be faster if the input data is smaller or just xy
+# Expects a data table as entry and outputs a data table with coordinates added
+# Input:
+# Coordinates, a data table with XY coordinates
+
   fromcrs = switch(from,lonlat = "+init=epsg:4326",RDS = "+init=epsg:28992",error("not supported, add CRS system"))
   tocrs   = switch(to,lonlat = "+init=epsg:4326",RDS = "+init=epsg:28992",error("not supported, add CRS system"))
   
@@ -40,10 +49,18 @@ Convert_Coordinate_System = function(mindataset,from = "lonlat", to = "RDS",xcol
 }
 
 processXY = function(file,mode,veld="Ligging",folder="1. BARlog"){
-  # Wrapper for the covnersion of MDSYS files to usable coordinates
-  # Can calculate beginning and end of lines
-  # Can convert points into XY
-  # Has a function to convert oracle geospatial into R geospatial lines (lines)
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
+# Contains all the geographical functions used in the project
+# Wrapper for the covnersion of MDSYS files to usable coordinates
+# input:
+# file, the file to import and transform
+# mode, the mode to use:
+# - beginend: Can calculate beginning and end of lines
+# - points: Can convert points into XY
+# - lines: Has a function to convert oracle geospatial into R geospatial lines (lines)
+# folder, what folder to find the data in
+# veld, which field containts the geo information
   
   load(paste0(settings$Ruwe_Datasets,"/",folder,"/",file,".Rda"));
 
@@ -60,8 +77,8 @@ processXY = function(file,mode,veld="Ligging",folder="1. BARlog"){
 }
 
 AHA_Data_BAR_Geometry = function(dataset,mode="lines",atype="kabels",DT = "none"){
-# Converts the BAR geoinfo to something usefull
-
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
 # Converts the following "MDSYS.SDO_GEOMETRY(2001,28992,MDSYS.SDO_POINT_TYPE(185462.693,436911.424,NULL),NULL,NULL)"
 # modes
 # lines (export plotable lines)
@@ -109,7 +126,6 @@ return(
 }
 
 AHA_MDsysGeo_Conversion = function (){
-
 #Written by Michiel Musterd - 23-02-2015
 #---------------------------------------
 #Function to convert geo data of the mdsys type to SpatialPolygon type for use in geoquery coupling
@@ -188,55 +204,66 @@ return("Done")
 }
 
 processPC6 = function(file,mode,folder=paste0(settings$Ruwe_Datasets,"/","1. BARlog"),returndata=F){
-  # Function calculates the PC6 of files
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
+# Converts the goespatial data (XY) into the postal code region  the data is in
+# input:
+# file, the file to load
+# folder, the folder to load the file from
+# mode, the mode to use, se below
+# returndata, return the data or just write to file?
   
-  a=1  
-  switch (mode,
-          van_naar_NOR= {
-            load(paste0(folder,"/",file,".Rda"))
-            masterdataset$PC_6_van_original = masterdataset$PC_6_van
-            setkeyv(masterdataset,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
-            datatable = AHA_Data_Determine_PC(unique(masterdataset[,list(Coo_X_van,Coo_Y_van,Coo_Y_naar,Coo_X_naar)]),x="Coo_X_naar",y="Coo_Y_naar",PC="PC_6_naar")
-            datatable = AHA_Data_Determine_PC(datatable,x="Coo_X_van",y="Coo_Y_van",PC="PC_6_van",extrainfo=TRUE)  
-            
-            setkeyv(masterdataset,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
-            setkeyv(datatable,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
-            mindataset=unique(datatable)[masterdataset]
-            },
+switch (mode,
+        van_naar_NOR= {
+          load(paste0(folder,"/",file,".Rda"))
+          masterdataset$PC_6_van_original = masterdataset$PC_6_van
+          setkeyv(masterdataset,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
+          datatable = AHA_Data_Determine_PC(unique(masterdataset[,list(Coo_X_van,Coo_Y_van,Coo_Y_naar,Coo_X_naar)]),x="Coo_X_naar",y="Coo_Y_naar",PC="PC_6_naar")
+          datatable = AHA_Data_Determine_PC(datatable,x="Coo_X_van",y="Coo_Y_van",PC="PC_6_van",extrainfo=TRUE)  
           
-          punt_NOR= {
-            load(paste0(folder,"/",file,".Rda"));
-            masterdataset[,PC_6_original := PC_6]
-            mindataset=AHA_Data_Determine_PC(masterdataset,x="Coo_X",y="Coo_Y",PC="PC_6",extrainfo=TRUE)},
-            
-          van_naar= {
-            load(paste0(folder,"/",file,"_XY.Rda"))
-            datatable = AHA_Data_Determine_PC(mindataset[,list(Coo_X_van,Coo_Y_van,Coo_Y_naar,Coo_X_naar)],
-            x="Coo_X_naar",y="Coo_Y_naar",PC="PC_6_naar")
-            datatable = AHA_Data_Determine_PC(datatable,x="Coo_X_van",y="Coo_Y_van",PC="PC_6_van",extrainfo=TRUE)
-            
-            setkeyv(mindataset,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
-            setkeyv(datatable,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
-            mindataset=unique(datatable)[mindataset]
-            },
+          setkeyv(masterdataset,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
+          setkeyv(datatable,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
+          mindataset=unique(datatable)[masterdataset]
+          },
+        
+        punt_NOR= {
+          load(paste0(folder,"/",file,".Rda"));
+          masterdataset[,PC_6_original := PC_6]
+          mindataset=AHA_Data_Determine_PC(masterdataset,x="Coo_X",y="Coo_Y",PC="PC_6",extrainfo=TRUE)},
           
-          punt= {
-            load(paste0(folder,"/",file,"_XY.Rda"));
-            mindataset=AHA_Data_Determine_PC(mindataset,extrainfo=TRUE)},
-          warning("Not a valid mode\n")
-  )
-  if (returndata){
-    save(mindataset,file=paste0(folder,"/",file,"_XY_PC6.Rda"),compress=F)
-    return(mindataset)
-  }else{
-    save(mindataset,file=paste0(folder,"/",file,"_XY_PC6.Rda"),compress=F)
-  }
+        van_naar= {
+          load(paste0(folder,"/",file,"_XY.Rda"))
+          datatable = AHA_Data_Determine_PC(mindataset[,list(Coo_X_van,Coo_Y_van,Coo_Y_naar,Coo_X_naar)],
+          x="Coo_X_naar",y="Coo_Y_naar",PC="PC_6_naar")
+          datatable = AHA_Data_Determine_PC(datatable,x="Coo_X_van",y="Coo_Y_van",PC="PC_6_van",extrainfo=TRUE)
+          
+          setkeyv(mindataset,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
+          setkeyv(datatable,c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar"))
+          mindataset=unique(datatable)[mindataset]
+          },
+        
+        punt= {
+          load(paste0(folder,"/",file,"_XY.Rda"));
+          mindataset=AHA_Data_Determine_PC(mindataset,extrainfo=TRUE)},
+        warning("Not a valid mode\n")
+)
+if (returndata){
+  save(mindataset,file=paste0(folder,"/",file,"_XY_PC6.Rda"),compress=F)
+  return(mindataset)
+}else{
+  save(mindataset,file=paste0(folder,"/",file,"_XY_PC6.Rda"),compress=F)
+}
 }
 
-# Determines the PC regions corresponding to XY coordinates ---------------------
 AHA_Data_Determine_PC=function(datatable,x="Coo_X",y="Coo_Y",PC="PC_6",extrainfo=FALSE){
-  # Function calculated the postal codes for regions that lack this (i.e BAR and NOR sets)
-  # Prepare lines
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
+# Contains all the geographical functions used in the project
+# Function calculated the postal codes for regions that lack this (i.e BAR and NOR sets)
+# input:
+# x and y, fields that contain the coordinates
+# PC, the postal code field
+# extrainfo, write all the metadata in the pc6 file to dataframe
   
   cfg=list()
   cfg$pb = pbarwrapper (title = paste0("AHA_Data_Determine_PC, ",as.character(Sys.time())), label = "Preparing lines for comparison to pc6 regions", min = 0, max = 10000, initial = 0, width = 450);
@@ -260,21 +287,6 @@ AHA_Data_Determine_PC=function(datatable,x="Coo_X",y="Coo_Y",PC="PC_6",extrainfo
   datatable[,V1:=co$V1]
   coordinates(co) = datatable[,c(x,y),with=FALSE]
   proj4string(co) <- CRS("+init=epsg:28992")
-
-#   load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial_Michiel.Rda"))
-#   pc4_m  = pc4
-#   pc4_m_data = data.table(pc4@data)
-#   setkey(pc4_m_data,postcode4)
-#     
-#   load(paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial_OLD.Rda"))
-#   pc4_old_data = data.table(data.table(pc4@data))
-#   setnames(pc4_old_data,"PC4CODE","postcode4")
-#   setkey(pc4_old_data,postcode4)
-#   pc4_m_data = pc4_old_data[pc4_m_data]
-#   rownames(pc4_m_data) = pc4_m_data$postcode4
-#   
-#   pc4 = SpatialPolygonsDataFrame(pc4_m,pc4_m_data)
-#   save(pc4,file=paste0(settings$Ruwe_Datasets,"/10. BAG/PC_4_Spatial.Rda"))
 
 # Extract PC4
   ret = data.table(co %over% pc4)
