@@ -1,4 +1,4 @@
-proxy_samenv  <- function(global=F,set){
+AHA_Proxy_Merge  <- function(global=F,set){
   #Deze functie gebruikt drie proxy-uitkomsten (van PC, XY en TOPO) 
   #en voegt deze samen tot één lange lijst. Er  worden punten gegeven
   #aan elke koppeling op basis van de gebruikte koppelmethode, wel/geen
