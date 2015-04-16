@@ -17,49 +17,31 @@
 #-----------------------------------------------------------------#
 
 
-AHA_MVA_Analyse = function (){
+AHA_MVA_Analyse = function (Target_val="T",Target_var="gestoordAsset_th0.3",Settype="MSkabels",NfoldSplit=3){
+  library("ROCR")
   
-  rm(list = setdiff(ls(), lsf.str()))
-  .First()
-  gc()
+#   rm(list = setdiff(ls(), lsf.str()))
+#   .First()
+#   gc()
+
   cat("Note that the alldata set and the metadata already have to exist for 
       this script to run, output them first with the shiny preprocessing tool \n")
   
   #############################
   # Settings                  #
   #############################
-  threshold=0.3
-  settype="LSkabels"
-  Ntrain=500000
-  Ntest=1000000
-  PercTrain=1
-  Target_val="T"
-  Target_var="gestoordAsset_th0.3"
-  removeColumns=c("ID_unique","ID_unique_present","ID_NAN","ID_NAN_present")
-  #binColumns=c("Afstand_Boom","Afstand_Overige_Punt_Inrichtingselement","Afstand_Spoorbaan","Afstand_Pand","Coo_X_van","Coo_Y_van")
+  #remove columns that are in the preprocessing set for registration purposes, but cannot/should not be handled
+  #by the MVA analysis
+  removeColumns=c("ID_unique","ID_unique_present","ID_NAN","ID_NAN_present","Datum_Inbedrijf",
+                  "Datum_Inbedrijf_Dag","Datum_Inbedrijf_Maand","Datum_Inbedrijf_Jaar")
   binColumns=""
-  
-  #NOTITIES:
-  #OMBOUWEN SCRIPT ZODAT IK 7-FOLD RUNS KAN DOEN EN MAAR 1 UITEINDELIJKE OUTPUT KRIJG AAN KANSEN
-  #VERDER OMBOUWEN TOT FUNCTIE
-  
-  #STUKJE SAMPLECODE WAARMEE IK DE RFs kan combineren
-  # set.seed(42)
-  # library(randomForest)
-  # rf1 <-randomForest(Species ~ ., iris, ntree=50, norm.votes=FALSE) 
-  # rf2 <- randomForest(Species ~ ., iris, ntree=50, norm.votes=FALSE) 
-  # rf3 <- randomForest(Species ~ ., iris, ntree=50, norm.votes=FALSE) 
-  # 
-  # rf.all <- combine(rf1, rf2, rf3) 
-  # predict(rf.all, type='prob')
-  
+  filename=paste0("MVA_Final_",Settype)
   
   #############################
   #Load the dataset           #
   #############################
   ptmOrg=proc.time()[3]
   ptm=ptmOrg
-  filename=paste0("MVA_Coupled_AnalysisSet_",settype,"_singleKLAK")
   load(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_alldata.Rda"))
   cat("Alldata loaded in ",proc.time()[3]-ptm," s \n")
   
@@ -69,6 +51,9 @@ AHA_MVA_Analyse = function (){
   ptm=proc.time()[3]
   if (exists("mindataset")==T){alldata=mindataset
                                rm(mindataset)}
+  
+  #remove columns that are not desired
+  alldata=alldata[,setdiff(names(alldata),removeColumns),with=F]
   
   gc()
   for (i in names(alldata))
@@ -95,55 +80,85 @@ AHA_MVA_Analyse = function (){
   save(alldata,metadata,cfg,file = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_alldataImputed.Rda"),compress=F)
   cat("Imputation performed and file saved in ",proc.time()[3]-ptm," s \n")
   
+  
+  #create a 10% validation set to compute the ROC curve on at the end, use the rest for test/train
+  validateSample=sample(1:nrow(alldata),round(nrow(alldata)/10))
+  validateSet=alldata[validateSample,]
+  testtraindata=alldata[!validateSample,]
+  
+  #select the sizes of the sets
+  setSizes=1:NfoldSplit
+  setSizes[1:NfoldSplit]=floor(nrow(testtraindata)/NfoldSplit)
+  
+  #assign the correct number of rows to each of the N sets by random selection
+  set.seed(10)
+  sampleList=sample(1:nrow(testtraindata),nrow(testtraindata),replace=F)
+  
+  setList=vector("list",NfoldSplit)
+  endID=0
+  for (i in 1:NfoldSplit){
+    startID=endID+1
+    endID=endID+setSizes[i]
+    setList[[i]]=testtraindata[sampleList[startID:endID],]
+  }
+  
+  #create a list for output of the results later on
+  uitkomstList=vector("list",NfoldSplit)
+  
+  
+ #loop for all N folds of the cross validation
+  for (cntr in 1:NfoldSplit){
+    
   ############################
   #Create test and train sets#
   ############################
-  
-  #set settings
   ptm=proc.time()[3]
-  st= data.table(Tr_size=as.numeric(Ntrain),
-                 Tr_tgt=as.numeric(PercTrain)/100,
-                 tst_size=as.numeric(Ntest),
-                 rnd_seed=as.numeric(10),
-                 Target_Value=Target_val, 
-                 Target_Variable=Target_var)
+  testset=setList[[cntr]]
+  trainset=rbindlist(setList[c(which((1:NfoldSplit)!=cntr))])
   
+  save(testset,trainset,metadata,cfg,file = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_test_train_set_RF.Rda"),compress=F)
   
-  alldata=alldata[,setdiff(names(alldata),removeColumns),with=F]
-  
-  #BIN THE COLUMNS HERE
-  binnedColumns=AHA_MVA_Bin(alldata[,binColumns,with=F],N=10)
-  alldata[,binColumns:=NULL,with=F]
-  alldata=cbind(alldata,binnedColumns)
-  
-  #Create test and trainset from the already imputed and corrected set
-  testrows = rep(F,nrow(alldata))
-  testrows[sample(1:nrow(alldata),st$tst_size)] = T
-  trainrow = c(sample(which(alldata[[st$Target_Variable]]==st$Target_Value & !testrows),st$Tr_size*(st$Tr_tgt)),
-               sample(which(alldata[[st$Target_Variable]]!=st$Target_Value & !testrows),st$Tr_size*(1-st$Tr_tgt)))
-  testrows = which(testrows)
-  
-  testset  = alldata[testrows,]
-  trainset = alldata[trainrow,]
-  
-  save(testset,trainset,metadata,cfg,file = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_test_train_set.Rda"),compress=F)
-  #write.table(testset,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_testset.csv"),sep = ";",na="",row.names = F);
-  #write.table(trainset,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_trainset.csv"),sep = ";",na="",row.names = F);
   cat("Test and trainsets created and saved in ",proc.time()[3]-ptm," s \n")
+  
   
   ############################
   #Run random forest analysis
   ############################
   ptm=proc.time()[3]
-  paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_test_train_set.Rda")
-  uitkomst=AHA_MVA_Analyse(aantalimp=1,inputfilename=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_test_train_set.Rda"))
-  cat("Random forest run done in ",proc.time()[3]-ptm," s --- for trainsize: ",st$Tr_size,"\n")
+  allFailedAssets=round(nrow(trainset[get(cfg$Target_Variable)=="T",]))
+  cat("Starting RF run with ",allFailedAssets," failed assets per tree for ",Settype,"\n")
+
+  stratifier = c("F" =allFailedAssets*10, "T" = allFailedAssets)
+
+  uitkomst=MVA_Actual_Analyse(aantalboom=500,stratifier=stratifier,aantalimp=1,inputfilename=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_test_train_set_RF.Rda"))
+  cat("Random forest run done in ",proc.time()[3]-ptm," s --- for fold: ",cntr,"\n")
   
-  #calculate failure probabilities 
-  probs=data.table(predict(uitkomst$resultaat[[1]],alldata,"prob"));
-  setnames(probs,names(probs),c("P_Nietgestoord","P_Gestoord"))
-  gc()
+  uitkomstList[[cntr]]=uitkomst$resultaat[[1]]
   
+  }#end of Nfold loop
+ 
+#clean up a bit (especially important with LSkabels to prevent memory issues)
+rm(testset)
+rm(trainset)
+rm(setList)
+gc()
+
+#combine the RF results from all folds
+rf.all=uitkomstList[[1]]
+for (i in (2:NfoldSplit)){
+  rf.all=combine(rf.all,uitkomstList[[i]])
+}
+  
+
+#calculate failure probabilities 
+finalResult=predict(rf.all,alldata,"prob")
+probs=data.table(finalResult);
+setnames(probs,names(probs),c("P_Nietgestoord","P_Gestoord"))
+gc()
+
+rm(alldata)
+gc()
+
   ###########################################################
   #Load the original NOR dataset and couple P_fail into it  #
   ###########################################################
@@ -154,30 +169,41 @@ AHA_MVA_Analyse = function (){
   
   fullSet[,eval(Pfailname):=probs$P_Gestoord]
   
-  cat("Total time taken (in minutes): ",(proc.time()[3]-ptmOrg)/60,"\n")
-  save(fullSet,file=paste0(settings$Analyse_Datasets,"/6. MVA output/",filename,Pfailname,"PT2.Rda"),compress=F)
-  save(uitkomst,file=paste0(settings$Analyse_Datasets,"/6. MVA output/",filename,Pfailname,"_modelPT2.Rda"),compress=F)
-  
+
   #############################################################################
   #Save a sorted list of failprone assets and export model metrics (ROC etc)  #
   #############################################################################
+  cat("Total time taken (in minutes): ",(proc.time()[3]-ptmOrg)/60,"\n")
+  save(fullSet,file=paste0(settings$Results,"/2. MVA output/",filename,Pfailname,".Rda"),compress=F)
+  save(uitkomstList,file=paste0(settings$Results,"/2. MVA output/",filename,Pfailname,"_model.Rda"),compress=F)
+  
+
   #save ROC curve
-  jpeg(paste0(settings$Analyse_Datasets,"/6. MVA output/",filename,Pfailname,"_ROCPT2.jpg"),
+  grafiek <- roc(validateSet[[Target_var]] ~ probs[validateSample,P_Gestoord]);
+  jpeg(paste0(settings$Results,"/2. MVA output/",filename,Pfailname,"_ROC.jpg"),
        width = 1920, height = 1920,quality=100,pointsize = 40)
-  plot(uitkomst$plotje)
+  plot(grafiek)
+  dev.off()
+
+  #save PR curve
+  pred <- prediction(probs[validateSample,P_Gestoord],validateSet[[Target_var]]);
+  RP.grafiek=performance(pred,"prec","rec")
+  jpeg(paste0(settings$Results,"/2. MVA output/",filename,Pfailname,"_PR.jpg"),
+       width = 1920, height = 1920,quality=100,pointsize = 40)
+  plot(RP.grafiek,xlim=c(0,1),ylim=c(0,1))
   dev.off()
   
   #save rule ordering
-  jpeg(paste0(settings$Analyse_Datasets,"/6. MVA output/",filename,Pfailname,"_RulesPT2.jpg"),
+  jpeg(paste0(settings$Results,"/2. MVA output/",filename,Pfailname,"_Rules.jpg"),
        width = 3410, height = 1920,quality=100,pointsize = 40)
-  varImpPlot(uitkomst$resultaat[[1]])
+  varImpPlot(rf.all)
   dev.off()
   
   
 }
 
 
-MVA_Actual_Analyse = function(methode = "RF", analyse = "testtrain", imputatie = "preprocess", aantalimp = 5, aantalboom = 500, minsplit = 60, minbucket = 20, cp = 0.001,inputfilename="-"){
+MVA_Actual_Analyse = function(methode = "RF", analyse = "testtrain", imputatie = "preprocess",stratifier="Empty", aantalimp = 5, aantalboom = 500, minsplit = 60, minbucket = 20, cp = 0.001,inputfilename="-"){
   # Multivariate analyse uitvoeren
   
   # methode:
@@ -212,6 +238,7 @@ MVA_Actual_Analyse = function(methode = "RF", analyse = "testtrain", imputatie =
   require(pROC);
   require(Amelia);
   require(rpart);
+  
   
   # Deze code voert de MVA analyse uit, volgt op de preprocessing
   switch(analyse,
@@ -250,6 +277,11 @@ MVA_Actual_Analyse = function(methode = "RF", analyse = "testtrain", imputatie =
            #   load("C:/Data/Asset Health Data/3. Analyse Datasets/5. MVA analyseset/Output/MVA sample MSR full_test_train_set.Rda")
            #   load("C:/Data/Asset Health Data/3. Analyse Datasets/5. MVA analyseset/Output/MVA sample MSR full_alldata.Rda")
          })
+  
+  #set stratifier to the full set if necessary
+  if (stratifier[1]=="Empty"){
+    stratifier = c("F" =round(nrow(trainset[get(cfg$Target_Variable)=="F",])/20), "T" = round(nrow(trainset[get(cfg$Target_Variable)=="T",])/20))
+  }
   
   # Imputeer
   switch(imputatie,
@@ -480,7 +512,7 @@ MVA_Actual_Analyse = function(methode = "RF", analyse = "testtrain", imputatie =
     imptrain[[i]]$doel <- traindoel;
     set.seed(863368);
     #Maken we een random-forestmodel.
-    boompjes[[i]] <- foreach(ntree=rep(aantalboom, 1), .combine=combine, .multicombine = TRUE, .packages='randomForest') %do% {randomForest(as.factor(doel) ~., data = imptrain[[i]], ntree=ntree, importance = TRUE, do.trace = TRUE)}
+    boompjes[[i]] <- foreach(ntree=rep(aantalboom, 1), .combine=combine, .multicombine = TRUE, .packages='randomForest') %do% {randomForest(as.factor(doel) ~., data = imptrain[[i]], ntree=ntree, importance = TRUE, do.trace = TRUE,sampsize=stratifier)}
     #boompjes[[i]] <- foreach(ntree=rep(aantalboom, 1), .combine=combine, .multicombine = TRUE, .packages='randomForest') %do% {randomForest(as.factor(doel) ~., data = imptrain[[i]], ntree=ntree, sampsize = c("0" = 37500, "1" = 2500), importance = FALSE, do.trace = TRUE)}
     #En doen we een voorspelling op de testset.
     imptest[[i]]$voorspelling <- predict(boompjes[[i]], imptest[[i]], type="prob")[,2];

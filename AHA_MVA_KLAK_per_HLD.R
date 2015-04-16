@@ -1,8 +1,9 @@
-AHA_MVA_KLAK_per_HLD = function()
-{
+AHA_MVA_KLAK_per_HLD = function(){
 # Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
 # Script is used to calculate the number of KLAK reports on a given cable of Ms Route
 # No input required
+  
 storingen = list()
 storingen$KLAKMelders = LoadWrap(paste0(settings$Ruwe_Datasets,"/25. KLAK-OUD/KLAK_MELDING_XY.Rda"))
 storingen$LS = LoadWrap(paste0(settings$Ruwe_Datasets,"/25. KLAK-OUD/KLAK_LS.Rda"))

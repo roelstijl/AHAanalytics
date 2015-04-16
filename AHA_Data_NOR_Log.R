@@ -3,8 +3,12 @@
 # Source can be backup or file, backups will be created every 6 months unless backup=FALSE
 
 AHA_Data_NOR_Log = function(NORtable, datasource="file",backups=F){
-# Load functions and settings ----------------------------------------
-par(mfrow=c(1,1))
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
+# Converts the raw data into a combined file with all changes
+# NORTable - Which table to use?
+# datasource - file or backup, backup prompts you to select a backup Rda from an earlier run
+# backups - make backups? Makes it slower, but easier to debug
 
 cfg = list()
 cfg$NORtable      = NORtable
@@ -98,6 +102,8 @@ setpbarwrapper(cfg$pb,  label = "Done");
 }
 
 AHA_NOR_Load_Backup=function (cfg){
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
 # Loads the backups if requested
   setpbarwrapper("Select backup file to continue from")
   cfg$bfile = file.choose()  
@@ -112,8 +118,13 @@ AHA_NOR_Load_Backup=function (cfg){
 }
 
 AHA_NOR_Load_File = function(cfg,n,masterdataset=NULL){
-  # Determine date at which the file was created
-#   setpbarwrapper(cfg$pb,  title = paste0("AHA_Data_NOR_Log, file: ",cfg$filesshort[n]), label = "Starting import"); 
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
+# Loads the backups if requested
+# Determine date at which the file was created
+# cfg - the configuration parameters
+# n - the loop number
+# masterdataset - the masterdataset
   par(mfrow=c(2,1))
   load(cfg$files[n])
   
@@ -152,8 +163,10 @@ AHA_NOR_Load_File = function(cfg,n,masterdataset=NULL){
 }
 
 AHA_Data_NOR_Log_Postprocessing  = function(){
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
 # Postprocesses the data and combines it into a single all assets file
-# Settings -----------------------------------
+# Settings
 cfg = list();
 assets = list();
 achanges = list();
@@ -389,6 +402,8 @@ setpbarwrapper(cfg$pb, label = "Done");
 }
 
 Transform_changes= function(changes) {
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
 # Other functions
 # Function that transforms the useless data structure of changes into something more managable
 setkey(changes,Date,ID_unique)
@@ -416,6 +431,8 @@ return( output )
 }
 
 Merge_xy = function(datax,datay,changes){
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
 # Merge XY changes
 xynames = c("Coo_X","Coo_Y")
 metacols = c("Date","ID_Object","oldnew","ID_unique","ID_NAN")
@@ -428,6 +445,8 @@ return(merge(datax,datay[,c(paste0(xynames[2],"_oud"),paste0(xynames[2],"_nieuw"
 }
 
 Merge_xy_xy = function(dataxvan,datayvan,dataxnaar,dataynaar,changes){
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
 # Merge XY changes
 xynames = c("Coo_X_van","Coo_Y_van","Coo_X_naar","Coo_Y_naar")
 metacols = c("Date","ID_Object","oldnew","ID_unique","ID_NAN")
@@ -452,7 +471,11 @@ dataxvan,datayvan[,c(paste0(xynames[2],"_oud"),paste0(xynames[2],"_nieuw"),"ID_O
 }
 
 historical_topo = function(allXY, byvars=c("Coo_X","Coo_Y")){
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
 # Used to calculate histortical nettopology
+# allXY - the dataset with all the information, in a changelog format
+# byvars - the variables to base the history on 
 allXY = allXY[!is.na(allXY[[byvars[1]]])]
 allXY[,ID_unique_present:=ID_unique]
 allXY[,ID_NAN_present:=ID_NAN]
@@ -492,6 +515,8 @@ barplot(a$V1,names.arg=a$Date_Last)
 }
 
 Add_Status_Voltage = function(dataset,Conversion_of_voltages,Status_tabel){
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
 # Just a simple wrapper to prevent some clutter
 # Adds spanningsniveau and status details
 setkey(Conversion_of_voltages,SpanningsNiveau)
@@ -509,7 +534,13 @@ return(dataset)
 }
 
 nnsearch_kabel_mof = function(kabelsset,moffenset,variable){
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
 # Third use NN for Routenaam
+# Fill in every NA in the dataset with its nearest neighbour cable
+# kabelset - the set of cables to compare to moffen
+# moffenset - the set of moffen to compare to cables
+# variable - the variable to fill the nearest neighbour for
 if(!any(names(moffenset)==variable)) 
   eval(parse(text=paste0( "moffenset[,",variable, ":= as.",
        class(kabelsset[[variable]])
@@ -527,7 +558,12 @@ return(output)
 }
 
 nnsearch_kabel = function(kabelsset,variable){
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
 # Looks for the nearest cable to couple variable to 
+# Fill in every NA in the dataset with its nearest neighbour
+# kabelset - the set of couples to look in
+# variable - the variable to fill the nearest neighbour for
 nearest2 = nn2(
 kabelsset[!is.na(Coo_X_naar)&!is.na(kabelsset[[variable]]),list(Coo_X_naar,Coo_Y_naar)],
 kabelsset[!is.na(Coo_X_naar)&is.na(kabelsset[[variable]]),list(Coo_X_naar,Coo_Y_naar)],k=1)

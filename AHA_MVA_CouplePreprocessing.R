@@ -14,7 +14,7 @@
 # BAGimport()
 # BAGcleanup()
 # CreateLoadIndicators()
-# ReadNOR()
+# SplitNOR()
 # CDBreadin()
 # CDBcalcmetrics()
 # LoadPerLSHLD()
@@ -47,7 +47,7 @@ BAGimport = function (){
   
   folder=paste0(settings$Bron_Datasets,"/10. BAG/ExtractOutput")
   
-  for (i in 11:54){
+  for (i in 1:54){
     gc()
     cat("Working on set number: ",i,"\n")
     if (i==1){
@@ -100,6 +100,9 @@ BAGimport = function (){
     
   }
   
+  #call BAG cleanup to clean the generated sets
+  BAGcleanup()
+  
   return("Done!")
   
 }
@@ -137,19 +140,17 @@ BAGcleanup = function(){
 }
 
 CreateLoadIndicators=function(){
-  #koppel LS kabels aan belastingmetrics
-  load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/LS_HLDbelastingindicators.Rda"))
-  
-  setkey(LSkabels,ID_Hoofdleiding_present)
-  setkey(HLDmetrics,ID_Hoofdleiding)
-  
-  coupledSetLS=HLDmetrics[LSkabels] 
-  #99.3% gevonden :)
-  
+#   #koppel LS kabels aan belastingmetrics
+#   load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/LS_HLDbelastingindicators.Rda"))
+#   
+#   setkey(LSkabels,ID_Hoofdleiding_present)
+#   setkey(HLDmetrics,ID_Hoofdleiding)
+#   
+#   coupledSetLS=HLDmetrics[LSkabels] 
+#   #99.3% gevonden :)
   
   #koppel MS kabels aan belastingmetrics
   load(paste0(settings$Ruwe_Datasets,"/00. NOR input/MSkabels_NOR.Rda"))
-  #load(paste0(settings$Ruwe_Datasets,"/11. Nettopologie/LS_HLDbelastingindicators.Rda"))
   
   fileHSDkoppelMpoint1=paste0(settings$Bron_Datasets,"/19. CDB/HSD_Meetpunt_koppel_MS_Hoofdleiding.ssv")
   fileNRGkoppelMpoint1=paste0(settings$Bron_Datasets,"/19. CDB/NRG_Meetpunt_koppel_MS_Hoofdleiding.ssv")
@@ -204,8 +205,9 @@ CreateLoadIndicators=function(){
   #11.3 procent met M_point of i.M_point gevuld
 }
 
-ReadNOR = function (){
+SplitNOR = function (){
   #Voorbereiding NOR naar LS, MS kabels en moffen
+  
   
   #splitsing naar moffen en kabels
   moffen=assets$moffen
@@ -579,7 +581,7 @@ RisicoGridGen = function (stepX=500,stepY=500){
 RisicoMerge = function(stepX=20000,stepY=20000){
   
   #generate the grid and store it as spatialpoints
-  Set1=AHA_GridGen(stepX,stepY)
+  Set1=RisicoGridGen(stepX,stepY)
   outputSet=Set1
   SPoints=SpatialPoints(Set1,proj4string=CRS(as.character("+init=epsg:28992")))
   
@@ -611,7 +613,7 @@ RisicoMerge = function(stepX=20000,stepY=20000){
   filename=paste0(settings$Ruwe_Datasets,"/14. Risicokaart/t100_beschermd_overstroming.Rda")
   outputSet[,t100beschermd:=as.factor(geoQuery(filename,SPoints))]
   cat("Finished in ",proc.time()[3]-ptm[3],"seconds \n")
-  A
+  
   gc()
   
   #for use with only the t1000beschermd file (for memory saving)
@@ -866,6 +868,26 @@ LineToPointSet = function (){
   #The code is meant to preprocess linesets such that a nearest neighbour search based on points can be
   #performed instead of the (very slow) coupling of point to line that is needed otherwise
   
+  LtoPcleanup = function(DT,setname){
+    #adjust the cleanup operation depending on the type of linedata, selecting only the useful columns
+    
+    switch(setname,
+           "spoor"={DTout=DT[,list(Coo_X,Coo_Y,TYPESPOORB,VERVOERFUN)]
+                    setnames(DTout,c("TYPESPOORB","VERVOERFUN"),c("Type_Spoorbaan","Vervoersfuctie_Spoorbaan"))},
+           
+           "inrichting"={DTout=DT[,list(Coo_X,Coo_Y,TYPEINRICH)]
+                         DTout=DTout[TYPEINRICH!="bomenrij",TYPEINRICH:="overig"]
+                         setnames(DTout,c("TYPEINRICH"),c("Type_Inrichting"))},
+           
+           "isolijn"={DTout=DT[,list(Coo_X,Coo_Y,HOOGTE,TYPERELIEF,OBJECTID)]
+                      setnames(DTout,c("HOOGTE","TYPERELIEF","OBJECTID"),
+                               c("Hoogte_Isolijn","Type_Isolijn","Isolijn_ID"))},      
+           
+    )
+    
+    return(DTout)
+  }
+  
   #Read in the spatialLines set
   #filename_no_ext=paste0(settings$Ruwe_Datasets,"/13. Kadaster_TOP10_NL_Sept/spoorbaandeel_lijn")
   filename_no_ext=paste0(settings$Ruwe_Datasets,"/13. Kadaster_TOP10_NL_Sept/Iso_hoogtelijn")
@@ -900,7 +922,7 @@ LineToPointSet = function (){
   mindataset=dataset[XYID]
   
   #clean up operations  
-  mindataset=cleanup(mindataset,setname=setname)
+  mindataset=LtoPcleanup(mindataset,setname=setname)
   
   if (setname=="inrichting"){
     #split the output and save it as two sets (boom and overig)
@@ -916,30 +938,10 @@ LineToPointSet = function (){
     save(mindataset,file=paste0(filename_no_ext,"_XY.Rda"))
   }
   
-  
-  
-  
+    
 }
 
-LtoPcleanup = function(DT,setname){
-  #adjust the cleanup operation depending on the type of linedata, selecting only the useful columns
-  
-  switch(setname,
-         "spoor"={DTout=DT[,list(Coo_X,Coo_Y,TYPESPOORB,VERVOERFUN)]
-                  setnames(DTout,c("TYPESPOORB","VERVOERFUN"),c("Type_Spoorbaan","Vervoersfuctie_Spoorbaan"))},
-         
-         "inrichting"={DTout=DT[,list(Coo_X,Coo_Y,TYPEINRICH)]
-                       DTout=DTout[TYPEINRICH!="bomenrij",TYPEINRICH:="overig"]
-                       setnames(DTout,c("TYPEINRICH"),c("Type_Inrichting"))},
-         
-         "isolijn"={DTout=DT[,list(Coo_X,Coo_Y,HOOGTE,TYPERELIEF,OBJECTID)]
-                    setnames(DTout,c("HOOGTE","TYPERELIEF","OBJECTID"),
-                             c("Hoogte_Isolijn","Type_Isolijn","Isolijn_ID"))},      
-         
-  )
-  
-  return(DTout)
-}
+
 
 
 sample.line = function(x, sdist=100)
@@ -1133,4 +1135,5 @@ SpatialPoint_To_XY = function (){
   
   
 }
+
 
