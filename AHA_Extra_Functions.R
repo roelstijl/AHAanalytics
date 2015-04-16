@@ -1,7 +1,8 @@
 # Containts lots of extra functions for the AHA project
-cNA = function(dataset)
-{
-  par(mfrow=c(1, 1), mar=c(2, 10, 0, 2))
+cNA = function(dataset){
+# Roel Stijl (Bearingpoint) 2015
+# Produces a simple bar chart with your NA and empty values
+par(mfrow=c(1, 1), mar=c(2, 10, 0, 2))
   
 #   for (x in which(!laply(dataset,is.character))){
 #     suppressMessages( set(dataset,i=NULL,j=x,as.character(dataset[,x,with=F])))
@@ -11,6 +12,36 @@ cNA = function(dataset)
   barplot(t(cbind(sapply(dataset,function(x) sum(as.character(x)=="",na.rm=T)),
                   sapply(dataset,function(x) sum(is.na(x))),
                   sapply(dataset,function(x) sum(!is.na(x))-sum(as.character(x)=="",na.rm=T)))), horiz=TRUE,las=1,cex.names=0.7,legend = c("empty","NA","Not NA"))
+}
+
+LoadWrap = function(filename="NULL",filetype = "",filepath=settings$Analyse_Datasets,cfg=list()){
+# Roel Stijl (Bearingpoint) 2015
+# A little wrapper to make the loading easier and easier to modify
+# filename: is the name of the file you wish to load, filetype detected based on extention
+# filetype: legacy
+# filepath: where to start the prompt is filename == NULL
+# cfg: input the cfg to 
+  if(filename=="NULL") filename= choose.files(default = paste0(filepath,"/",filetype,"*"))
+  settings$Last_Load <<- filename
+  
+  switch(file_ext(filename),
+         ssv = {return(data.table(fread(filename)))},
+         csv = {return(data.table(fread(filename)))},
+         Rda = {SetName  = load(filename)
+                return(get(SetName))}
+)
+
+}
+
+SaveWrap = function(mindataset,filename)
+{
+  dir.create(dirname(filename), showWarnings = FALSE)
+  
+  switch(file_ext(filename),
+           csv = {write.csv(mindataset,file=filename,row.names = F)},
+          Rda = {save(mindataset,file=filename,compress=F)}
+          )
+  
 }
 
 vector_in_DT = function(vector,DT){

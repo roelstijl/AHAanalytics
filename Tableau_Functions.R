@@ -1,138 +1,75 @@
-Save_Tableau_assets = function(assets,folder){
-load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_assets_",assets,".Rda"))
-# Loop over all components of assets
-for (n in names(assets))
+Save_Tableau_assets = function(dataset,folder){
+load(paste0(settings$Input_Datasets,"/1. AID KID proxy/AHA_Proxy_partial_data_dataset_",dataset,".Rda"))
+# Loop over all components of dataset
+for (n in names(dataset))
 {
   # Transform the RDS collumns to something more usable
-  CooNames = cbind(names(assets[[n]])[grepl("Coo_X",names(assets[[n]]))],names(assets[[n]])[grepl("Coo_Y",names(assets[[n]]))])
+  CooNames = cbind(names(dataset[[n]])[grepl("Coo_X",names(dataset[[n]]))],names(dataset[[n]])[grepl("Coo_Y",names(dataset[[n]]))])
   for (Co in 1:nrow(CooNames)){
-    assets[[n]] = Convert_Coordinate_System(assets[[n]],from = "RDS", to = "lonlat",
+    dataset[[n]] = Convert_Coordinate_System(dataset[[n]],from = "RDS", to = "lonlat",
                                        xcol = CooNames[Co,1],ycol = CooNames[Co,2],
                                        xcolout = strrep(CooNames[Co,1],"Coo_X","Lon"), ycolout = strrep(CooNames[Co,2],"Coo_Y","Lat"))
   }
   if (any(n %in% c("MSkabels","LSkabels"))) {
-    assets[[n]] = rbind(assets[[n]][,Lon:=c(Lon_van)],assets[[n]][,Lon:=c(Lon_van)])
-    assets[[n]][,Lat:=c(Lat_van[1:(nrow(assets[[n]])/2)],Lat_naar[1:(nrow(assets[[n]])/2)])]
+    dataset[[n]] = rbind(dataset[[n]][,Lon:=c(Lon_van)],dataset[[n]][,Lon:=c(Lon_van)])
+    dataset[[n]][,Lat:=c(Lat_van[1:(nrow(dataset[[n]])/2)],Lat_naar[1:(nrow(dataset[[n]])/2)])]
   }
 }  
-  dir.create(paste0(settings$Analyse_Datasets,"/4. Tableau sets/",folder), showWarnings = FALSE)
-  write.csv(rbind(assets$LSkabels,assets$MSkabels,fill=T),paste0(settings$Analyse_Datasets,"/4. Tableau sets/",folder,"/Kabels_",folder,".csv"))
-  write.csv(rbind(assets$LSmoffen,assets$MSmoffen,fill=T),paste0(settings$Analyse_Datasets,"/4. Tableau sets/",folder,"/Moffen_",folder,".csv"))
+
+SaveWrap(rbind(dataset$LSkabels,dataset$MSkabels,fill=T),paste0(settings$Analyse_Datasets,"/4. Tableau sets/",folder,"/Kabels_",folder,".csv"))
+SaveWrap(rbind(dataset$LSmoffen,dataset$MSmoffen,fill=T),paste0(settings$Analyse_Datasets,"/4. Tableau sets/",folder,"/Moffen_",folder,".csv"))
 
 }
 
-Tableau_Create_Polygons = function(fileout="polygons",sources="spd",combine = FALSE)
-{
-  # Roel Stijl, Bearingpoint 2015. 
-  # Converts shp or R spatial files to tableau.
-  # Select the source and which file to output (filename)
-  # Combine selects wether to attach the entire data table to the spatials (space inefficient)
-  # Next select the file(s) (prompted) to import and wait
-  #  
-  # Settings ---------------------
-  FileName = paste0(settings$Visuals,"/2. Tableau Polygons/",fileout)
+Save_Tableau_storingen = function(folder){
+  dataset = LoadWrap
   
-  # Load stuff -----------------------
-  switch (sources,
-          # shapefile
-          sf = {
-            cat("Select a shapefile \n")
-            ShapeFile <- readShapeSpatial(file.choose())
-            Data      <- as(ShapeFile, "data.table")
-            Data$PolygonID <- as.numeric(rownames(Data))
-          },
-          
-          # spatialpolygonsdataframe
-          spd = {
-            cat("Select a spatiallines R file \n")
-            fc = file.choose(); cat(paste0("Loading ",fc,"........\n\n" ))
-            load(fc);  ShapeFile = mindataset
-            
-            cat("Select a datatable R file \n")
-            fc = file.choose(); cat(paste0("Loading ",fc,"........\n\n" ))
-            load(fc);  Data      = mindataset
-            Data$PolygonID <- as.numeric(rownames(Data))
-            remove(mindataset)
-          },
-          
-          # else
-          error("Invalid source filetype methode")
-  )
-  
-  # Extracts the coodinates and polygon IDs -----------------------
-  Lines <- slot(ShapeFile,"lines")
-  # coordinates = llply(Polygons,createpoly, .progress = "text")
-  coordinates = data.tableldply(Lines,createpoly, .progress = "text")
-  
-  out = AHA_RDCtoGPS(coordinates[,list(Longitude,Latitude)])
-  coordinates[Longitude:= out$V1]
-  coordinates[Latitude := out$V2]
-  
-  if (combine) {coordinates <- merge(Data,coordinates)}
-  
-  write.csv(coordinates, paste0(FileName,".csv"), row.names = FALSE)
+  # Loop over all components of dataset
+  for (n in names(dataset))
+  {
+    # Transform the RDS collumns to something more usable
+    CooNames = cbind(names(dataset[[n]])[grepl("Coo_X",names(dataset[[n]]))],names(dataset[[n]])[grepl("Coo_Y",names(dataset[[n]]))])
+    for (Co in 1:nrow(CooNames)){
+      if (!is.na(CooNames[1])){
+      
+      dataset[[n]] = Convert_Coordinate_System(dataset[[n]],from = "RDS", to = "lonlat",
+                                               xcol = CooNames[Co,1],ycol = CooNames[Co,2],
+                                               xcolout = strrep(CooNames[Co,1],"Coo_X","Lon"), ycolout = strrep(CooNames[Co,2],"Coo_Y","Lat"))
+    }}
+    
+    SaveWrap(dataset[[n]],paste0(settings$Analyse_Datasets,"/4. Tableau sets/",folder,"/",folder,n,".csv"))
+  }   
+  SaveWrap(rbind(dataset$LS,dataset$MS,fill=T),paste0(settings$Analyse_Datasets,"/4. Tableau sets/",folder,"/",folder,"MS_LS.csv"))
 }
 
-AHA_RDCtoGPS = function(data,veld_x,veld_y,veld_lon="lon",veld_lat="lat"){
-  x=data[,veld_x,with=F]
-  y=data[,veld_y,with=F]
+Save_Tableau_dataset = function(){
+  dataset = LoadWrap()
   
-  data[,lon := 
-         5.387206+((5260.52916 * ((x - 155000) * 10 ^ -5)) + (105.94684 * ((x - 155000) * 10 ^ -5) 
-                                                              * (y - 463000) * 10 ^ -5) + (2.45656 * ((x - 155000) * 10 ^ -5) * (y - 463000) * 10 ^ -5 ^ 2) + 
-                     (-0.81885 * ((x - 155000) * 10 ^ -5) ^ 3) + (0.05594 * ((x - 155000) * 10 ^ -5) * 
-                                                                    (y - 463000) * 10 ^ -5 ^ 3) + (-0.05607 * ((x - 155000) * 10 ^ -5) ^ 3 * (y - 463000) * 
-                                                                                                     10 ^ -5) + (0.01199 * (y - 463000) * 10 ^ -5) + 
-                     (-0.00256 * ((x - 155000) * 10 ^ -5) ^ 3 * (y - 463000) * 10 ^ -5 ^ 2) + (0.00128 * 
-                                                                                                 ((x - 155000) * 10 ^ -5) * (y - 463000) * 10 ^ -5 ^ 4) + (0.00022 * (y - 463000) * 10 ^ -5 ^ 2) + 
-                     (-0.00022 * ((x - 155000) * 10 ^ -5) ^ 2) + (0.00026 * ((x - 155000) * 10 ^ -5) ^ 5))/3600]
+  NANset = LoadWrap("E:/1. Alliander/3. Asset Health Analytics/3. Analyse Datasets/4. Tableau sets/ELCVERBINDINGSKNOOPPUNTEN_1501_Tableau.Rda")
   
-  data[,lat := 
-         52.15517+((3235.65389 * (y - 463000) * 10 ^ -5) + (-32.58297 * ((x - 155000) * 10 ^ -5) ^ 2) 
-                   + (-0.2475 * (y - 463000) * 10 ^ -5 ^ 2) + 
-                     (-0.84978 * ((x - 155000) * 10 ^ -5) ^ 2 * (y - 463000) * 10 ^ -5) + (-0.0655 * 
-                                                                                             (y - 463000) * 10 ^ -5 ^ 3) + (-0.01709 * ((x - 155000) * 10 ^ -5) ^ 2 * (y - 463000) 
-                                                                                                                            * 10 ^ -5 ^ 2) + (-0.00738 * ((x - 155000) * 10 ^ -5)) + 
-                     (0.0053 * ((x - 155000) * 10 ^ -5) ^ 4) + (-0.00039 * ((x - 155000) * 10 ^ -5) ^ 2 
-                                                                * (y - 463000) * 10 ^ -5 ^ 3) + (0.00033 * ((x - 155000) * 10 ^ -5) ^ 4 * 
-                                                                                                   (y - 463000) * 10 ^ -5) + (-0.00012 * ((x - 155000) * 10 ^ -5) * (y - 463000) * 10 ^ -5))/3600]
+  setkey(NANset,ID_NAN)
+  setkey(dataset,ID_NAN)
   
-  setnames(data,c("lon","lat"),c(veld_lon,veld_lat))
-  return(data)
-}
+  dataset = dataset[,In_Recent_NOR := ID_NAN %in% NANset$ID_NAN]
+  
+    # Transform the RDS collumns to something more usable
+    CooNames = cbind(names(dataset)[grepl("Coo_X",names(dataset))],names(dataset)[grepl("Coo_Y",names(dataset))])
+    for (Co in 1:nrow(CooNames)){
+      if (!is.na(CooNames[1])){
+        
+        dataset = Convert_Coordinate_System(dataset,from = "RDS", to = "lonlat",
+                                                 xcol = CooNames[Co,1],ycol = CooNames[Co,2],
+                                                 xcolout = strrep(CooNames[Co,1],"Coo_X","Lon"), ycolout = strrep(CooNames[Co,2],"Coo_Y","Lat"))
+      }}
 
-# Create the polygons ------------------------------
-createpoly = function (Line)
-{  
-  ID <- slot(Lines, "ID")
-  coords <- data.table(slot(slot(Line,"Lines")[[1]],"coords"))
-  coords$PlotOrder <- c(1:nrow(coords))
-  
-  return(
-    data.table(
-      Longitude = coords[,1],
-      Latitude  = coords[,2],
-      LineID = rep(ID,nrow(coords)),
-      PlotOrder = c(1:nrow(coords))
-    ))
-}
+  SaveWrap(dataset2,paste0(settings$Analyse_Datasets,"/4. Tableau sets/",file_path_sans_ext(basename(settings$Last_Load)),"_Tableau.csv"))
 
-toTableau = function(data,foldername,Coo_lat=F){
-  folder = paste0(settings$Visuals,"/0. Bron Data en tools/",foldername)
-  dir.create(folder,showWarnings = FALSE)
+  train = sample(1:100000,20000)
   
-  switch(class(data),
-         list = {
-           l_ply(names(data),function(fname) {
-             if (Coo_lat) {data[[fname]] = AHA_RDCtoGPS(data[[fname]],"Coo_X","Coo_Y")}
-             write.csv(data[[fname]],file=paste0(folder,"/",fname,".csv"),row.names=F)
-           })
-         },
-         data.table ={
-           
-         },
-         SpatialLines={
-           
-         }
-  )
+  SaveWrap(dataset[sample(1:100000,20000)],paste0(settings$Analyse_Datasets,"/4. Tableau sets/",file_path_sans_ext(basename(settings$Last_Load)),"_Tableau_Train.csv"))
+  
+  setkey(dataset,ID_unique)
+  setkey(mindataset,ID_unique)
+  dataset2=mindataset[,list(Datum_Aanschaf,Datum_Fabrikage,Datum_Inbedrijf,Datum_Uitbedrijf,ID_unique)][dataset]
+ 
 }
