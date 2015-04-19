@@ -143,7 +143,7 @@ l_ply(names(mindataset)[laply(mindataset,function(x) class(x) =="Date")],
 if(mode=="shiny"){
   
   # Shiny visualisation
-  shinyfolder  = "Shiny"
+  shinyfolder  = "Shiny_Import_Data"
   dataset   <<- mindataset[sample(nrow(mindataset),min(nrow(mindataset),10000)),]
   remove ("mindataset")
   header    <<- header  

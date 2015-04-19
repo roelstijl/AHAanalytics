@@ -31,13 +31,9 @@
 # SpatialPoint_To_XY()
 #-----------------------------------------------------------------#
 
-
-
-AHA_MVA_CouplePreprocessing = function ()
-{
+AHA_MVA_CouplePreprocessing = function (){
   #Wrapper to call all preprocessing for the coupling
 }
-
 
 BAGimport = function (){
   #Written by Michiel Musterd 06-03-2015
@@ -103,7 +99,6 @@ BAGimport = function (){
   return("Done!")
   
 }
-
 
 BAGcleanup = function(){
   #This function opens all BAG panden files and takes out all the non-needed columns and rows
@@ -238,9 +233,6 @@ SplitNOR = function (){
   save(MSmoffen,file=paste0(settings$Ruwe_Datasets,"/00. NOR input/MSmoffen_NOR.Rda"),compress=F)
   
 }
-
-#Written by Michiel Musterd 17-03-2015
-library("caTools")
 
 CDBreadin=function(){
   #This function reads in the CDB file (put in a directory on my C-drive because that is an SSD)
@@ -550,15 +542,12 @@ LoadPerLSHLD = function(){
   save(HLDmetrics,file=paste0(settings$Ruwe_Datasets,"/11. Nettopologie/LS_HLDbelastingindicators.Rda"),compress=F)
 }
 
-
-#Written by Michiel Musterd - 25-02-2015
-#---------------------------------------
-#Script containing the necessary functions to group the geoquery information in risicokaart
-#to an X,Y grid that can be coupled to the NOR later.
-
-#Mini function to generate a row of X,Y coordinates that together form a grid [Xmin,Xmax]_[Ymin,Ymax]
 RisicoGridGen = function (stepX=500,stepY=500){
+  #Written by Michiel Musterd - 25-02-2015
+  #Script containing the necessary functions to group the geoquery information in risicokaart
+  #to an X,Y grid that can be coupled to the NOR later.
   
+  #Mini function to generate a row of X,Y coordinates that together form a grid [Xmin,Xmax]_[Ymin,Ymax]
   #set the boundaries of the grid
   Xmin=0
   Xmax=300000
@@ -577,8 +566,8 @@ RisicoGridGen = function (stepX=500,stepY=500){
   return(XYgrid)
 }
 
-#Function to couple the risicokaart geoquery sets to a single X,Y grid
 RisicoMerge = function(stepX=20000,stepY=20000){
+  #Function to couple the risicokaart geoquery sets to a single X,Y grid
   
   #generate the grid and store it as spatialpoints
   Set1=RisicoGridGen(stepX,stepY)
@@ -662,12 +651,12 @@ RisicoMerge = function(stepX=20000,stepY=20000){
   
 }
 
-#Function to perform the geoquery on a given input set and return the matching indices
-
-
-#find the rows where the index is set and return a vector of yes/no (1/0)
 geoQuery=function(filename,PointSet){
   
+  #Function to perform the geoquery on a given input set and return the matching indices
+  
+  
+  #find the rows where the index is set and return a vector of yes/no (1/0) 
   loadCatch=load(filename)
   PolygonSet=SpatialPolygons(spatialsetdataframe@polygons,proj4string=CRS("+init=epsg:28992"))
   cat("Polygon set created, removing spatialsetdataframe for memory space \n")
@@ -709,11 +698,10 @@ geoQuery=function(filename,PointSet){
   return(TFvect$V1)
 }
 
-#Written by Michiel Musterd - 26-02-2015
-#Script to convert the KNMI set into the set needed for the MVA
-
 KNMIconvertMonth = function (){
   
+  #Written by Michiel Musterd - 26-02-2015
+  #Script to convert the KNMI set into the set needed for the MVA 
   #read in the KNMI set
   load(paste0(settings$Ruwe_Datasets,"/18. KNMI/KNMI_20150223_v02.Rda"))
   
@@ -861,7 +849,6 @@ KNMIconvert20072014 = function (){
   
 }
 
-
 LineToPointSet = function (){
   #Written by Michiel Musterd 02-03-2015
   #This function converts spatialLines(Dataframe) to spatialPoints and then further to simply XY coords
@@ -941,11 +928,7 @@ LineToPointSet = function (){
     
 }
 
-
-
-
-sample.line = function(x, sdist=100)
-{
+sample.line = function(x, sdist=100){
   if (!require(sp)) stop("sp PACKAGE MISSING")
   if (!inherits(x, "SpatialLinesDataFrame")) stop("MUST BE SP SpatialLinesDataFrame OBJECT")
   
@@ -1003,16 +986,14 @@ sample.line = function(x, sdist=100)
   return(results)
 }
 
-#Written by Michiel Musterd - 23-02-2015
-#---------------------------------------
-#Function to convert geo data of the mdsys type to SpatialPolygon type for use in geoquery coupling
-#This function takes mdsys input of the type: 
-#MDSYS.SDO_GEOMETRY(2003,NULL,NULL,MDSYS.SDO_ELEM_INFO_ARRAY(1,1003,1),MDSYS.SDO_ORDINATE_ARRAY(231088.1358,570469.305399999
-#where the geometric data is available in the ordindate_array in x,y,x,y etc format
-
-#This function was particularly written for the grondsoorten set, but can be fairly easily adapted to a different set
-
 GrondsoortsysGeo_Conversion = function (){
+  #Written by Michiel Musterd - 23-02-2015
+  #Function to convert geo data of the mdsys type to SpatialPolygon type for use in geoquery coupling
+  #This function takes mdsys input of the type: 
+  #MDSYS.SDO_GEOMETRY(2003,NULL,NULL,MDSYS.SDO_ELEM_INFO_ARRAY(1,1003,1),MDSYS.SDO_ORDINATE_ARRAY(231088.1358,570469.305399999
+  #where the geometric data is available in the ordindate_array in x,y,x,y etc format
+  
+  #This function was particularly written for the grondsoorten set, but can be fairly easily adapted to a different set
   
   #Set the savefile location
   savefile=paste0(settings$Ruwe_Datasets,"/23. Grondsoort/Grondsoorten_shp.Rda")
@@ -1083,7 +1064,6 @@ GrondsoortsysGeo_Conversion = function (){
   return("Done")
   
 }
-
 
 SpatialPoint_To_XY = function (){
   #Written by Michiel Musterd 03-03-2015

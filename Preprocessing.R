@@ -1,4 +1,5 @@
-storingenset <- read.csv("~/Multivariate analyse/storingenset.csv", sep=";")
+preprocessing = function(){
+  storingenset <- read.csv("~/Multivariate analyse/storingenset.csv", sep=";")
 variabelen <- c(2, 7, 8, 14, 15, 18, 21, 23, 28, 29, 30, 33, 37, 38, 40, 41, 47, 53, 55, 62, 64, 72, 80, 81, 83, 85, 86);
 data <- storingenset[,variabelen];
 data$failing_asset <- substr(data$failing_asset, 4, 4);
@@ -8,11 +9,10 @@ data <- data[complete.cases(data),];
 factoren <- which(sapply(data,class) == "character") #kolommen die als karakters geïnterpreteerd moeten worden
 #eventueel kun je dit ook handmatig invoeren (bijv. als je een kolom hebt met alleen numerieke waardes die je toch als factor wilt zien)
 #doe dit dan als 3 regels hierboven
-listtake = logical()
+listtake = logical()}
 
 #functie die van aantal kolommen factoren maakt
-naarfactor <- function(dataset, factoren)
-{
+naarfactor <- function(dataset, factoren){
   i <- 1;
   for (i in 1:ncol(dataset))
   {
@@ -21,11 +21,8 @@ naarfactor <- function(dataset, factoren)
   dataset;
 }  
 
-data <- naarfactor(data, factoren);
-
 #functie die vraagt of we bepaalde variabelen willen behouden
-readkey <- function()
-{
+readkey <- function(){
 #   cat ("Press [enter] to continue");
 
    n <- readline("Keep variable? T/F:\n")
@@ -35,8 +32,7 @@ readkey <- function()
 }
 
 #functie die de lift van parameters berekent
-preprocessing <- function(dataset)
-{
+preprocessing <- function(dataset){
   for (teller in 2:ncol(dataset))
   {
     tabeltotaal <- as.data.frame(table(data[,teller]));
@@ -121,8 +117,7 @@ preprocessing <- function(dataset)
 }
 
 #functie die de correlatie tussen numerieke parameters berekent
-correlaties <- function(data)
-{
+correlaties <- function(data){
    listtake = preprocessing(data);
    print(listtake)
    data <- data[,listtake];
@@ -134,5 +129,3 @@ correlaties <- function(data)
    #correlatie <- correlatie[rowSums(correlatie^2) > 0, colSums(correlatie^2) > 0];
    fix(correlatie);
 }
-
-correlaties(data);

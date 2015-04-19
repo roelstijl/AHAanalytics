@@ -11,7 +11,7 @@
   # Install required packages if not .Firinstalled already -------------------------------
   packages = c("xlsxjars", "xlsx", "plyr","Rserve","tcltk2","shiny","foreach","hash","parallel","doParallel","maptools","RANN","proj4","tools",
                "data.table","iterators","pracma","plotGoogleMaps","lubridate","PBSmapping","reshape2","ggplot2","foreign","rgeos","stringr",
-               "vcd","heplots")
+               "vcd","heplots","caTools")
   
   for (m in 1:length(packages)){
     # Install if not present
@@ -29,16 +29,19 @@
   }
   
   # Source some functions --------------------------------
-  sourcefiles = c("AHA_Data_Import.R","AHA_Data_Batch_Processing.R","Tableau_Functions.R",
-                  "AHA_Data_NOR_Log.R", 'AHA_Data_Geo_Functions.R', "AHA_Data_MVA_Preprocessing_Functions.R",
-                  "AHA_Data_BAR_Log.R","AHA_Proxy_KA_Postprocessing.R","AHA_Extra_Functions.R",
-                  "AHA_MVA_Coupling.R","AHA_MVA_Preprocessing_Functions.R",
-                  "AHA_MVA_Analyse.R","AHA_MVA_CouplePreprocessing.R")
+  sourcefiles = c("AHA_Data_BAR_Log.R",                     "AHA_Data_Batch_Processing.R",           
+                  "AHA_Data_Geo_functions.R",               "AHA_Data_Import.R",                      "AHA_Data_MVA_Preprocessing_Functions.R",
+                  "AHA_Data_NOR_Log.R",                     "AHA_Data_Proxy_KA_Preprocessing.R",      "AHA_Extra_Functions.R",                 
+                  "AHA_MVA_Analyse.R",                      "AHA_MVA_CouplePreprocessing.R",          "AHA_MVA_Coupling.R",                    
+                  "AHA_MVA_KLAK_per_HLD.R",                 "AHA_MVA_Postprocessing.R",               "AHA_MVA_wrappers.R",                    
+                  "AHA_Proxy_batch.R",                      "AHA_Proxy_BL_Nettopologie.R",                
+                  "AHA_Proxy_KA_Postprocessing.R",          "AHA_Proxy_samenv.R",                             
+                  "AHA_Shiny_Data_Import.R",                "AHA_Temp_PC6_inspection.R",              "AHA_Visual_Google_Maps_IDs.R",          
+                  "AHA_Visual_Google_Maps_PC.R",            "Preprocessing.R",                       
+                  "Tableau_Functions.R",                    "Tableau_Functions_GEO.R" )
 
-  l_ply(sourcefiles,function(x) try(source(x)))
-  
-  # l_ply(ffiles,source)
-  
+  l_ply(sourcefiles,function(x) {cat(x);source(x)})
+    
   # Finnish -------------------------------------
   cat("Loaded settings, built by R Stijl (Bearingpoint), J Heres (Alliander)\n")
 }
