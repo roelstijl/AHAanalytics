@@ -29,7 +29,6 @@
   }
   
   # Source some functions --------------------------------
-<<<<<<< HEAD
   sourcefiles = c("AHA_Data_BAR_Log.R",                     "AHA_Data_Batch_Processing.R",           
                   "AHA_Data_Geo_functions.R",               "AHA_Data_Import.R",                      "AHA_Data_MVA_Preprocessing_Functions.R",
                   "AHA_Data_NOR_Log.R",                     "AHA_Data_Proxy_KA_Preprocessing.R",      "AHA_Extra_Functions.R",                 
@@ -40,13 +39,12 @@
                   "AHA_Shiny_Data_Import.R",                "AHA_Temp_PC6_inspection.R",              "AHA_Visual_Google_Maps_IDs.R",          
                   "AHA_Visual_Google_Maps_PC.R",            "Preprocessing.R",                       
                   "Tableau_Functions.R",                    "Tableau_Functions_GEO.R" )
-=======
+
   sourcefiles = c("AHA_Data_Import.R","AHA_Data_Batch_Processing.R","Tableau_Functions.R",
                   "AHA_Data_NOR_Log.R", 'AHA_Data_Geo_Functions.R', "AHA_Data_MVA_Preprocessing_Functions.R",
                   "AHA_Data_BAR_Log.R","AHA_Proxy_KA_Postprocessing.R","AHA_Extra_Functions.R",
                   "AHA_MVA_Coupling.R","AHA_Proxy_Merge.R",
                   "AHA_MVA_Analyse.R","AHA_MVA_CouplePreprocessing.R","AHA_Proxy_KA_BARNOR.R")
->>>>>>> 4de2a57c754305a9b413f0a3eae2f81e16fd343a
 
   l_ply(sourcefiles,function(x) {cat(x);source(x)})
     
