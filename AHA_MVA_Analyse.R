@@ -23,12 +23,15 @@ AHA_MVA_Analyse = function (Target_val="T",Target_var="gestoordAsset_th0.3",Sett
 #   rm(list = setdiff(ls(), lsf.str()))
 #   .First()
 #   gc()
+
   cat("Note that the alldata set and the metadata already have to exist for 
       this script to run, output them first with the shiny preprocessing tool \n")
   
   #############################
   # Settings                  #
   #############################
+  #remove columns that are in the preprocessing set for registration purposes, but cannot/should not be handled
+  #by the MVA analysis
   removeColumns=c("ID_unique","ID_unique_present","ID_NAN","ID_NAN_present","Datum_Inbedrijf",
                   "Datum_Inbedrijf_Dag","Datum_Inbedrijf_Maand","Datum_Inbedrijf_Jaar")
   binColumns=""
@@ -51,11 +54,6 @@ AHA_MVA_Analyse = function (Target_val="T",Target_var="gestoordAsset_th0.3",Sett
   
   #remove columns that are not desired
   alldata=alldata[,setdiff(names(alldata),removeColumns),with=F]
-  
-  #BIN THE COLUMNS HERE
-  #binnedColumns=BinGeographic(alldata[,binColumns,with=F],N=10)
-  #alldata[,binColumns:=NULL,with=F]
-  #alldata=cbind(alldata,binnedColumns)
   
   gc()
   for (i in names(alldata))
@@ -92,8 +90,7 @@ AHA_MVA_Analyse = function (Target_val="T",Target_var="gestoordAsset_th0.3",Sett
   setSizes=1:NfoldSplit
   setSizes[1:NfoldSplit]=floor(nrow(testtraindata)/NfoldSplit)
   
-  
-  #assign the correct number of rows to each of the three sets by random selection
+  #assign the correct number of rows to each of the N sets by random selection
   set.seed(10)
   sampleList=sample(1:nrow(testtraindata),nrow(testtraindata),replace=F)
   
@@ -102,70 +99,26 @@ AHA_MVA_Analyse = function (Target_val="T",Target_var="gestoordAsset_th0.3",Sett
   for (i in 1:NfoldSplit){
     startID=endID+1
     endID=endID+setSizes[i]
-    
     setList[[i]]=testtraindata[sampleList[startID:endID],]
   }
   
+  #create a list for output of the results later on
   uitkomstList=vector("list",NfoldSplit)
   
-  #NOTITIES:
-  #OMBOUWEN SCRIPT ZODAT IK 7-FOLD RUNS KAN DOEN EN MAAR 1 UITEINDELIJKE OUTPUT KRIJG AAN KANSEN
-  #VERDER OMBOUWEN TOT FUNCTIE
   
-  #STUKJE SAMPLECODE WAARMEE IK DE RFs kan combineren
-  # set.seed(42)
-  # library(randomForest)
-  # rf1 <-randomForest(Species ~ ., iris, ntree=50, norm.votes=FALSE) 
-  # rf2 <- randomForest(Species ~ ., iris, ntree=50, norm.votes=FALSE) 
-  # rf3 <- randomForest(Species ~ ., iris, ntree=50, norm.votes=FALSE) 
-  # 
-  # rf.all <- combine(rf1, rf2, rf3) 
-  # predict(rf.all, type='prob')
-  
-
-  
-  
+ #loop for all N folds of the cross validation
   for (cntr in 1:NfoldSplit){
     
   ############################
   #Create test and train sets#
   ############################
   ptm=proc.time()[3]
-  trainset=setList[[cntr]]
-  testset=rbindlist(setList[c(which((1:NfoldSplit)!=cntr))])
+  testset=setList[[cntr]]
+  trainset=rbindlist(setList[c(which((1:NfoldSplit)!=cntr))])
   
   save(testset,trainset,metadata,cfg,file = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_test_train_set_RF.Rda"),compress=F)
   
   cat("Test and trainsets created and saved in ",proc.time()[3]-ptm," s \n")
-  
-  
-  #set settings
-#   ptm=proc.time()[3]
-#   st= data.table(Tr_size=as.numeric(Ntrain),
-#                  Tr_tgt=as.numeric(PercTrain)/100,
-#                  tst_size=as.numeric(Ntest),
-#                  rnd_seed=as.numeric(10),
-#                  Target_Value=Target_val, 
-#                  Target_Variable=Target_var)
-  
-  
-  
-#   
-# 
-#   
-#   #Create test and trainset from the already imputed and corrected set
-#   testrows = rep(F,nrow(alldata))
-#   testrows[sample(1:nrow(alldata),st$tst_size)] = T
-#   trainrow = c(sample(which(alldata[[st$Target_Variable]]==st$Target_Value & !testrows),st$Tr_size*(st$Tr_tgt)),
-#                sample(which(alldata[[st$Target_Variable]]!=st$Target_Value & !testrows),st$Tr_size*(1-st$Tr_tgt)))
-#   testrows = which(testrows)
-#   
-#   testset  = alldata[testrows,]
-#   trainset = alldata[trainrow,]
-#   
-#  save(testset,trainset,metadata,cfg,file = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_test_train_set_RF.Rda"),compress=F)
-#   #write.table(testset,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_testset.csv"),sep = ";",na="",row.names = F);
-#   #write.table(trainset,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Output/",filename,"_trainset.csv"),sep = ";",na="",row.names = F);
   
   
   ############################
@@ -184,11 +137,13 @@ AHA_MVA_Analyse = function (Target_val="T",Target_var="gestoordAsset_th0.3",Sett
   
   }#end of Nfold loop
  
+#clean up a bit (especially important with LSkabels to prevent memory issues)
 rm(testset)
 rm(trainset)
 rm(setList)
 gc()
 
+#combine the RF results from all folds
 rf.all=uitkomstList[[1]]
 for (i in (2:NfoldSplit)){
   rf.all=combine(rf.all,uitkomstList[[i]])
@@ -214,22 +169,23 @@ gc()
   
   fullSet[,eval(Pfailname):=probs$P_Gestoord]
   
+
+  #############################################################################
+  #Save a sorted list of failprone assets and export model metrics (ROC etc)  #
+  #############################################################################
   cat("Total time taken (in minutes): ",(proc.time()[3]-ptmOrg)/60,"\n")
   save(fullSet,file=paste0(settings$Results,"/2. MVA output/",filename,Pfailname,".Rda"),compress=F)
   save(uitkomstList,file=paste0(settings$Results,"/2. MVA output/",filename,Pfailname,"_model.Rda"),compress=F)
   
-  #############################################################################
-  #Save a sorted list of failprone assets and export model metrics (ROC etc)  #
-  #############################################################################
-  #save ROC curve
 
+  #save ROC curve
   grafiek <- roc(validateSet[[Target_var]] ~ probs[validateSample,P_Gestoord]);
   jpeg(paste0(settings$Results,"/2. MVA output/",filename,Pfailname,"_ROC.jpg"),
        width = 1920, height = 1920,quality=100,pointsize = 40)
   plot(grafiek)
   dev.off()
 
-  
+  #save PR curve
   pred <- prediction(probs[validateSample,P_Gestoord],validateSet[[Target_var]]);
   RP.grafiek=performance(pred,"prec","rec")
   jpeg(paste0(settings$Results,"/2. MVA output/",filename,Pfailname,"_PR.jpg"),
