@@ -1,3 +1,4 @@
+temporary_function = function(){
 # Take original BAR set
 load("E:/1. Alliander/3. Asset Health Analytics/1. Ruwe Datasets/1. BARlog/MH_NRG_MS_KABELS_XY_PC6.Rda")
 BAR_LS_Kabels = mindataset
@@ -47,3 +48,4 @@ row.sample(PCXY[,list(PC_6_van_BAR_LS_Kabels,PC_6_van_NOR_old, PC_6_van_NOR_PC, 
 write.csv(row.sample(PCXY,1000),file="Postcode_tests.csv")
 
 
+}

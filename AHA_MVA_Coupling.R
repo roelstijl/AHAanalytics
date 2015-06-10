@@ -1,45 +1,71 @@
-#######################################################################
-# Written by Michiel Musterd- 09-02-2015 (last update:10-03-2015)
-# -------------
-# This code is meant to couple two sets based on their common keys. 
-# Possible keys:
-# - x,y (nearest neighbour coupling)
-# - PC4
-# - PC6
-# - Essentially any other single key
-# - Coupling on geoquery (do these x,y coordinates lie inside a certain region)(shape files: SP package)
+#-----------------------------------------------------------------#
+#-------- Written by Michiel Musterd (BearingPoint) 2015 ---------#
+#-----------------------------------------------------------------#
+# PURPOSE: 
+# This file contains several functions that are used in coupling
+# the NOR dataset to a variety of internal and external datasources.
+# The core of this file is coupling() which performs the coupling 
+# itself, whereas other functions perform brief calculations or
+# more specialized types of coupling
 #
-# The base set is Set1, in which duplicates are allowed (e.g. cables in the same location)
-# whereas the dependent set is Set2, in which duplicates are not allowed 
-# (and in fact filtered out to catch errors)
-
-# Functionality to be added: 
-# ----
-# Add coupling on more than 2 keys
 # 
+# INCLUDED FUNCTIONS (see each function for a description):
+# ---
+# AHA_MVA_Coupling(NORfile,Proxyfile,Settype,ProxyThreshold) - batch to run all coupling
+# coupling(no_of_keys,couple_method,includeNNdist,NNdistName
+#         includeNNamount,amountRad,key1_nameA,amountIDname,amountName,
+#         key1_nameB,key2_nameA,key2_nameB,pandensetRepeat,
+#         outFileName,Set1Name,Set2Name,cleantextkey,memorySet)
+# splitDate(inputSet)
+# CoupleNORproxy(NORset,ProxySet,Settype)
+# CalcLoadIndicators(inputSet)
+# TargetVariables(coupledNOR,threshold)
+# ExtractMofData(mindataset)
+# ExtractCableData(mindataset)
+# KLAKhistoryCoupling()
+#-----------------------------------------------------------------#
 
-# Non-implemented nice to haves:
-# -----------------
-# - ...
-#
-######################################################################
+
+
 
 AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR input/MSmoffen_NOR.Rda"),
-                            Proxyfile=paste0(settings$Ruwe_Datasets,"/00B. Proxylijsten/Proxy_koppellijst_2015-03-25 14.00.00.Rda"),
-                            Settype="MSmoffen", ProxyThreshold=0.5){
+                            Proxyfile=paste0(settings$Analyse_Datasets,"/1. Proxylijsten/Proxy_koppellijst_2015-03-27 21.20.07inclOorzaak.Rda"),
+                            Settype="MSmoffen", ProxyThreshold=0.3){
   #Wrapper function to call the coupling function multiple times with different settings
   #in order to provide 1 call coupling of the proxylist with all external datasources
   #
-  #  Input: location of the proxylist file in NORfile
-  #  Output: a large data.table file with all the relevant columns for the MVA analysis (saved and returned)
+  #  Input: location of the proxylist file in NORfile (can be "InMemory")
+  #  Output: a large data.table file with all the relevant columns for the MVA analysis (saved (unless "InMemory") and returned)
     
   #Apart from the NORfile, all other datafiles are assumed to be in the Ruwe_Datasets folder. Except
   #for using the proxylist as base table, the order of coupling is chosen arbitrarily, because it does not
   #matter for the eventual dataset
   
-  #Specify the names of all sets to be coupled
+  #######################################################################
+  # Written by Michiel Musterd (BearingPoint) - 09-02-2015 (last update:07-04-2015)
+  # -------------
+  # This code is meant to couple multiple sets based on their common keys. 
+  # Possible keys:
+  # - x,y (nearest neighbour coupling)
+  # - PC4
+  # - PC6
+  # - Essentially any other single key
+  # - Coupling on geoquery (do these x,y coordinates lie inside a certain region)(shape files: SP package)
+  #
+  # The base set is Set1, in which duplicates are allowed (e.g. cables in the same location)
+  # whereas the dependent set is Set2, in which duplicates are not allowed 
+  # (and in fact filtered out to catch errors)
   
-  Nfiles=16
+  # Non-implemented nice to haves:
+  # -----------------
+  # - Coupling on more than 2 keys
+  #
+  ######################################################################
+  
+  
+  
+  #Specify the names of all sets to be coupled
+  Nfiles=17
   InputFileList=list(as.character(1:Nfiles))
   InputFileList[1]=paste0(settings$Ruwe_Datasets,"/15. CBS/CBS_Gecombineerd_Gemeente_Wijk_Buurt.Rda")
   InputFileList[2]=paste0(settings$Ruwe_Datasets,"/16. Zakking/Zakking.Rda")
@@ -57,6 +83,7 @@ AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR inpu
   InputFileList[14]=paste0(settings$Ruwe_Datasets,"/10. BAG/panden000_XY_clean.Rda")
   InputFileList[15]=paste0(settings$Ruwe_Datasets,"/11. Nettopologie/LS_HLDbelastingindicators.Rda")
   InputFileList[16]=paste0(settings$Ruwe_Datasets,"/19. CDB/MS_HLDbelastingindicators.Rda")
+  InputFileList[17]=paste0(settings$Ruwe_Datasets,"/30. Tariefstoring/Tarief_data.Rda")
   
   
   #Check existence of each of these files before starting the run  
@@ -81,23 +108,23 @@ AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR inpu
   #Start the coupling sequence, each with their respective settings with respect to the 
   #method of coupling and things to be included on top of the coupling (e.g. distance to nearest neighbour)
   genericOutFileName=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/KoppelOutput")
-  
-  finalSetOutFileName=paste0(settings$Ruwe_Datasets,"/00C. CoupledWithoutProxy//MVA_Coupled_AnalysisSet_",Settype,".Rda")
   finalSetOutIntermediateFileName=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/MVA_Coupled_AnalysisSet_",Settype,"Intermediate.Rda")
-  finalSetTargetOutFileName=paste0(settings$Ruwe_Datasets,"/00D. CoupledWithProxy/MVA_Coupled_AnalysisSet_",Settype,"_withTarget_TH",ProxyThreshold,".Rda")
+  
+  finalSetOutFileName=paste0(settings$Analyse_Datasets,"/2. CoupledWithoutProxy//MVA_Coupled_AnalysisSet_",Settype,".Rda")
+  finalSetTargetOutFileName=paste0(settings$Analyse_Datasets,"/3. CoupledWithProxy/MVA_Coupled_AnalysisSet_",Settype,"_withTarget_TH",ProxyThreshold,".Rda")
   
   #First we process the fabrikanttype column into more useful data about the cable
   #This is the first, and usually only load of the inputlist, after this all operations can be done in memory
   if (Settype=="LSkabels" | Settype=="MSkabels"){
     SetName=load(NORfile)
     Set=get(SetName)
-    coupledSet=AHA_MVA_ExtractCableData(Set)
-    #save(mindataset,file=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/ProxylistRich.Rda"),compress=F)
+    coupledSet=ExtractCableData(Set)
+
   }else if (Settype=="LSmoffen" | Settype=="MSmoffen"){
     SetName=load(NORfile)
     Set=get(SetName)
-    coupledSet=AHA_MVA_ExtractMofData(Set)
-    #save(mindataset,file=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/ProxylistRich.Rda"),compress=F)
+    coupledSet=ExtractMofData(Set)
+
   }else{
     stop("Unknown settype, abort coupling")
   }
@@ -105,22 +132,20 @@ AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR inpu
   
   #Add dag, maand, jaar fields for each date field
   cat("Started adding dag,maand, jaar, runtime (s):",proc.time()[3]-ptm[3] ," \n")
-  coupledSet=AHA_MVA_splitDate(coupledSet)
+  coupledSet=splitDate(coupledSet)
   
+  #Calculate the amount of failures per year on the HLD/Route of the cable
+  coupledSet=KLAKhistoryCoupling(NORset=coupledSet,settype=Settype)
   
   #CBS - PC4 coupling
   SetNo=1
   cat("Starting ",SetNo," coupling, runtime (s):",proc.time()[3]-ptm[3] ," \n")
-  currentInFile=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/ProxylistRich.Rda")
-  currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
   coupledSet=coupling(no_of_keys=1,couple_method=3,key1_nameA="PC_6_van",key2_nameA="PC_4",
            outFileName="InMemory", Set1Name="InMemory",Set2Name=InputFileList[[SetNo]],memorySet=coupledSet)
   
   #Deltares - XY coupling
   SetNo=2
   cat("Starting ",SetNo," coupling, runtime (s):",proc.time()[3]-ptm[3] ," \n")
-  currentInFile=currentOutFile
-  currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
   coupledSet=coupling(no_of_keys=2,couple_method=1,key1_nameA="Coo_X_van",key1_nameB="Coo_Y_van",
            key2_nameA="Coo_X",key2_nameB="Coo_Y",
            outFileName="InMemory", Set1Name="InMemory",Set2Name=InputFileList[[SetNo]],memorySet=coupledSet)
@@ -128,8 +153,6 @@ AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR inpu
   #KNMI - XY coupling (preprocessed lat/lon into RDS)
   SetNo=3
   cat("Starting ",SetNo," coupling, runtime (s):",proc.time()[3]-ptm[3] ," \n")
-  currentInFile=currentOutFile
-  currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
   coupledSet=coupling(no_of_keys=2,couple_method=1,key1_nameA="Coo_X_van",key1_nameB="Coo_Y_van",
            key2_nameA="Coo_X",key2_nameB="Coo_Y",includeNNdist=1,NNdistName="Afstand_Weerstation",
            outFileName="InMemory", Set1Name="InMemory",Set2Name=InputFileList[[SetNo]],memorySet=coupledSet)
@@ -137,16 +160,12 @@ AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR inpu
   #Grondsoort - geoquery (polygon)
   SetNo=4
   cat("Starting ",SetNo," coupling, runtime (s):",proc.time()[3]-ptm[3] ," \n")
-  currentInFile=currentOutFile
-  currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
   coupledSet=coupling(no_of_keys=0,couple_method=2,key1_nameA="Coo_X_van",key1_nameB="Coo_Y_van",
            outFileName="InMemory", Set1Name="InMemory",Set2Name=InputFileList[[SetNo]],memorySet=coupledSet)
   
   #Risicokaart - XY
   SetNo=5
   cat("Starting ",SetNo," coupling, runtime (s):",proc.time()[3]-ptm[3] ," \n")
-  currentInFile=currentOutFile
-  currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
   coupledSet=coupling(no_of_keys=2,couple_method=1,key1_nameA="Coo_X_van",key1_nameB="Coo_Y_van",
            key2_nameA="Coo_X",key2_nameB="Coo_Y",
            outFileName="InMemory", Set1Name="InMemory",Set2Name=InputFileList[[SetNo]],memorySet=coupledSet)
@@ -154,8 +173,6 @@ AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR inpu
   #Iso lijnen - XY (preprocessed lines into x,y point sets)
   SetNo=6
   cat("Starting ",SetNo," coupling, runtime (s):",proc.time()[3]-ptm[3] ," \n")
-  currentInFile=currentOutFile
-  currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
   coupledSet=coupling(no_of_keys=2,couple_method=1,key1_nameA="Coo_X_van",key1_nameB="Coo_Y_van",
            key2_nameA="Coo_X",key2_nameB="Coo_Y",includeNNamount=1,amountRad=100,amountIDname="Isolijn_ID",
            amountName="Aantal_Isolijn",includeNNdist=1,NNdistName="Afstand_Isolijn",
@@ -164,8 +181,6 @@ AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR inpu
   #Spoorbaan - XY (preprocessed lines into x,y point sets)
   SetNo=7
   cat("Starting ",SetNo," coupling, runtime (s):",proc.time()[3]-ptm[3] ," \n")
-  currentInFile=currentOutFile
-  currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
   coupledSet=coupling(no_of_keys=2,couple_method=1,key1_nameA="Coo_X_van",key1_nameB="Coo_Y_van",
            key2_nameA="Coo_X",key2_nameB="Coo_Y",
            includeNNdist=1,NNdistName="Afstand_Spoorbaan",
@@ -174,8 +189,6 @@ AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR inpu
   #Inrichtingselementen lijn, boom - XY (preprocessed lines into x,y point sets)
   SetNo=8
   cat("Starting ",SetNo," coupling, runtime (s):",proc.time()[3]-ptm[3] ," \n")
-  currentInFile=currentOutFile
-  currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
   coupledSet=coupling(no_of_keys=2,couple_method=1,key1_nameA="Coo_X_van",key1_nameB="Coo_Y_van",
            key2_nameA="Coo_X",key2_nameB="Coo_Y",
            includeNNdist=1,NNdistName="Afstand_Boomrij",
@@ -184,8 +197,6 @@ AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR inpu
   #Inrichtingselementen lijn, overig - XY (preprocessed lines into x,y point sets)
   SetNo=9
   cat("Starting ",SetNo," coupling, runtime (s):",proc.time()[3]-ptm[3] ," \n")
-  currentInFile=currentOutFile
-  currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
   coupledSet=coupling(no_of_keys=2,couple_method=1,key1_nameA="Coo_X_van",key1_nameB="Coo_Y_van",
            key2_nameA="Coo_X",key2_nameB="Coo_Y",
            includeNNdist=1,NNdistName="Afstand_Overige_Lijn_Inrichtingselement",
@@ -194,8 +205,6 @@ AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR inpu
   #Inrichtingselementen punt, boom - XY
   SetNo=10
   cat("Starting ",SetNo," coupling, runtime (s):",proc.time()[3]-ptm[3] ," \n")
-  currentInFile=currentOutFile
-  currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
   coupledSet=coupling(no_of_keys=2,couple_method=1,key1_nameA="Coo_X_van",key1_nameB="Coo_Y_van",
            key2_nameA="Coo_X",key2_nameB="Coo_Y",
            includeNNdist=1,NNdistName="Afstand_Boom",
@@ -204,29 +213,23 @@ AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR inpu
   #Inrichtingselementen punt, overig - XY
   SetNo=11
   cat("Starting ",SetNo," coupling, runtime (s):",proc.time()[3]-ptm[3] ," \n")
-  currentInFile=currentOutFile
-  currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
   coupledSet=coupling(no_of_keys=2,couple_method=1,key1_nameA="Coo_X_van",key1_nameB="Coo_Y_van",
            key2_nameA="Coo_X",key2_nameB="Coo_Y",
            includeNNdist=1,NNdistName="Afstand_Overige_Punt_Inrichtingselement",
            outFileName="InMemory", Set1Name="InMemory",Set2Name=InputFileList[[SetNo]],memorySet=coupledSet)
   
-  #Max belasting kabel 
+  #Determine the max belasting (=capaciteit) of each cable 
   if (Settype=="LSkabels" | Settype=="LSmoffen"){
     SetNo=12
     cat("Starting ",SetNo," coupling, runtime (s):",proc.time()[3]-ptm[3] ," \n")
-    currentInFile=currentOutFile
-    currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
     coupledSet=coupling(no_of_keys=1,couple_method=0,key1_nameA="Fabrikanttype",
                         key2_nameA="Fabrikanttype",cleantextkey=1,
                         outFileName="InMemory", Set1Name="InMemory",Set2Name=InputFileList[[SetNo]],memorySet=coupledSet)
   }else if (Settype=="MSkabels" | Settype=="MSmoffen"){
     SetNo=13
     cat("Starting ",SetNo," coupling, runtime (s):",proc.time()[3]-ptm[3] ," \n")
-    currentInFile=currentOutFile
-    currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
-    coupledSet=coupling(no_of_keys=1,couple_method=0,key1_nameA="ID_Hoofdleiding_present",
-                        key2_nameA="ID_Hoofdleiding_present",
+    coupledSet=coupling(no_of_keys=1,couple_method=0,key1_nameA="ID_Verbinding_present",
+                        key2_nameA="ID_Verbinding_present",
                         outFileName="InMemory", Set1Name="InMemory",Set2Name=InputFileList[[SetNo]],memorySet=coupledSet)
   }
   
@@ -235,9 +238,7 @@ AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR inpu
 
   #BAG panden - XY
   SetNo=14
-  currentInFile=currentOutFile
   cat("Starting BAG panden coupling \n")
-  currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
   coupledSet=coupling(key1_nameA="Coo_X_van",key1_nameB="Coo_Y_van",
            key2_nameA="Coo_X",key2_nameB="Coo_Y",pandensetRepeat=0,includeNNdist=1,NNdistName="Afstand_Pand",
            includeNNamount=0,amountRad=5,amountIDname="Gebouw_mID",amountName="Aantal_Panden_Binnen_5m",
@@ -250,47 +251,60 @@ AHA_MVA_Coupling = function(NORfile=paste0(settings$Ruwe_Datasets,"/00. NOR inpu
     }else{
       Set2NameInput=paste0(settings$Ruwe_Datasets,"/10. BAG/panden0",i,"_XY_clean.Rda")
     }
-    currentInFile=currentOutFile
-    currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
     coupledSet=coupling(key1_nameA="Coo_X_van",key1_nameB="Coo_Y_van",
                 key2_nameA="Coo_X",key2_nameB="Coo_Y",pandensetRepeat=1,includeNNdist=1,NNdistName="Afstand_Pand",
                 includeNNamount=0,amountRad=5,amountIDname="Gebouw_mID",amountName="Aantal_Panden_Binnen_5m",
                 outFileName="InMemory", Set1Name="InMemory",Set2Name=Set2NameInput,memorySet=coupledSet)
   }
 
+  save(coupledSet,file=finalSetOutIntermediateFileName,compress=F)
   
   #Belastingindicator coupling
-  if (Settype=="LSkabels" | Settype=="LSmoffen"){
+  if (Settype=="LSkabels"){
     SetNo=15
     cat("Starting ",SetNo," coupling, runtime (s):",proc.time()[3]-ptm[3] ," \n")
-    currentInFile=currentOutFile
-    currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
     coupledSet=coupling(no_of_keys=1,couple_method=0,key1_nameA="ID_Hoofdleiding_present",key2_nameA="ID_Hoofdleiding_present",
                         outFileName="InMemory", Set1Name="InMemory",Set2Name=InputFileList[[SetNo]],memorySet=coupledSet)
-  }else if (Settype=="MSkabels" | Settype=="MSmoffen"){
+  }else if (Settype=="MSkabels"){
     SetNo=16
     cat("Starting ",SetNo," coupling, runtime (s):",proc.time()[3]-ptm[3] ," \n")
-    currentInFile=currentOutFile
-    currentOutFile=paste0(genericOutFileName,SetNo,".Rda")
-    coupledSet=coupling(no_of_keys=1,couple_method=0,key1_nameA="ID_Hoofdleiding_present",key2_nameA="ID_Hoofdleiding_present",
+    coupledSet=coupling(no_of_keys=1,couple_method=0,key1_nameA="ID_Verbinding_present",key2_nameA="ID_Verbinding_present",
                         outFileName="InMemory", Set1Name="InMemory",Set2Name=InputFileList[[SetNo]],memorySet=coupledSet)
   }
 
+  if (Settype=="LSkabels" | Settype=="LSmoffen"){
+    #couple tariefstoringen
+    SetNo=17
+    cat("Starting ",SetNo," coupling, runtime (s):",proc.time()[3]-ptm[3] ," \n")
+    coupledSet=coupling(no_of_keys=1,couple_method=0,key1_nameA="ID_Hoofdleiding_present",
+                        key2_nameA="ID_Hoofdleiding_present",
+                        outFileName="InMemory", Set1Name="InMemory",Set2Name=InputFileList[[SetNo]],memorySet=coupledSet)
+    
+    #set all NAs in tariefstoringen to 0 because that is what they are
+    coupledSet[is.na(Aantal_tariefstoringen)==T,Aantal_tariefstoringen:=0]
+  }
+
+  
   cat("Performing intermediate save \n")
   save(coupledSet,file=finalSetOutIntermediateFileName,compress=F)
   
-  #Calculate belasting metrics
-  cat("Calculating load metrics \n")
-  coupledSet=AHA_MVA_CalcLoadIndicators(coupledSet)
+  if (Settype=="LSkabels" | Settype=="MSkabels"){
+    #Calculate belasting metrics
+    cat("Calculating load metrics \n")
+    coupledSet=CalcLoadIndicators(coupledSet,Settype)
+
+  }else if (Settype=="LSmoffen" | Settype=="MSmoffen") {
+    coupledSet$Max_Belasting=NULL
+  }
+    
   
- 
   #save the set without target variable
   save(coupledSet,file=finalSetOutFileName,compress=F)
  
   
   #finally couple the proxylist into the set to get the target variable
   ProxySet=get(load(Proxyfile))
-  coupledSet=AHA_MVA_CoupleNORproxy(coupledSet,ProxySet,Settype=Settype,threshold=ProxyThreshold)
+  coupledSet=CoupleNORproxy(coupledSet,ProxySet,Settype=Settype,threshold=ProxyThreshold)
  
   #save the final file with a more descriptive name
   save(coupledSet,file=finalSetTargetOutFileName,compress=F)
@@ -310,41 +324,22 @@ coupling = function(no_of_keys=2,couple_method=1,includeNNdist=0,NNdistName="-",
   #   
   #   no_of_keys      : set the number of keys to be used per dataset (0 (geoquery), 1 or 2)
   #   couple_method   : 0 is direct comparison, 1 is nearest neighbour, 2 is geoquery on polygon, 3 PC6 (in set 1) to PC4
-  #   includeNNdist   : whether to include the distance to the nearest neighbour (in case of couple_method=1), 1 for yes, 0 for no
+  #   includeNNdist   : whether to include the distance to the nearest neighbour (in case of couple_method=1), (1/0)
   #   NNdistName      : name of the nearest neighbour column to be added to the table
+  #   includeNNamount : whether to include the amount of objects within amountRad (1/0)
+  #   amountRad       : radius within which to look for objects
+  #   amountIDname    : ID by which to collect objects in the radius
+  #   amountName      : name of the object to look for in the radius
+  #   pandensetRepeat : switch whether the coupling is the first of the pandenset (0) or a repeat (1)
+  #   memorySet       : input for the coupling when Set1Name is "inMemory"
+  #   key1_nameA      : first name for key 1
+  #   key2_nameA      : first name for key 2
+  #   key1_nameB      : second name for key 1 (if used)
+  #   key2_nameB      : second name for key 2 (if used)
   #   
-  #   #whether to include the amount of elements within a certain radius (1=yes, 0=no)
-  #   includeNNamount=0
-  #   amountRad=100
-  #   
-  #   #Set the primary column names to be used as key in set 1 and set 2
-  #   key1_nameA="Coo_X_van"
-  #   key2_nameA="Coo_X"
-  #   
-  #   #Set the secondary column names to be used as key. These keys are only used if no_of_keys is set to 2
-  #   key1_nameB="Coo_Y_van"
-  #   key2_nameB="Coo_Y"
-  #   
-  #   #Set the location and names of the input datasets
-  #   #Set1Name=paste0(settings$Testcodes,"/Set1.Rda")
-  #   #Set1Name=paste0(settings$Ruwe_Datasets,"/MS_kabels_BAR_KLAK_Zakking.Rda")
-  #   Set1Name=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/MVA_sample_CBS_zakking_KNMI_Grondsoort.Rda")
-  #   #Set2Name=paste0(settings$Ruwe_Datasets,"/15. CBS/CBS_Gecombineerd_Gemeente_Wijk_Buurt.Rda")
-  #   #Set2Name=paste0(settings$Ruwe_Datasets,"/16. Zakking/Zakking.Rda")
-  #   #Set2Name=paste0(settings$Ruwe_Datasets,"/18. KNMI/KNMI_grouped_2007_2014_RDS.Rda")
-  #   #Set2Name=paste0(settings$Ruwe_Datasets,"/23. Grondsoort/Grondsoorten_shp.Rda")
-  #   #Set2Name=paste0(settings$Ruwe_Datasets,"/14. Risicokaart/risicokaartXY.Rda")
-  #   Set2Name=paste0(settings$Ruwe_Datasets,"/13. Kadaster_TOP10_NL_Sept/Iso_hoogtelijn.Rda")
-  #   
-  #   #Set2Name=paste0(settings$Testcodes,"/Set2.Rda")
-  #   
-  #   
-  #   #Set the location and name of the output dataset
-  #   outFileName=paste0(settings$Ruwe_Datasets,"/25. KoppelOutput/MVA_sample_CBS_zakking_KNMI_Grondsoort_Risico_Hoogtelijn.Rda")
-  #   
-  #   #############################
-  #   #End of user input section  #
-  #############################
+  #   ############################################
+  #   #End of explanation of user input          #
+  #   ############################################
   
   
    
@@ -468,7 +463,6 @@ coupling = function(no_of_keys=2,couple_method=1,includeNNdist=0,NNdistName="-",
   }
 
   
-    
   if (couple_method==1){ #coupling on nearest neighbour
     
     # if pandenset=1 I need to loop over all panden files so I rewrote the
@@ -527,8 +521,6 @@ coupling = function(no_of_keys=2,couple_method=1,includeNNdist=0,NNdistName="-",
     
     
       indexNearest=nn2(Set2Sub,Set1Sub,k=1)
-    
-      
     
       cat("Nearest neighours identified, proceed to coupling \n")
       
@@ -676,7 +668,10 @@ coupling = function(no_of_keys=2,couple_method=1,includeNNdist=0,NNdistName="-",
   return(coupledSet)
 }
 
-AHA_MVA_splitDate = function(inputSet=mindataset){
+splitDate = function(inputSet=mindataset){
+  #This function splits each column of the inputset that has the class "Date"
+  #into a separate column for day, month and year. The assumed dateformat is
+  #yyyy-mm-dd
   
   Names_Date_Cols=which(sapply(inputSet,class)=="Date")
   
@@ -697,7 +692,7 @@ AHA_MVA_splitDate = function(inputSet=mindataset){
   return(inputSet)
 }
 
-AHA_MVA_CoupleNORproxy = function(NORset,ProxySet,Settype="LSkabels",threshold=0.1){
+CoupleNORproxy = function(NORset,ProxySet,Settype="LSkabels"){
   cat("Starting coupling of NOR to Proxy \n")
   cat("We assume that the NORset is already subsampled for settype, if not, please correct \n")
   
@@ -709,39 +704,50 @@ AHA_MVA_CoupleNORproxy = function(NORset,ProxySet,Settype="LSkabels",threshold=0
          MSmoffen={CurrentProxyList=ProxySet$MSmoffen})
   
   
+  #add a column with failure reason in 3 categories
+  load(paste0(settings$Analyse_Datasets,"/1. Proxylijsten/Oorzaakclassificatie.Rda"))
+  setkey(OorzaakClassificatie,Oorzaak)
+  setkey(CurrentProxyList,Oorzaak)
+  
+  CurrentProxyList=OorzaakClassificatie[CurrentProxyList]
+  
   #check whether ID_unique in the koppelijst has PC6 by making it numeric, if so: cut off the last 4 characters because we couple to PC2
   if (sum(is.na(as.numeric(CurrentProxyList$ID_unique)))>100){
     CurrentProxyList$ID_unique=substr(CurrentProxyList$ID_unique,1,nchar(CurrentProxyList$ID_unique)-4)
   }
   
-  #Add a column with the maximum punten for later comparison
-  CurrentProxyList[,maximum := max(punten),by=ID_unique]
-  CurrentProxyList=CurrentProxyList[maximum == punten,]
+  #select only the most likely failed asset for each ID_KLAK_Melding
+  #   CurrentProxyList[,maxpuntenKLAK := max(punten),by=ID_KLAK_Melding]
+  #   CurrentProxyList=CurrentProxyList[punten==maxpuntenKLAK,]
+  #   setkey(CurrentProxyList,ID_KLAK_Melding)
+  #   CurrentProxyList=unique(CurrentProxyList)
+    
+  #Sum punten by ID_unique when it is found in more failures
+  CurrentProxyList[,punten := sum(punten),by=ID_unique]
   
-  #select one of the ID_uniques at random when punten is equal
+  #Select for each ID_unique only the assets with the heighest number of punten
+  CurrentProxyList[,maxpunten := max(punten),by=ID_unique]
+  CurrentProxyList=CurrentProxyList[punten==maxpunten,]
+  
+  #select one of the ID_uniques at "random" (whatever way unique() does this) when punten is equal
   setkey(CurrentProxyList,ID_unique)
   CurrentProxyList=unique(CurrentProxyList)
   
-  #clean the LSkabelsKoppel table to only include the useful fields
-  CurrentProxyList=CurrentProxyList[,list(ID_unique,punten)]
+  #clean the koppel table to only include the useful fields
+  CurrentProxyList=CurrentProxyList[,list(ID_unique,punten,Oorzaak,Oorzaakklasse,ID_KLAK_Melding)]
   
   #Now do the coupling to the nor set
   #First set the keys to couple on
   setkey(CurrentProxyList,ID_unique)
-  if ("ID_unique_present" %in% names(NORset)){
-    setkey(NORset,ID_unique_present)
+  if ("i.ID_unique" %in% names(NORset)){
+    setkey(NORset,i.ID_unique)
   }else{setkey(NORset,ID_unique)}
   
-  #setkey(CurrentProxyList,ID_unique)
   
   #perform the coupling and set anything that doesn't couple to 0 (because there is no failure in that case)
   coupledNOR=CurrentProxyList[NORset]
   coupledNOR[is.na(punten),punten:=0]
-  
-  #Now calculate the gestoord/niet gestoord markers based on the provided threshold
-  coupledNOR[punten>threshold,gestoord:=1]
-  coupledNOR[!(punten>threshold),gestoord:=0]
-  
+    
   #correct missing PC6 values
   if("i.PC_6_van" %in% colnames(coupledNOR)){
     coupledNOR[is.na(PC_6_van),PC_6_van:=i.PC_6_van]
@@ -758,15 +764,20 @@ AHA_MVA_CoupleNORproxy = function(NORset,ProxySet,Settype="LSkabels",threshold=0
   
 }
 
-AHA_MVA_CalcLoadIndicators=function(inputSet){
-  #Note, inputSet needs to contain a column Max_Belasting, ID_Hoofdleiding and the five load metrics
+CalcLoadIndicators=function(inputSet,settype){
+  #Note, inputSet needs to contain a column Max_Belasting, ID_Hoofdleiding/ID_Verbinding and the five load metrics
   
   #First we calculate the value of the max belasting of the HLD, assuming that this is the one the highest in 
   #the tree and that load fractions are equally distributed over the HLD.
   #We also add metrics for mean I squared to be weighted against
   inputSet[is.na(Max_Belasting),Max_Belasting:=-100]
-  inputSet[,Max_Belasting_HLD := max(Max_Belasting),by=ID_Hoofdleiding_present]  
-  inputSet[,Max_Belasting_HLD_squared := max(Max_Belasting)*abs(max(Max_Belasting)),by=ID_Hoofdleiding_present]
+  if (settype=="LSkabels"){
+    inputSet[,Max_Belasting_HLD := max(Max_Belasting),by=ID_Hoofdleiding_present]  
+    inputSet[,Max_Belasting_HLD_squared := max(Max_Belasting)*abs(max(Max_Belasting)),by=ID_Hoofdleiding_present]
+  }else if(settype=="MSkabels"){
+    inputSet[,Max_Belasting_HLD := max(Max_Belasting),by=ID_Verbinding_present]  
+    inputSet[,Max_Belasting_HLD_squared := max(Max_Belasting)*abs(max(Max_Belasting)),by=ID_Verbinding_present]
+  }
   inputSet[Max_Belasting==-100,Max_Belasting:=NA]
   inputSet[Max_Belasting_HLD==-100,Max_Belasting_HLD:=NA]
   inputSet[Max_Belasting_HLD_squared==-10000,Max_Belasting_HLD_squared:=NA]
@@ -781,4 +792,227 @@ AHA_MVA_CalcLoadIndicators=function(inputSet){
   
   return(inputSet)
 }
+
+TargetVariables = function(coupledNOR,threshold=0.3){
+  
+  #Now calculate the gestoord/niet gestoord markers based on the provided threshold for all different permutations of oorzaakklasse
+  for (i in 1:length(threshold)){
+    currentTH=threshold[i]
+    
+    #targetvariable names
+    allname=paste0("gestoordAll_th",currentTH)
+    assetfailname=paste0("gestoordAsset_th",currentTH)
+    digfailname=paste0("gestoordGraaf_th",currentTH)
+    otherfailname=paste0("gestoordOverig_th",currentTH)
+    notassetfailname=paste0("gestoordNietAsset_th",currentTH)
+    notdigfailname=paste0("gestoordNietGraaf_th",currentTH)
+    nototherfailname=paste0("gestoordNietOverig_th",currentTH)
+    
+    coupledNOR[punten>currentTH,eval(allname):="T"]
+    coupledNOR[!(punten>currentTH),eval(allname):="F"]
+    
+    coupledNOR[punten>currentTH & Oorzaakklasse=="Assetfalen",eval(assetfailname):="T"]
+    coupledNOR[!(punten>currentTH) | !Oorzaakklasse=="Assetfalen",eval(assetfailname):="F"]
+    
+    coupledNOR[punten>currentTH & Oorzaakklasse=="Graafschade",eval(digfailname):="T"]
+    coupledNOR[!(punten>currentTH) | !Oorzaakklasse=="Graafschade",eval(digfailname):="F"]
+    
+    coupledNOR[punten>currentTH & Oorzaakklasse=="Overig",eval(otherfailname):="T"]
+    coupledNOR[!(punten>currentTH) | !Oorzaakklasse=="Overig",eval(otherfailname):="F"]
+    
+    coupledNOR[punten>currentTH & !Oorzaakklasse=="Assetfalen",eval(notassetfailname):="T"]
+    coupledNOR[!(punten>currentTH) | Oorzaakklasse=="Assetfalen",eval(notassetfailname):="F"]
+    
+    coupledNOR[punten>currentTH & !Oorzaakklasse=="Graafschade",eval(notdigfailname):="T"]
+    coupledNOR[!(punten>currentTH) | Oorzaakklasse=="Graafschade",eval(notdigfailname):="F"]
+    
+    coupledNOR[punten>currentTH & !Oorzaakklasse=="Overig",eval(nototherfailname):="T"]
+    coupledNOR[!(punten>currentTH) | Oorzaakklasse=="Overig",eval(nototherfailname):="F"]
+    
+  }
+  
+  return(coupledNOR)
+}
+
+ExtractMofData=function(mindataset){
+  #Written by Michiel Musterd - 10-03-2014
+  #This script is meant to extract useful categorical data from the constructie and soort entries in the NOR for moffen
+  MofSet=data.table(LowConstructie=gsub(" ","",tolower(as.character(mindataset[,Constructie]))),
+                    LowSoort=tolower(as.character(mindataset[,Soort])))
+  
+  #Categorize the constructie in a few useful groups
+  # Wikkelmof Filoform
+  # Wikkelmof Cellpack
+  # Wikkelmof overig
+  # Kunstharsmof
+  # Nekaldietmof
+  # Krimpmof Raychem
+  # Krimpmof Cellpack
+  # Krimpmof overig
+  # Gietharsmof
+  # Oliemof
+  # Overig
+  # Onbekend  
+  MofSet[grep("wikkelmof",MofSet$LowConstructie),Constructie:="Wikkelmof overig"]
+  MofSet[grep("krimpmof",MofSet$LowConstructie),Constructie:="Krimpmof overig"]
+  #note, the two commands above should be run first because they are more general then two below
+  
+  MofSet[grep("wikkelmoffiloform",MofSet$LowConstructie),Constructie:="Wikkelmof Filoform"]
+  MofSet[grep("wikkelmofcellpack",MofSet$LowConstructie),Constructie:="Wikkelmof Cellpack"]
+  MofSet[grep("krimpmofraychem",MofSet$LowConstructie),Constructie:="Krimpmof Raychem"]
+  MofSet[grep("krimpmofcellpack",MofSet$LowConstructie),Constructie:="Krimpmof Cellpack"]
+  MofSet[grep("kunsthars",MofSet$LowConstructie),Constructie:="Kunstharsmof"]
+  MofSet[grep("nekaldiet",MofSet$LowConstructie),Constructie:="Nekaldietmof"]
+  MofSet[grep("giethars",MofSet$LowConstructie),Constructie:="Gietharsmof"]
+  MofSet[grep("olie",MofSet$LowConstructie),Constructie:="Oliemof"]
+  MofSet[is.na(MofSet$Constructie),Constructie:="Overig"]
+  MofSet[is.na(MofSet$LowConstructie),Constructie:="Onbekend"]
+  MofSet[grep("onbekend",MofSet$LowConstructie),Constructie:="Onbekend"]
+  MofSet$Constructie=as.factor(MofSet$Constructie)
+  
+  #Categorize the soort and change into more readable names
+  MofSet[grep("tn|vm|verbindingsmof",MofSet$LowSoort),Soort:="Verbindingsmof"]
+  MofSet[grep("em|gm",MofSet$LowSoort),Soort:="Eindmof"]
+  MofSet[grep("ae|tae",MofSet$LowSoort),Soort:="Aftak-Eindmof"]
+  MofSet[grep("vam|am",MofSet$LowSoort),Soort:="Aftakmof"]
+  MofSet[grep("aam|ap",MofSet$LowSoort),Soort:="Aansluitmof"]
+  MofSet[is.na(MofSet$Soort),Soort:="Overig"]
+  MofSet[grep("onbekend",MofSet$LowSoort),Constructie:="Onbekend"]
+  MofSet[is.na(MofSet$LowSoort),Constructie:="Onbekend"]
+  MofSet$Soort=as.factor(MofSet$Soort)
+  
+  
+  mindataset$Soort=MofSet$Soort
+  mindataset$Constructie=MofSet$Constructie
+  
+  return(mindataset)
+}
+
+
+ExtractCableData=function(mindataset){
+  
+  #Written by Michiel Musterd - 10-03-2014
+  #This script is meant to extract useful categorical data from the Fabrikanttype entry in the NOR for cables
+  
+  #Note: the extra cable information after the + in the fabrikanttype is about extra cables for specific 
+  #goals e.g. street lighting or grounding. We will ignore those in our specification
+  
+  #load and preprocess the data (lowercase and , to . conversion)
+  FabrikantSet=data.table(LowFabrikanttype=gsub(",",".",tolower(as.character(mindataset[,Fabrikanttype]))))
+  
+  
+  #Isolatiemedium herkenning: Algemene classificering en bijbehorende namen
+  # YMvK-asmb
+  # VMvKh-sas
+  # GPLK
+  # XLPE:  Overige YMvK en XLPE
+  # Overig Kunststof: VM (en VMvK)
+  # Overig
+  # Onbekend
+  FabrikantSet[grep("xlpe|ymvk|ymek",FabrikantSet$LowFabrikanttype),Isolatie:="XLPE"]
+  FabrikantSet[grep("vm",FabrikantSet$LowFabrikanttype),Isolatie:="Overig Kunststof"]
+  #note, the two commands above should be run first because they are more general then two below
+  
+  FabrikantSet[grep("ymvk-asmb",FabrikantSet$LowFabrikanttype),Isolatie:="YMvK-asmb"]
+  FabrikantSet[grep("vmvkh-sas",FabrikantSet$LowFabrikanttype),Isolatie:="VMvKh-sas"]
+  FabrikantSet[grep("gplk",FabrikantSet$LowFabrikanttype),Isolatie:="GPLK"]
+  FabrikantSet[is.na(FabrikantSet$Isolatie),Isolatie:="Overig"]
+  FabrikantSet[is.na(FabrikantSet$LowFabrikanttype),Isolatie:="Onbekend"]
+  FabrikantSet[grep("onbekend",FabrikantSet$LowFabrikanttype),Isolatie:="Onbekend"]
+  FabrikantSet$Isolatie=as.factor(FabrikantSet$Isolatie)
+  
+  #First strip away anything after the +
+  FabrikantSet[,CutType:=gsub("\\+.*","",FabrikantSet$LowFabrikanttype)]
+  
+  #Then also remove the spaces around an x, first remove XLPE to avoid issues
+  FabrikantSet[,CutType:=gsub("xlpe","",CutType)]
+  FabrikantSet[,CutType:=gsub(" x|x ","x",CutType)]
+  
+  
+  #recognize rows with multiple x's
+  # FabrikantSet[grep(".*x.*x.*",FabrikantSet$CutType),]
+  
+  
+  #Herkenning aantal aders - is het eerste getal voor de x (aanname: aders<10)
+  x_location=gregexpr("x",FabrikantSet$CutType)
+  FabrikantSet[,xloc:=rapply(x_location, function(x) head(x, 1))]
+  FabrikantSet[,Aantal_Aders:=as.factor(as.numeric(substr(FabrikantSet$CutType,xloc-1,xloc-1)))]
+  FabrikantSet[is.na(Aantal_Aders),Aantal_Aders:="Onbekend"]
+  
+  
+  #Herkenning geleidermateriaal
+  FabrikantSet[grep("al",CutType),Geleidermateriaal:="Al"]
+  FabrikantSet[grep("cu",CutType),Geleidermateriaal:="Cu"]
+  FabrikantSet[is.na(Geleidermateriaal),Geleidermateriaal:="Onbekend"]
+  FabrikantSet$Geleidermateriaal=as.factor(FabrikantSet$Geleidermateriaal)
+  
+  #Herkenning diameter kabel
+  char1=as.numeric(substr(FabrikantSet$CutType,FabrikantSet$xloc+1,FabrikantSet$xloc+1))
+  char2=as.numeric(substr(FabrikantSet$CutType,FabrikantSet$xloc+1,FabrikantSet$xloc+2))
+  char3=as.numeric(substr(FabrikantSet$CutType,FabrikantSet$xloc+1,FabrikantSet$xloc+3))
+  char4=as.numeric(substr(FabrikantSet$CutType,FabrikantSet$xloc+1,FabrikantSet$xloc+4))
+  FabrikantSet[,Diameter_Kabel:=pmax(char1,char2,char3,char4,na.rm=T)]
+  
+  mindataset=cbind(mindataset,FabrikantSet[,list(Isolatie,Aantal_Aders,Geleidermateriaal,Diameter_Kabel)])
+  
+  return(mindataset)
+  
+}
+
+
+
+KLAKhistoryCoupling = function(NORset="",settype="LSmoffen"){
+  #This function counts the historic failures (KLAK_meldingen) in a HLD (LS) or Route (MS)
+  #and couples those to assets in the current HLD/route, up to, but excluding, the time that the asset
+  #itself fails
+  
+  KLAKsetName=load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_Meldingen_per_HLD.Rda"))
+  KLAKlist=get(KLAKsetName)
+  
+  if (settype=="LSmoffen" | settype=="LSkabels") {
+    KLAKset=KLAKlist$ID_Hoofdleiding
+    setkey(NORset,ID_Hoofdleiding_present)
+    setkey(KLAKset,ID_Hoofdleiding)
+    ID_list=unique(KLAKset$ID_Hoofdleiding)
+    
+    
+  }else if (settype=="MSmoffen" | settype=="MSkabels"){
+    KLAKset=KLAKlist$Routenaam
+    setkey(NORset,Routenaam_Present)
+    setkey(KLAKset,Routenaam)
+    ID_list=unique(KLAKset$Routenaam)
+    
+    
+  }
+  rm(KLAKlist)
+  
+  #Create a variable with information on the last change on the asset, this is the moment it failed itself
+  if (settype=="LSmoffen" | settype=="MSmoffen"){
+    NORset[,DateLastChange:=as.Date(DateRemoved,"%Y%m%d")]
+  }else if (settype=="LSkabels"| settype=="MSkabels"){
+    NORset[,DateLastChange:=as.Date(pmax(DateRemoved,DateLength_ch,Date_Status_ch,na.rm=T),"%Y%m%d")]
+  }
+  
+  
+  #convert datum to a number that is easy to compare numerically in both sets (yyyymmdd)
+  KLAKset[nchar(KLAKset[,Datum])>8,Datum:=paste0(substr(Datum,1,2),"-",substr(Datum,4,5),"-",substr(Datum,9,10))]
+  KLAKset[Datum!="",DatumNum:=as.Date(paste0(20,substr(Datum,7,8),substr(Datum,4,5),substr(Datum,1,2)),"%Y%m%d")]
+  
+  
+   cntr=0
+   for (i in ID_list){    
+     cntr=cntr+1
+     print(paste0(cntr," of ",length(ID_list)))
+     NORset[i,HLDStoringenSinds2001:=sum(KLAKset[i,DatumNum]<DateLastChange),by=DateLastChange]
+   }
+  
+  #Note that the variable will always be called HLDstoringen.. even though for MS it is actually a RouteStoring
+  NORset[,HLDStoringenPerJaar:=HLDStoringenSinds2001/as.numeric(DateLastChange-min(KLAKset$DatumNum,na.rm=T))*365]
+  
+  NORset[is.na(HLDStoringenSinds2001),HLDStoringenSinds2001:=0]
+  NORset[is.na(HLDStoringenPerJaar),HLDStoringenPerJaar:=0]
+  
+  return(NORset)
+}
+
 

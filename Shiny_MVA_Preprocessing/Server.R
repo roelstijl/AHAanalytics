@@ -6,7 +6,7 @@ observe({
 metadata[cfg$elements,selected := is.element(cfg$elements, input$Checkbox)]
 checkboxx <<-input$Checkbox
 
-setsettings = data.table(Tr_size=as.numeric(input$Tr_size),
+setsettings <<- data.table(Tr_size=as.numeric(input$Tr_size),
                          Tr_tgt=as.numeric(input$Tr_tgt)/100,
                          tst_size=as.numeric(input$tst_size),
                          rnd_seed=as.numeric(input$rnd_seed),
@@ -54,8 +54,8 @@ if(input$save_to_file[1] > save_to_file)
 observe({
 updateSelectInput(session,"Target_Value", 
                   choices = 
-                    setNames(laply(unique((dataset[,input$Target_Variable,with=F])),as.list),
-                             laply(unique((dataset[,input$Target_Variable,with=F])),as.list)),
+                    setNames(laply(laply(unique((dataset[,input$Target_Variable,with=F])),as.character),as.list),
+                             laply(laply(unique((dataset[,input$Target_Variable,with=F])),as.character),as.list)),
                   label = NULL, selected = NULL)
 })
 

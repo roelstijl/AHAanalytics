@@ -1,4 +1,7 @@
 AHA_Data_KA_Proxy_Preprocessing = function(datasets=c("assetsBAR","assetsNOR","nettopo","storingen","validatieset")){
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
+# Script used for the complete project
 # Merges the Delta data into small datasets for analysis
 # Datasets selects only a certain set to process (default = all)
 # cfg$firstdate_NOR is the startdate of the data subset
@@ -9,6 +12,7 @@ cfg = list()
 cfg$pb  = pbarwrapper(title = paste0("AHA_Data_KA_Proxy_Preprocessing: ",as.character(Sys.time())),label = "Start", min = 0, max = 3*length(datasets)+1);
 
 # Specify the dates from to
+cfg$firstdate_KLAK = as.Date("2000-02-01")
 cfg$firstdate_NOR = as.Date("2007-02-01")
 cfg$firstdate_BAR = as.Date("2014-02-14")
 cfg$lastdate      = as.Date("2015-02-01")
@@ -199,7 +203,7 @@ setpbarwrapper(cfg$pb, label = "Loading KLAK data");
 # Load the LS KLAK
 load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_LS.Rda"))
 mindataset[,Datum:=as.Date(mindataset$Datum)]
-storingen$LS= unique(mindataset[(mindataset$Datum > cfg$firstdate_NOR & mindataset$Datum < cfg$lastdate)],by="ID_KLAK_Melding")
+storingen$LS= unique(mindataset[(mindataset$Datum > cfg$firstdate_KLAK & mindataset$Datum < cfg$lastdate)],by="ID_KLAK_Melding")
 storingen$LS[,Brontabel := "LS storingen"]
 
 # Add PC6 based coordinates
@@ -209,7 +213,7 @@ PC_6_Coo = mindataset
 # Load the MS KLAK
 load(paste0(settings$Ruwe_Datasets,"/4. KLAK/KLAK_MS.Rda"))
 mindataset[,Datum:=as.Date(mindataset$Datum)]
-storingen$MS= mindataset[(mindataset$Datum > cfg$firstdate_NOR & mindataset$Datum < cfg$lastdate)]
+storingen$MS= mindataset[(mindataset$Datum > cfg$firstdate_KLAK & mindataset$Datum < cfg$lastdate)]
 storingen$MS[,Brontabel := "MS storingen"]
 
 # Add XY based on the lon lat in the systems (converted to XY elsewhere)

@@ -1,35 +1,34 @@
-AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="save",override="no",ID_Object=F){
-  
-  # Asset health analytics import script, 
-  # Load project first
-  # (c) Roel Stijl (Bearingpoint), Jacco Heres (Alliander), 2014
-  
-  # This file imports select collumns from raw files and modifies the headers based on an xlsx file
-  # The xlsx file is <filename>_header.xlsx, and is automatically created importing a CSV
-  # Default for the xlsx file is all collumns and default headers, can be modified using shiny GUI or excel
-  # The functions operates in several modes these can be be shiny, save or load
-  # - shiny provides a GUI for editing the header files
-  # - load provides a mode to load a file to workspace (e.g. output = AHA_impot(a,b,c))
-  # - save will save the data to file <filename>.Rda
-  # - header will just dump the header xlsx
-  # Multiple files is supported, initial input dataname is a partial search
-  
-  # An attached excel sheet contains all the information for the import, the following date formats are allowed
-  #  "date",         dmy
-  #  "dateymd",      ymd
-  #  "datetime",     my_hms
-  #  "datetimeYDM",  ymd_hms
-  #  "datetimeM",    dmy_hm
-  #  "Hours minuts", hm
-  
-  # Do all the loading and modifying of files -------------------------------
-  # Define the location of your data based on the system used
-  cfg           = list()
-  cfg$compress  = F
-  cfg$started   = Sys.time()
-  shinyfolder   = "Shiny"
-  pb = pbarwrapper (title = "Import", label = "Starting...", min = 0, max = length(datafiles)*3, initial = 0, width = 450); pc=0;
-  
+AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="save",override=T,ID_Object=F){
+# Asset health analytics import script, 
+# Load project first
+# (c) Roel Stijl (Bearingpoint), Jacco Heres (Alliander), 2014
+
+# This file imports select collumns from raw files and modifies the headers based on an xlsx file
+# The xlsx file is <filename>_header.xlsx, and is automatically created importing a CSV
+# Default for the xlsx file is all collumns and default headers, can be modified using shiny GUI or excel
+# The functions operates in several modes these can be be shiny, save or load
+# - shiny provides a GUI for editing the header files
+# - load provides a mode to load a file to workspace (e.g. output = AHA_impot(a,b,c))
+# - save will save the data to file <filename>.Rda
+# - header will just dump the header xlsx
+# Multiple files is supported, initial input dataname is a partial search
+
+# An attached excel sheet contains all the information for the import, the following date formats are allowed
+#  "date",         dmy
+#  "dateymd",      ymd
+#  "datetime",     my_hms
+#  "datetimeYDM",  ymd_hms
+#  "datetimeM",    dmy_hm
+#  "Hours minuts", hm
+
+# Do all the loading and modifying of files -------------------------------
+# Define the location of your data based on the system used
+cfg           = list()
+cfg$compress  = F
+cfg$started   = Sys.time()
+shinyfolder   = "Shiny_Import_Data"
+pb = pbarwrapper (title = "Import", label = "Starting...", min = 0, max = length(datafiles)*3, initial = 0, width = 450); pc=0;
+
 
   if (folder == "automatic"){
     filechooser= choose.files(default = paste0(settings$Bron_Datasets,"/*"))
@@ -67,7 +66,7 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
     setpbarwrapper (pb, title = paste0("AHA_Data_Import, Started:",cfg$started," ,file: ",datafiles[filenumber]), label = "Starting import"); 
     
     # Choose the correct import method
-    if(mode!="header"){colclass=rep("character",1)} else {colclass = switch (override,yes=NA,no=NULL)}
+    if(mode!="header"){colclass=rep("character",1)} else {colclass = ifelse (override,NA,NULL)}
     mindataset  = switch (curdataext,
                           csv = {if(folder =="NOR" & !any(pmatch(paste0("ELCVERBINDINGEN_140",1:8), curdataname,dup = TRUE,nomatch=0)>0) & any(pmatch("ELCVERBINDINGEN",curdataname,dup = TRUE,nomatch=0)>0))
                                 {mindataset = data.frame(read.csv(sourcefile,row.names=NULL,colClasses=colclass));
@@ -77,15 +76,13 @@ AHA_Data_Import= function(folder="automatic",dataname,headername=dataname,mode="
                                 else 
                                 {data.frame(fread(sourcefile,sep=",",header=TRUE,colClasses=colclass))}},
                           
-                          tsv = {switch(override,
-                                        no=data.frame(fread(sourcefile,header=TRUE,sep="\t",colClasses=colclass)),
-                                        yes=data.frame(read.csv(sourcefile,sep="\t",colClasses=colclass)))},
+                          tsv = {if(override) data.frame(fread(sourcefile,header=TRUE,sep="\t",colClasses=colclass))
+                                  else data.frame(read.csv(sourcefile,sep="\t",colClasses=colclass))},
                           
                           ldr = {data.frame(importldr(sourcefile,colclass))},
                           
-                          ssv = {switch(override,
-                                        no=data.frame(fread(sourcefile,header=TRUE,sep=";",colClasses=colclass)),
-                                        yes=data.frame(read.csv(sourcefile,header=TRUE,sep=";",colClasses=colclass)))},
+                          ssv = {if(override) data.frame(fread(sourcefile,header=TRUE,sep=";",colClasses=colclass))
+                                  else data.frame(read.csv(sourcefile,header=TRUE,sep=";",colClasses=colclass))},
                           
                           xlsx= {data.frame(read.xlsx(sourcefile,1))},
                           
@@ -135,6 +132,7 @@ for(i in header[header[,5]=="dateymd"|header[,5]=="ymd",1])        {mindataset[,
 for(i in header[header[,5]=="datetime"|header[,5]=="my_hms",1])    {mindataset[,i] = as.Date(my_hms(mindataset[,i]))}
 for(i in header[header[,5]=="datetimeYDM"|header[,5]=="ymd_hms",1]){mindataset[,i] = as.Date(ymd_hms(mindataset[,i]))}
 for(i in header[header[,5]=="datetimeM"|header[,5]=="dmy_hm",1])   {mindataset[,i] = as.Date(dmy_hm(mindataset[,i]))}
+for(i in header[header[,5]=="datetimeDMY"|header[,5]=="dmy_hms",1]){mindataset[,i] = as.Date(dmy_hms(mindataset[,i]))}
 
 # Correct for missing information if 2 digit year in the 20th century
 l_ply(names(mindataset)[laply(mindataset,function(x) class(x) =="Date")],
@@ -145,7 +143,7 @@ l_ply(names(mindataset)[laply(mindataset,function(x) class(x) =="Date")],
 if(mode=="shiny"){
   
   # Shiny visualisation
-  shinyfolder  = "Shiny"
+  shinyfolder  = "Shiny_Import_Data"
   dataset   <<- mindataset[sample(nrow(mindataset),min(nrow(mindataset),10000)),]
   remove ("mindataset")
   header    <<- header  
@@ -184,5 +182,36 @@ else if(mode=="load") {
 }else{
   cat("Wrong mode selected, load, save or shiny\n")
 } } }
-
   
+AHA_Data_Import_SVG = function(){
+# Created by Roel Stijl (Bearingpoint) 2015
+# for project Asset Health Analytics, Alliander
+# Functions to convert SVG files into HTML readable files
+  load(paste0(settings$Ruwe_Datasets,"/17. Storingsschetsen/OBJ3700673_STORINGSSCHETSFORMU_DATA_TABLE_MAIN.Rda"))
+  schetstabel = mindataset
+  
+  flist = list.files(paste0(settings$Bron_Datasets,"/17. Storingsschetsen"),pattern = ".ldr",full.names=TRUE)
+  flist = flist[2:length(flist)]
+  pb = tkProgressBar (title = "Import", label = "Starting...", min = 0, max = length(flist), initial = 0, width = 900); pc=1;
+  
+  for (fileName in flist){
+    setTkProgressBar (pb, pc, label = paste0("File: ", pc, " of ", length(flist),": ",basename(fileName))); pc=pc+1
+    
+    if (sum(schetstabel$Storingsschets %in% basename(fileName))==1)
+    {
+      
+      ID_KLAK = schetstabel[Storingsschets == basename(fileName),ID_KLAK_Melding]
+      Plaats = schetstabel[Storingsschets == basename(fileName),Plaats]
+      
+      a=readChar(fileName, file.info(fileName)$size)  
+      b=gregexpr(pattern ='</svg>',a)
+      c=substring(a,1,b[[1]][1]+5)
+      d=paste0("<!DOCTYPE html><html><body><h1>KLAK melding: ",ID_KLAK,", Plaats: ",Plaats,"</h1>",c,"</body></html>")
+      
+      fileConn<-save(c,file=paste0(settings$Ruwe_Datasets,"/17. Storingsschetsen/Storingsschets, ID_KLAK ", ID_KLAK,".R"))
+      fileConn<-file(paste0(settings$Ruwe_Datasets,"/17. Storingsschetsen/Storingsschets, ID_KLAK ", ID_KLAK,".html"))
+      writeLines(d, fileConn)
+      close(fileConn)  
+    }
+  }
+}

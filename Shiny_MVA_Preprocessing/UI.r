@@ -3,7 +3,7 @@
 cfg <<-list()
 cfg$max_categories <<- 25
 cfg$namelength     <<- 25
-cfg$samplesize     <<- 5000
+cfg$samplesize     <<- 100000
 
 # Prepare some variables for the first run
 filechooser <<- choose.files(default = paste0(settings$Analyse_Datasets,"/5. MVA analyseset/*.Rda"))
@@ -12,30 +12,37 @@ filename <<- file_path_sans_ext(basename(filechooser))
 # Sample the data
 if(file.exists(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_sample.Rda")))
 { # Load data if ran before
+  cat("Loading already existing sample set .... ")
   load(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_sample.Rda"),envir = globalenv())
+  cat("Done\n")
 } else { # Run it for the first time
   cat("Creating sample set .... ")
   SetName  = load(filechooser)
   mindataset = data.table(get(SetName))
-  
+  datalength <<- nrow(mindataset)
   dataset    <<- mindataset[sample(1:nrow(mindataset),cfg$samplesize)]
+  datalength <<- nrow(mindataset)
   
   l_ply(names(dataset)[laply(dataset,is.character)],function(x) dataset[,eval(x):=as.factor(dataset[,get(x)])])
   l_ply(names(dataset)[laply(dataset,function(x) class(x)[1])=="POSIXct"],function(x) dataset[,eval(x):=as.Date(get(x))])
   l_ply(names(dataset)[laply(dataset,function(x) class(x)[1])=="integer"],function(x) dataset[,eval(x):=as.numeric(get(x))])
   l_ply(names(dataset)[laply(dataset,function(x) class(x)[1])=="Date"],function(x) dataset[,eval(x):=as.numeric(get(x))])
+  l_ply(names(dataset)[laply(dataset,function(x) class(x)[1])=="factor"],function(x) dataset[,eval(x):=factor(get(x))])
+  
   
   setcolorder(dataset,cn(dataset))
-  save(dataset,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_sample.Rda"))
+  save(dataset,datalength,file=paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_sample.Rda"))
   cat("Done\n ")
 }
 
 # Settings in excel file
 if(file.exists(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_metadata.xlsx")))
 { # load an excel file with the metadata if none exist
+  cat("Loading already existing correlations set .... ")
  temp = read.xlsx(paste0(settings$Analyse_Datasets,"/5. MVA analyseset/Settings/",filename,"_metadata.xlsx"),1)
  temp$selected = as.logical(temp$selected)
  metadata <<- data.table(temp)
+ cat("Done\n")
 } else { # Create metadata
   metadata  <<- data.table(
   names     = cn(dataset),
@@ -86,7 +93,8 @@ shinyUI(fluidPage(
       selectInput("Target_Variable", label="Target variable",choices = Variable_names,selected = Variable_names[1]),
       
       selectInput("Target_Value", label="Target value",
-                  choices = setNames(as.list(unique(dataset[,metadata$names[1],with=F])),as.list(unique(dataset[,metadata$names[1],with=F])))),      
+                  choices = setNames(as.list(laply(unique(dataset[,metadata$names[1],with=F]),as.character))
+                  ,as.list(laply(unique(dataset[,metadata$names[1],with=F]),as.character)))),      
 fluidRow(
   column(4,actionButton("vorige_x", label = "Last")),
   column(4,actionButton("save_to_file", label = "Save")),

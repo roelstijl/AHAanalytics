@@ -1,4 +1,4 @@
-proxy_samenv  <- function(global=F,set){
+AHA_Proxy_Merge  <- function(global=F,set){
   #Deze functie gebruikt drie proxy-uitkomsten (van PC, XY en TOPO) 
   #en voegt deze samen tot één lange lijst. Er  worden punten gegeven
   #aan elke koppeling op basis van de gebruikte koppelmethode, wel/geen
@@ -9,11 +9,11 @@ proxy_samenv  <- function(global=F,set){
     if(!(exists("proxy_res"))){
       setwd(paste0(settings$Analyse_Datasets,"/1. KA Proxy"))
       proxy_res      <- list() 
-      myFile <- file.choose(caption = "Selecteer Postcode file"); load(myFile);
+      myFile <- file.choose(); load(myFile);
       proxy_res$PC   <- assetsltb
-      myFile <- file.choose(caption = "Selecteer XY file"); load(myFile);
+      myFile <- file.choose(); load(myFile);
       proxy_res$XY   <- assetsltb
-      myFile <- file.choose(caption = "Selecteer Topologie file"); load(myFile);
+      myFile <- file.choose(); load(myFile);
       proxy_res$TOPO <- assetsltb
       proxy_res <<- proxy_res
       rm(assetsltb)
@@ -123,9 +123,12 @@ for(klasse in c("LSkabels","LSmoffen","MSkabels","MSmoffen")){
     koppellijst[[klasse]]$punten               <- rowSums(koppellijst[[klasse]][,c("XY","PC","TOPO"),with=F],na.rm=T)*
                                                   koppellijst[[klasse]]$GIS_datum*
                                                   koppellijst[[klasse]]$Component*
-                                                  koppellijst[[klasse]]$Component/
+                                                  koppellijst[[klasse]]$Storingsdatum/
                                                   koppellijst[[klasse]]$freq
+
+    
     koppellijst[[klasse]]$Oorzaak              <- storingen[[voltage]][J(koppellijst[[klasse]]$ID_KLAK_Melding)]$Oorzaak2
+
     koppellijst[[klasse]]$Graafschade          <- (storingen[[voltage]][J(koppellijst[[klasse]]$ID_KLAK_Melding)]$Oorzaak2 %in% config$graafschade)
   
     print(paste("Klaar, aantal gevonden assets is",assetsgevonden,"aantal gekoppelde assets is",assetsgekoppeld))
@@ -142,4 +145,3 @@ vervangingmoffen = function(moffenlijst,kabellijst){
 
   test <-(sum(kabellijst[J(moffenlijst["ID_KLAK_Melding"]),]$DateAdded==moffenlijst["DateRemoved"])>0)
   return(test)}
-
