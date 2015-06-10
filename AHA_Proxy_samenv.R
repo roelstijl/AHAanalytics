@@ -139,11 +139,7 @@ for(klasse in c("LSkabels","LSmoffen","MSkabels","MSmoffen")){
 }
 
 vervangingmoffen = function(moffenlijst,kabellijst){
-  if(moffenlijst["ID_KLAK_Melding"]=="3740842"){
-    print("blah")
-    print(paste(kabellijst[J(moffenlijst["ID_KLAK_Melding"]),]$DateAdded))
-    print(moffenlijst["DateRemoved"])
-  }
+
   test <-(sum(kabellijst[J(moffenlijst["ID_KLAK_Melding"]),]$DateAdded==moffenlijst["DateRemoved"])>0)
   return(test)}
 
